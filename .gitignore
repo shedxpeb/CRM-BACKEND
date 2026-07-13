@@ -1,0 +1,94 @@
+# compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+/coverage
+/.nyc_output
+
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+.env.example
+
+# temp directory
+.temp
+.tmp
+*.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Cache
+.cache
+.turbo
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+/generated/prisma
+
+
+# Prisma generated files
+prisma/generated/
+generated/prisma/
+
+# Prisma migrations (keep migrations in Git)
+# prisma/migrations/
+
+# Uploads / user files (if your app creates them)
+uploads/
+public/uploads/
+
+# Build cache
+.eslintcache
+.npm
+.pnpm-store/
+
+# Local development files
+*.local

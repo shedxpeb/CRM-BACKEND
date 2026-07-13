@@ -1,0 +1,732 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum LeadStatus {
+  New
+  Contacted
+  DesignPending
+  BOQPending
+  EstimateSent
+  ProposalSent
+  Negotiation
+  Approved
+  Rejected
+  Converted
+}
+
+enum ProjectType {
+  Factory
+  Warehouse
+  IndustrialShed
+  Commercial
+  Residential
+  Other
+}
+
+enum StructureType {
+  PEB
+  SteelStructure
+  Hybrid
+  Other
+}
+
+enum RoofType {
+  MetalSheet
+  DeckSheet
+  SandwichPanel
+  Other
+}
+
+enum WallType {
+  MetalSheet
+  BrickWall
+  SandwichPanel
+  Other
+}
+
+enum MaterialPreference {
+  Standard
+  Premium
+  Economy
+}
+
+enum LeadSource {
+  Website
+  Referral
+  ColdCall
+  Email
+  SocialMedia
+  TradeShow
+  Advertisement
+  Other
+}
+
+enum LeadPriority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+enum CustomerStatus {
+  Active
+  Inactive
+  Prospect
+  Converted
+  Churned
+}
+
+enum Industry {
+  Construction
+  Manufacturing
+  Technology
+  Healthcare
+  Hospitality
+  Retail
+  Education
+  Finance
+  RealEstate
+  Infrastructure
+  Energy
+  Mining
+  Agriculture
+  Transportation
+  Logistics
+  Commercial
+  Other
+}
+
+enum BusinessType {
+  SoleProprietorship
+  Partnership
+  PrivateLimited
+  PublicLimited
+  LLP
+  Government
+  NonProfit
+  Other
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  OWNER
+  ADMIN
+  EMPLOYEE
+}
+
+enum OrganizationType {
+  SYSTEM
+  COMPANY
+}
+
+enum OrganizationStatus {
+  Active
+  Inactive
+  Suspended
+}
+
+model Organization {
+  id              String              @id @default(uuid())
+  name            String
+  email           String?             @unique
+  mobile          String?
+  address         String?
+  city            String?
+  state           String?
+  country         String?             @default("India")
+  pincode         String?
+  gstNumber       String?
+  panNumber       String?
+  website         String?
+  status          OrganizationStatus  @default(Active)
+  maxUsers        Int                 @default(25)
+  maxStorageGb    Int                 @default(10)
+  subscriptionTier String              @default("free")
+  settings        Json?
+  createdById     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  isDeleted       Boolean             @default(false)
+  deletedAt       DateTime?
+
+  users           User[]
+  leads           Lead[]
+  customers       Customer[]
+  projects        Project[]
+
+  @@index([status])
+  @@index([email])
+  @@index([name])
+  @@index([isDeleted])
+}
+
+model User {
+  id               String           @id @default(uuid())
+  organizationId   String?
+  organization     Organization?    @relation(fields: [organizationId], references: [id])
+
+  email            String           @unique
+  password         String
+  name             String?
+  mobile           String?
+  avatar           String?
+  department       String?
+  designation      String?
+  isActive         Boolean          @default(false)
+  isVerified       Boolean          @default(false)
+  isLocked         Boolean          @default(false)
+  lastLogin        DateTime?
+  otp              String?
+  otpExpiry        DateTime?
+  otpAttempts      Int              @default(0)
+  role             UserRole         @default(OWNER)
+  organizationType OrganizationType @default(COMPANY)
+
+  // Enhanced Security
+  passwordVersion  Int              @default(1)
+  passwordHistory  Json?
+  failedLoginAttempts Int          @default(0)
+  lockedUntil      DateTime?
+
+  sessions         Session[]
+  refreshTokens    RefreshToken[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([organizationId])
+  @@index([organizationId, role])
+}
+
+model Session {
+  id              String    @id @default(uuid())
+  userId          String
+  organizationId  String?
+  token           String    @unique
+  refreshToken    String?
+  device          String?
+  browser         String?
+  os              String?
+  ipAddress       String?
+  userAgent       String?
+  loginAt         DateTime  @default(now())
+  lastActivity    DateTime  @default(now())
+  expiresAt       DateTime
+  idleExpiresAt   DateTime
+  isRevoked       Boolean   @default(false)
+  revokedAt       DateTime?
+  isRememberMe    Boolean   @default(false)
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens   RefreshToken[]
+
+  @@index([userId])
+  @@index([token])
+  @@index([userId, isRevoked])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id              String    @id @default(uuid())
+  tokenHash       String    @unique
+  sessionId       String
+  userId          String
+  organizationId  String?
+  expiresAt       DateTime
+  isRevoked       Boolean   @default(false)
+  revokedAt       DateTime?
+  replacedByTokenHash String?
+
+  session         Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model LoginAttempt {
+  id              String    @id @default(uuid())
+  email           String
+  organizationId  String?
+  ipAddress       String?
+  userAgent       String?
+  success         Boolean
+  failureReason   String?
+  lockedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([email, createdAt])
+}
+
+model AuditLog {
+  id              String    @id @default(uuid())
+  organizationId  String?
+  userId          String?
+  sessionId       String?
+  action          String
+  resource        String?
+  resourceId      String?
+  metadata        Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Role {
+  id              String   @id @default(uuid())
+  organizationId  String
+  name            String
+  description     String?
+  permissions     String[]
+  isSystem        Boolean  @default(false)
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Customer {
+  id                  String         @id @default(uuid())
+  organizationId      String
+  customerId          Int            @unique @default(autoincrement())
+
+  // Customer Details
+  customerName        String
+  companyName         String
+  mobile              String
+  alternateMobile     String?
+  email               String
+  gstNumber           String?
+  panNumber           String?
+  industry            Industry?
+  businessType        String?
+  website             String?
+
+  // Address
+  address             String
+  city                String
+  state               String
+  country             String?        @default("India")
+  pincode             String?
+
+  // Assignment
+  assignedEmployee    String?
+  assignedEmployeeId  String?
+  source              String         @default("Website")
+
+  // Business
+  status              CustomerStatus @default(Prospect)
+  notes               String?
+  attachments         String[]
+  customerSince       DateTime       @default(now())
+
+  // Cross-module
+  leadId              String?
+  convertedFromLeadId String?
+
+  // Tracking
+  createdById         String?
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Soft Delete
+  isDeleted           Boolean        @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+
+  // Custom fields
+  customFields        Json?
+
+  // Relations
+  organization        Organization   @relation(fields: [organizationId], references: [id])
+
+  @@index([leadId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([mobile])
+  @@index([companyName])
+  @@index([isDeleted])
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+enum ProjectStage {
+  Design
+  BOQ
+  Procurement
+  Fabrication
+  Dispatch
+  Installation
+  Handover
+}
+
+enum ProjectPriority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+enum ProjectTaskStatus {
+  Pending
+  InProgress
+  Completed
+  Overdue
+}
+
+enum ProjectMilestoneStatus {
+  Pending
+  InProgress
+  Completed
+  Delayed
+}
+
+enum ProjectActivityType {
+  project_created
+  project_updated
+  design_started
+  design_completed
+  design_uploaded
+  boq_created
+  boq_updated
+  procurement_started
+  material_reserved
+  purchase_request_created
+  fabrication_started
+  fabrication_completed
+  dispatch_started
+  dispatch_completed
+  installation_started
+  installation_completed
+  milestone_completed
+  team_assigned
+  task_assigned
+  status_changed
+  stage_changed
+  document_uploaded
+  note_added
+  payment_received
+  project_completed
+  handover_completed
+}
+
+model Project {
+  id                        String   @id @default(uuid())
+  organizationId            String
+  projectId                 Int      @unique @default(autoincrement())
+  projectCode               String?
+  projectName               String
+  customerId                String
+  customerName              String
+  leadId                    String?
+
+  // Type & Value
+  projectType               String   // 'Industrial Shed', 'Warehouse', etc. (string union on frontend)
+  value                     Float?
+  budget                    Float?
+
+  // Location
+  location                  String
+  city                      String
+  state                     String
+  pincode                   String?
+
+  // Schedule
+  startDate                 DateTime?
+  endDate                   DateTime?
+
+  // Assignment
+  priority                  ProjectPriority
+  projectManager            String?
+  projectManagerId          String?
+
+  // PEB Specifications
+  structureType             String   // 'PEB Building', 'Conventional Steel', etc.
+  width                     Float?
+  length                    Float?
+  height                    Float?
+  baySpacing                Float?
+  roofType                  String   // 'Standing Seam', 'Ribbed', etc.
+  craneSystem               String   // 'Single Girder', 'Double Girder', etc.
+  mezzanine                 Boolean  @default(false)
+  wallType                  String   // 'Sandwich Panel', 'Single Skin', etc.
+  insulation                Boolean  @default(false)
+  coveredArea               Float?
+  totalWeight               Float?
+
+  // Progress Tracking
+  status                    String   @default("Lead")
+  stage                     ProjectStage?
+  progress                  Int      @default(0)
+  designProgress            Int      @default(0)
+  procurementProgress       Int      @default(0)
+  fabricationProgress       Int      @default(0)
+  installationProgress      Int      @default(0)
+
+  // Health Indicators
+  healthStatus              String   @default("Healthy")
+  timelineHealth            String   @default("Healthy")
+  budgetHealth              String   @default("Healthy")
+  materialHealth            String   @default("Healthy")
+  resourceHealth            String   @default("Healthy")
+
+  // Cost Tracking
+  materialCost              Float?
+  procurementCost           Float?
+  fabricationCost           Float?
+  installationCost          Float?
+  profitMargin              Float?
+
+  // Cross-module Refs
+  boqId                     String?
+  designId                  String?
+  estimateId                String?
+  proposalId                String?
+  quotationId               String?
+  invoiceIds                String[]
+  inventoryReservationIds   String[]
+  reservedItems             String[]
+  consumedItems             String[]
+
+  // Relations
+  milestones    ProjectMilestone[]
+  teamMembers   ProjectTeamMember[]
+
+  // Custom
+  customFields  Json?
+
+  // Relations
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+
+  // Tracking
+  createdById   String?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Soft Delete
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  deletedById   String?
+
+  // Indexes
+  @@index([status])
+  @@index([stage])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([customerName])
+  @@index([projectManagerId])
+  @@index([isDeleted])
+  @@index([projectCode])
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model ProjectMilestone {
+  id          String                 @id @default(uuid())
+  projectId   String
+  name        String
+  plannedDate DateTime?
+  actualDate  DateTime?
+  status      ProjectMilestoneStatus @default(Pending)
+  delay       Int?
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ProjectTeamMember {
+  id           String   @id @default(uuid())
+  projectId    String
+  employeeId   String
+  name         String?
+  role         String
+  assignedDate DateTime @default(now())
+  workload     Int?
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([employeeId])
+}
+
+model ProjectActivity {
+  id           String              @id @default(uuid())
+  projectId    String
+  type         ProjectActivityType
+  description  String
+  performedBy  String?
+  performedAt  DateTime            @default(now())
+  metadata     Json?
+
+  @@index([projectId])
+  @@index([projectId, performedAt])
+}
+
+model ProjectTask {
+  id              String           @id @default(uuid())
+  projectId       String
+  title           String
+  description     String?
+  assignedTo      String
+  assignedToName  String?
+  dueDate         DateTime?
+  priority        ProjectPriority
+  status          ProjectTaskStatus @default(Pending)
+  dependencies    String[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, status])
+  @@index([assignedTo])
+}
+
+model Lead {
+  id            String        @id @default(uuid())
+  organizationId String
+  leadNumber    Int           @unique @default(autoincrement())
+
+  // Customer Details
+  customerName  String
+  companyName   String
+  designation   String?
+  website       String?
+  mobile        String
+  alternateMobile String?
+  email         String
+  gstNumber     String?
+  panNumber     String?
+  industry      Industry?
+  businessType  BusinessType?
+
+  // Address
+  addressLine1  String?
+  addressLine2  String?
+  area          String?
+  city          String?
+  state         String?
+  country       String?       @default("India")
+  pincode       String?
+
+  // Company Info
+  companySize   String?
+  annualRevenue Float?
+  employeeCount Int?
+
+  // Social Links
+  linkedin      String?
+  facebook      String?
+  instagram     String?
+
+  // Media
+  profileImage  String?
+  companyLogo   String?
+
+  // Tags
+  tags          String[]
+
+  // Project Details
+  projectTitle  String
+  projectType   ProjectType
+  structureType StructureType
+
+  // Structure Details
+  width         Float?
+  length        Float?
+  height        Float?
+  baySpacing    Float?
+  roofType      RoofType?
+  craneRequired Boolean?      @default(false)
+  craneCapacity Float?
+  mezzanine     Boolean?      @default(false)
+  mezzanineArea Float?
+  mezzanineLoad Float?
+  wallType      WallType?
+  insulationRequired Boolean? @default(false)
+  insulationType String?
+  insulationThickness Float?
+  materialPreference MaterialPreference?
+
+  // Site Details
+  siteLocation  String?
+  siteAddress   String?
+  mapCoordinates String?
+  soilNotes     String?
+
+  // Requirement Details
+  customerNotes String?
+  specialRequirement String?
+  attachments   String[]
+
+  // Business Details
+  source        LeadSource
+  priority      LeadPriority
+  status        LeadStatus    @default(New)
+  createdById   String
+  assignedToId  String?
+  assignedTo    String?
+  remarks       String?
+  score         Int?
+  isConverted   Boolean       @default(false)
+
+  // Tracking
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastFollowUp  DateTime?
+  nextFollowUpDate DateTime?
+  createdBy      String?
+  updatedBy      String?
+
+  // Cross-module relationships
+  customerId    String?
+  convertedDate DateTime?
+
+  // Soft Delete
+  isDeleted     Boolean       @default(false)
+  deletedAt     DateTime?
+  deletedById   String?
+
+  // Custom fields
+  customFields  Json?
+
+  // Relations
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([nextFollowUpDate])
+  @@index([mobile])
+  @@index([companyName])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([isDeleted])
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
