@@ -23,6 +23,14 @@ export class ConvertLeadDto {
 
   @IsOptional()
   @IsString()
+  gstNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  panNumber?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()

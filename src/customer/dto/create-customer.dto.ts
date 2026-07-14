@@ -23,8 +23,9 @@ export class CreateCustomerDto {
   @MaxLength(20)
   alternateMobile?: string;
 
+  @IsOptional()
   @IsEmail({}, { message: 'Invalid email format' })
-  email: string;
+  email?: string;
 
   @IsOptional()
   @IsString()
@@ -95,4 +96,7 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   leadId?: string;
+
+  @IsOptional()
+  customFields?: Record<string, any>;
 }
