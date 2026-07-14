@@ -97,7 +97,9 @@ export class AuthService {
       return { organization, user };
     });
 
-    await this.mailService.sendOtpEmail(dto.email, otp, 'registration');
+    this.mailService.sendOtpEmail(dto.email, otp, 'registration').catch((err) => {
+      console.error(`[MailService] Failed to send registration OTP to ${dto.email}:`, err.message);
+    });
 
     return {
       message: 'Account created. Please verify your email with the OTP sent.',
@@ -457,7 +459,9 @@ export class AuthService {
       where: { id: user.id },
       data: { otp, otpExpiry, otpAttempts: 0 },
     });
-    await this.mailService.sendOtpEmail(dto.email, otp, 'forgot-password');
+    this.mailService.sendOtpEmail(dto.email, otp, 'forgot-password').catch((err) => {
+      console.error(`[MailService] Failed to send forgot-password OTP to ${dto.email}:`, err.message);
+    });
 
     const response: any = { message: 'OTP sent to your email', email: user.email };
     if (this.configService.get<string>('nodeEnv') !== 'production') {
@@ -477,7 +481,9 @@ export class AuthService {
       where: { id: user.id },
       data: { otp, otpExpiry, otpAttempts: 0 },
     });
-    await this.mailService.sendOtpEmail(dto.email, otp, 'registration');
+    this.mailService.sendOtpEmail(dto.email, otp, 'registration').catch((err) => {
+      console.error(`[MailService] Failed to send registration OTP to ${dto.email}:`, err.message);
+    });
 
     const response: any = { message: 'New OTP sent to your email', email: user.email };
     if (this.configService.get<string>('nodeEnv') !== 'production') {
