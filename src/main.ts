@@ -31,8 +31,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
   const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:3000');
+  const allowedOrigins = frontendUrl.split(',').map(u => u.trim());
   await app.register(cors, {
-    origin: frontendUrl,
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Request-ID'],
