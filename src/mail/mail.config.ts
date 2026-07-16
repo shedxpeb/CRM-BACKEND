@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { isIpv4Literal } from './mail.dns';
 import type {
   MailDeliveryChannel,
   MailProviderName,
@@ -32,7 +33,12 @@ export function getResendApiKey(config: ConfigService): string {
 
 export function getMailTransportSnapshot(
   config: ConfigService,
-  extras?: { resolvedAddress?: string | null; deliveryChannel?: MailDeliveryChannel },
+  extras?: {
+    resolvedAddress?: string | null;
+    connectHost?: string | null;
+    smtpHostname?: string | null;
+    deliveryChannel?: MailDeliveryChannel;
+  },
 ): MailTransportSnapshot {
   const host = config.get<string>('smtp.host') || null;
   const user = config.get<string>('smtp.user') || null;
@@ -50,6 +56,9 @@ export function getMailTransportSnapshot(
   const provider = resolveMailProvider(config);
   const deliveryChannel: MailDeliveryChannel =
     extras?.deliveryChannel || (provider === 'resend' ? 'resend' : 'smtp');
+  const family = resolveSmtpIpFamily(config);
+  const connectHost = extras?.connectHost ?? extras?.resolvedAddress ?? null;
+  const resolvedAddress = extras?.resolvedAddress ?? null;
 
   return {
     timestamp: new Date().toISOString(),
@@ -61,12 +70,16 @@ export function getMailTransportSnapshot(
     secure,
     pool,
     verifyOnBoot,
-    family: resolveSmtpIpFamily(config),
+    family,
     connectionTimeoutMs: config.get<number>('smtp.connectionTimeoutMs') || 10_000,
     greetingTimeoutMs: config.get<number>('smtp.greetingTimeoutMs') || 10_000,
     socketTimeoutMs: config.get<number>('smtp.socketTimeoutMs') || 15_000,
     dnsTimeoutMs: config.get<number>('smtp.dnsTimeoutMs') || 5_000,
-    resolvedAddress: extras?.resolvedAddress ?? null,
+    resolvedAddress,
+    connectHost,
+    smtpHostname: extras?.smtpHostname ?? host,
+    ipv4Only: family === 4,
+    isIpv4Connect: !!connectHost && isIpv4Literal(connectHost),
     fromEmail,
     fromName,
     smtpUserExists: !!user,

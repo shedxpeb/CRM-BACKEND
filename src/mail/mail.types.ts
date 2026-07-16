@@ -40,11 +40,26 @@ export interface MailTransportSnapshot {
   socketTimeoutMs: number;
   dnsTimeoutMs: number;
   resolvedAddress: string | null;
+  connectHost: string | null;
+  smtpHostname: string | null;
+  ipv4Only: boolean;
+  isIpv4Connect: boolean;
   fromEmail: string | null;
   fromName: string | null;
   smtpUserExists: boolean;
   smtpPassExists: boolean;
   resendApiKeyExists: boolean;
+}
+
+export interface MailIpv4Diagnostics {
+  ipv4Only: boolean;
+  isIpv4Connect: boolean;
+  family: SmtpIpFamily;
+  hostname: string | null;
+  connectHost: string | null;
+  resolvedAddress: string | null;
+  /** Manual check: must be true when SMTP_IP_FAMILY=4 and SMTP channel is active. */
+  ipv4GuardPassed: boolean;
 }
 
 export interface MailHealthSnapshot {
@@ -57,6 +72,8 @@ export interface MailHealthSnapshot {
   failureType: SmtpFailureType | null;
   recoveryAttempt: number;
   nextRecoveryAt: string | null;
+  deliveryChannel: MailDeliveryChannel;
+  ipv4: MailIpv4Diagnostics;
 }
 
 export interface ClassifiedSmtpError {

@@ -78,11 +78,19 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   getConfigSnapshot(): MailTransportSnapshot {
     return getMailTransportSnapshot(this.config, {
       resolvedAddress: this.providers.getLastResolvedAddress(),
+      connectHost: this.providers.getLastConnectHost(),
+      smtpHostname: this.providers.getLastHostname(),
       deliveryChannel: this.deliveryChannel,
     });
   }
 
   getHealth(queuePending = 0): MailHealthSnapshot {
+    const config = this.getConfigSnapshot();
+    const ipv4GuardPassed =
+      this.deliveryChannel !== 'smtp'
+        ? true
+        : !config.ipv4Only || (config.isIpv4Connect && !!config.connectHost && !config.connectHost.includes(':'));
+
     return {
       state: this.state,
       provider: this.deliveryChannel === 'resend' ? 'resend' : this.providers.getProviderName(),
@@ -93,6 +101,16 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       failureType: this.failureType,
       recoveryAttempt: this.recoveryAttempt,
       nextRecoveryAt: this.nextRecoveryAt?.toISOString() || null,
+      deliveryChannel: this.deliveryChannel,
+      ipv4: {
+        ipv4Only: config.ipv4Only,
+        isIpv4Connect: config.isIpv4Connect,
+        family: config.family,
+        hostname: config.smtpHostname,
+        connectHost: config.connectHost,
+        resolvedAddress: config.resolvedAddress,
+        ipv4GuardPassed,
+      },
     };
   }
 
