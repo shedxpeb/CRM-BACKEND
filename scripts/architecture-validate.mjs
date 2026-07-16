@@ -132,5 +132,44 @@ if (missingEnv.length) {
 }
 ok('Env contract (.env.example) includes required keys');
 
+// ── 5. Mail content persistence policy ───────────────────
+const forbiddenMailModels = models.filter((m) =>
+  /^(MailTemplate|EmailTemplate|StoredEmail|EmailContent|MailBody)$/i.test(m),
+);
+if (forbiddenMailModels.length) {
+  fail(
+    `Email content must never be persisted.\n` +
+      `Forbidden models found:\n  - ${forbiddenMailModels.join('\n  - ')}\n` +
+      `Keep templates in src/mail/templates and render at runtime.`,
+  );
+}
+
+const mailPolicy = path.join(SRC, 'mail', 'mail.policy.ts');
+if (!fs.existsSync(mailPolicy)) {
+  fail('Missing src/mail/mail.policy.ts — mail content persistence rule is required.');
+}
+const policyText = fs.readFileSync(mailPolicy, 'utf8');
+if (!policyText.includes('Email content must never be persisted')) {
+  fail('mail.policy.ts must declare the email content persistence rule.');
+}
+
+const otpModelBlock = schema.match(/model\s+OtpChallenge\s*\{[\s\S]*?\n\}/);
+if (!otpModelBlock) fail('OtpChallenge model missing from schema');
+if (!/codeHash\s+String/.test(otpModelBlock[0])) {
+  fail('OtpChallenge must store codeHash only — never plaintext OTP');
+}
+if (/\n\s*otp\s+String/.test(otpModelBlock[0])) {
+  fail('OtpChallenge must not define a plaintext otp column');
+}
+
+const templateDir = path.join(SRC, 'mail', 'templates');
+const requiredTemplates = ['otp.template.ts', 'welcome.template.ts', 'reset-password.template.ts', 'password-changed.template.ts'];
+const missingTemplates = requiredTemplates.filter((f) => !fs.existsSync(path.join(templateDir, f)));
+if (missingTemplates.length) {
+  fail(`Missing code-owned mail templates:\n  - ${missingTemplates.join('\n  - ')}`);
+}
+
+ok('Mail persistence policy enforced (templates in code, hashed OTP only, no email-body models)');
+
 console.log('\n✅ Architecture validation passed — Schema ↔ Client ↔ Services are synchronized.\n');
 process.exit(0);

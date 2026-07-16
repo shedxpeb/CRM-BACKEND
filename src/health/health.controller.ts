@@ -49,12 +49,13 @@ export class HealthController {
       database = 'down';
     }
 
-    const smtpConfigured = !!(
-      this.config.get('smtp.host') &&
-      this.config.get('smtp.user') &&
-      this.config.get('smtp.pass')
-    );
-    const smtp = smtpConfigured && this.mail.isSmtpReady() ? 'up' : smtpConfigured ? 'degraded' : 'unconfigured';
+    const mail = this.mail.getMailHealth();
+    const smtp =
+      mail.state === 'READY'
+        ? 'up'
+        : mail.failureType === 'SMTP_NOT_CONFIGURED'
+          ? 'unconfigured'
+          : 'degraded';
     const requireSmtp = this.config.get<string>('SMTP_REQUIRED') === 'true' || process.env.SMTP_REQUIRED === 'true';
 
     const ready = database === 'up' && (!requireSmtp || smtp === 'up');
@@ -63,6 +64,7 @@ export class HealthController {
       check: 'ready',
       database,
       smtp,
+      mail,
       timestamp: new Date().toISOString(),
     };
     if (!ready) {
@@ -75,13 +77,17 @@ export class HealthController {
   @Get('health')
   @HealthCheck()
   @Public()
-  check() {
+  async check() {
     const heapMb = parseInt(process.env.HEALTH_HEAP_MB || '1024', 10);
     const rssMb = parseInt(process.env.HEALTH_RSS_MB || '1536', 10);
-    return this.health.check([
+    const terminus = await this.health.check([
       () => this.prismaHealth.isHealthy('database'),
       () => this.memory.checkHeap('memory_heap', heapMb * 1024 * 1024),
       () => this.memory.checkRSS('memory_rss', rssMb * 1024 * 1024),
     ]);
+    return {
+      ...terminus,
+      mail: this.mail.getMailHealth(),
+    };
   }
 }

@@ -1,0 +1,35 @@
+export const MAIL_HEALTH_STATES = [
+  'UNKNOWN',
+  'CONNECTING',
+  'READY',
+  'DEGRADED',
+  'FAILED',
+  'RECOVERING',
+] as const;
+
+export const SMTP_FAILURE_TYPES = [
+  'SMTP_AUTH_FAILED',
+  'SMTP_TIMEOUT',
+  'SMTP_DNS_ERROR',
+  'SMTP_TLS_ERROR',
+  'SMTP_IPV4_ERROR',
+  'SMTP_IPV6_ERROR',
+  'SMTP_CONNECTION_REFUSED',
+  'SMTP_PROVIDER_REJECTED',
+  'SMTP_RATE_LIMIT',
+  'SMTP_NOT_CONFIGURED',
+  'SMTP_UNKNOWN',
+] as const;
+
+/** Recovery backoff schedule (ms): 5s → 15s → 30s → 1m → 5m (then holds at 5m). */
+export const MAIL_RECOVERY_BACKOFF_MS = [5_000, 15_000, 30_000, 60_000, 300_000] as const;
+
+export const MAIL_PROVIDERS = [
+  'smtp',
+  'gmail',
+  'zoho',
+  'microsoft365',
+  'ses',
+  'sendgrid',
+  'mailgun',
+] as const;

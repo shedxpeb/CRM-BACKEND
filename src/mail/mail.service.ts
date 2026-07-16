@@ -1,65 +1,46 @@
 import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import { BrandingService } from './branding.service';
 import { MailQueueService, MailJob } from './mail-queue.service';
 import { buildMailTemplate, MailTemplateId, TemplateVars } from './template.engine';
 import { buildMailHeaders, formatFromAddress } from './mail.headers';
+import { MailTransportService } from './mail.transport';
+import { MailTemplateUnavailableException } from './mail.exceptions';
+import type { MailHealthSnapshot, SmtpFailureType } from './mail.types';
 
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter | null = null;
-  private smtpReady = false;
 
   constructor(
     private readonly config: ConfigService,
     private readonly branding: BrandingService,
     private readonly queue: MailQueueService,
+    private readonly transport: MailTransportService,
   ) {}
 
   async onModuleInit() {
     this.queue.setSender((job) => this.deliver(job));
-    await this.initTransporter();
   }
 
-  private async initTransporter() {
-    const host = this.config.get<string>('smtp.host');
-    const user = this.config.get<string>('smtp.user');
-    const pass = this.config.get<string>('smtp.pass');
-    const port = this.config.get<number>('smtp.port') || 587;
-    const secure = this.config.get<boolean>('smtp.secure') === true || port === 465;
+  /** Backward-compatible readiness flag used by OTP/health callers. */
+  isSmtpReady(): boolean {
+    return this.transport.isReady();
+  }
 
-    if (!host || !user || !pass) {
-      this.logger.warn('SMTP not fully configured — emails will be queued/logged but may not deliver');
-      return;
-    }
+  getSmtpFailureType(): SmtpFailureType | null {
+    return this.transport.getFailureType();
+  }
 
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass },
-      pool: this.config.get<boolean>('smtp.pool') !== false,
-      maxConnections: this.config.get<number>('smtp.maxConnections') || 5,
-      maxMessages: this.config.get<number>('smtp.maxMessages') || 100,
-      connectionTimeout: 15000,
-      socketTimeout: 15000,
-      family: 4,
-    } as any);
+  getMailHealth(): MailHealthSnapshot {
+    return this.transport.getHealth(this.queue.getPendingCount());
+  }
 
-    if (this.config.get<boolean>('smtp.verifyOnBoot') !== false) {
-      try {
-        await this.transporter.verify();
-        this.smtpReady = true;
-        this.logger.log(`SMTP verified (${host}:${port})`);
-      } catch (err: any) {
-        this.smtpReady = false;
-        this.logger.error(`SMTP verification failed — app will continue. ${err?.message || err}`);
-      }
-    } else {
-      this.smtpReady = true;
-    }
+  getQueueSnapshot() {
+    return {
+      pending: this.queue.getPendingCount(),
+      enabled: this.config.get<boolean>('mail.queueEnabled') !== false,
+    };
   }
 
   async sendTemplate(
@@ -69,9 +50,6 @@ export class MailService implements OnModuleInit {
     organizationId?: string | null,
   ): Promise<void> {
     const job = await this.buildTemplateJob(to, templateId, vars, organizationId);
-
-    // Transactional emails are intentionally queued; OTPs use sendTemplateNow
-    // so the API only reports success after SMTP accepts the message.
     this.queue.enqueue(job);
   }
 
@@ -84,8 +62,9 @@ export class MailService implements OnModuleInit {
     templateId: MailTemplateId,
     vars: TemplateVars = {},
     organizationId?: string | null,
+    context: Pick<MailJob, 'requestId' | 'purpose'> = {},
   ): Promise<void> {
-    const job = await this.buildTemplateJob(to, templateId, vars, organizationId);
+    const job = await this.buildTemplateJob(to, templateId, vars, organizationId, context);
     await this.deliver({ ...job, id: `mail_sync_${Date.now()}`, attempts: 0 });
   }
 
@@ -94,6 +73,7 @@ export class MailService implements OnModuleInit {
     templateId: MailTemplateId,
     vars: TemplateVars = {},
     organizationId?: string | null,
+    context: Pick<MailJob, 'requestId' | 'purpose'> = {},
   ): Promise<Omit<MailJob, 'id' | 'attempts'>> {
     const brand = await this.branding.resolve(organizationId);
     const merged: TemplateVars = {
@@ -113,16 +93,26 @@ export class MailService implements OnModuleInit {
     };
 
     const built = buildMailTemplate(templateId, merged);
-
-    // Always enqueue both text + html (multipart/alternative at send time)
     if (!built.text?.trim() || !built.html?.trim()) {
       this.logger.error(`Template ${templateId} missing text or html — refusing to queue incomplete message`);
-      throw new ServiceUnavailableException('Email template is unavailable');
+      throw new MailTemplateUnavailableException();
     }
 
     const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
-    if (nodeEnv === 'production' && !this.smtpReady) {
-      this.logger.error(`SMTP not ready — refusing to queue ${templateId} to ${to}`);
+    const health = this.getMailHealth();
+    if (nodeEnv === 'production' && !this.transport.isReady()) {
+      this.logger.error(
+        `SMTP unavailable for transactional message ${JSON.stringify({
+          requestId: context.requestId || null,
+          purpose: context.purpose || null,
+          recipient: to,
+          templateId,
+          smtpReady: false,
+          failureType: health.failureType || 'SMTP_UNKNOWN',
+          state: health.state,
+          ...this.transport.getConfigSnapshot(),
+        })}`,
+      );
       throw new ServiceUnavailableException('Email delivery is temporarily unavailable');
     }
 
@@ -132,6 +122,7 @@ export class MailService implements OnModuleInit {
       text: built.text,
       html: built.html,
       templateId,
+      ...context,
     };
   }
 
@@ -161,7 +152,6 @@ export class MailService implements OnModuleInit {
   }
 
   async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    // Raw sends must still include plain text
     const plain = text?.trim() || (html ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : '');
     if (!plain) {
       this.logger.error('Refusing to send email without plain-text body');
@@ -176,9 +166,18 @@ export class MailService implements OnModuleInit {
   }
 
   private async deliver(job: MailJob): Promise<void> {
-    if (!this.transporter) {
+    if (!this.transport.getTransporter()) {
       const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
-      this.logger.error(`[MAIL-FALLBACK] To=${job.to} Subject=${job.subject} — transporter missing`);
+      this.logger.error(
+        `SMTP transporter missing ${JSON.stringify({
+          requestId: job.requestId || null,
+          purpose: job.purpose || null,
+          recipient: job.to,
+          templateId: job.templateId || null,
+          failureType: this.transport.getFailureType() || 'SMTP_NOT_CONFIGURED',
+          state: this.getMailHealth().state,
+        })}`,
+      );
       if (nodeEnv === 'production') {
         throw new ServiceUnavailableException('SMTP transporter is not configured');
       }
@@ -200,7 +199,6 @@ export class MailService implements OnModuleInit {
       throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
     }
 
-    // Require multipart: text always present; html optional but preferred
     if (!job.text?.trim()) {
       this.logger.error(`Missing plain-text body for ${job.to} — aborting send`);
       throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
@@ -215,12 +213,27 @@ export class MailService implements OnModuleInit {
       appName,
     });
 
+    const startedAt = Date.now();
+    const health = this.getMailHealth();
+    this.logger.log(
+      `SMTP send started ${JSON.stringify({
+        requestId: job.requestId || null,
+        purpose: job.purpose || null,
+        recipient: job.to,
+        templateId: job.templateId || null,
+        smtpReady: this.transport.isReady(),
+        transportVerified: this.transport.isReady(),
+        state: health.state,
+        failureType: health.failureType,
+        provider: health.provider,
+      })}`,
+    );
+
     try {
-      const result = await this.transporter.sendMail({
+      const result = await this.transport.sendMail({
         from: formatFromAddress(fromName, fromEmail),
         to: job.to,
         subject: job.subject,
-        // Nodemailer builds multipart/alternative when both text + html are set
         text: job.text,
         html: job.html && job.html.trim() ? job.html : undefined,
         replyTo: supportEmail || fromEmail,
@@ -228,17 +241,57 @@ export class MailService implements OnModuleInit {
         date: new Date(),
         priority: 'normal',
       });
+
       if (!result.accepted?.length) {
+        this.logger.error(
+          `SMTP send rejected ${JSON.stringify({
+            requestId: job.requestId || null,
+            purpose: job.purpose || null,
+            recipient: job.to,
+            templateId: job.templateId || null,
+            failureType: 'SMTP_PROVIDER_REJECTED',
+            messageId: result.messageId,
+            accepted: result.accepted,
+            rejected: result.rejected,
+            pending: result.pending,
+            envelope: result.envelope,
+            response: result.response,
+            elapsedMs: Date.now() - startedAt,
+          })}`,
+        );
         throw new ServiceUnavailableException('SMTP did not accept the email for delivery');
       }
-      this.logger.log(`Email accepted by SMTP for ${job.to}: ${job.subject}${job.templateId ? ` [${job.templateId}]` : ''}`);
-    } catch (error: any) {
-      this.logger.error(`Failed to deliver email to ${job.to}: ${error?.message || error}`);
+
+      this.logger.log(
+        `SMTP send accepted ${JSON.stringify({
+          requestId: job.requestId || null,
+          purpose: job.purpose || null,
+          recipient: job.to,
+          templateId: job.templateId || null,
+          messageId: result.messageId,
+          accepted: result.accepted,
+          rejected: result.rejected,
+          pending: result.pending,
+          envelope: result.envelope,
+          response: result.response,
+          elapsedMs: Date.now() - startedAt,
+        })}`,
+      );
+    } catch (error: unknown) {
+      this.logger.error(
+        `SMTP send failed ${JSON.stringify({
+          requestId: job.requestId || null,
+          purpose: job.purpose || null,
+          recipient: job.to,
+          templateId: job.templateId || null,
+          elapsedMs: Date.now() - startedAt,
+          failureType: this.transport.getFailureType() || 'SMTP_UNKNOWN',
+          state: this.getMailHealth().state,
+          errorName: error instanceof Error ? error.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        })}`,
+      );
       throw error;
     }
-  }
-
-  isSmtpReady(): boolean {
-    return this.smtpReady;
   }
 }

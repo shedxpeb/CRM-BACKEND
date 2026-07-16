@@ -3,8 +3,14 @@
  * - multipart text + HTML (always both)
  * - inline CSS only, system fonts, no JS / tracking / external assets required
  * - dynamic branding via {{placeholders}} / vars — never hardcode company identity
+ * - templates live in source code under src/mail/templates (never persisted in DB)
  * - minimized HTML for Gmail / Outlook / Apple Mail / Zoho
  */
+
+import { buildForgotPasswordOtpTemplate, buildOtpTemplate } from './templates/otp.template';
+import { buildWelcomeTemplate } from './templates/welcome.template';
+import { buildResetPasswordSuccessTemplate } from './templates/reset-password.template';
+import { buildPasswordChangedTemplate } from './templates/password-changed.template';
 
 export type MailTemplateId =
   | 'welcome'
@@ -225,58 +231,19 @@ function contentFor(id: MailTemplateId, vars: TemplateVars): ContentParts {
   switch (id) {
     case 'register_otp':
     case 'email_verification':
-      return {
-        title: 'Your verification code',
-        htmlBody:
-          `<p style="margin:0 0 12px 0">Hi ${escapeHtml(name)},</p>` +
-          `<p style="margin:0 0 12px 0">Use this code to verify your email for ${escapeHtml(company)}.</p>` +
-          otpCard(otp, color) +
-          `<p style="margin:0 0 8px 0;font-size:14px;color:#334155">Expires in <strong>${escapeHtml(expiry)}</strong>.</p>` +
-          `<p style="margin:16px 0 0 0;font-size:13px;color:#64748b">If you did not request this, you can ignore this email.</p>`,
-        textBody:
-          `Hi ${name},\n\nYour verification code: ${otp}\nExpires in ${expiry}.\n\n` +
-          `If you did not request this, you can ignore this email.`,
-      };
+      return buildOtpTemplate(vars);
 
     case 'forgot_password_otp':
-      return {
-        title: 'Password reset code',
-        htmlBody:
-          `<p style="margin:0 0 12px 0">Hi ${escapeHtml(name)},</p>` +
-          `<p style="margin:0 0 12px 0">Use this code to reset your password.</p>` +
-          otpCard(otp, color) +
-          `<p style="margin:0 0 8px 0;font-size:14px;color:#334155">Expires in <strong>${escapeHtml(expiry)}</strong>.</p>` +
-          `<p style="margin:16px 0 0 0;font-size:13px;color:#64748b">If you did not request a password reset, you can ignore this email.</p>`,
-        textBody:
-          `Hi ${name},\n\nYour password reset code: ${otp}\nExpires in ${expiry}.\n\n` +
-          `If you did not request a password reset, you can ignore this email.`,
-      };
+      return buildForgotPasswordOtpTemplate(vars);
 
     case 'welcome':
-      return {
-        title: `Welcome to ${company}`,
-        htmlBody:
-          `<p style="margin:0 0 12px 0">Hi ${escapeHtml(name)},</p>` +
-          `<p style="margin:0 0 12px 0">Your account is ready. You can sign in and get started.</p>` +
-          ctaButton('Open dashboard', v(vars, 'loginLink') || v(vars, 'website'), color) +
-          `<p style="margin:16px 0 0 0;font-size:13px;color:#64748b">If you need help, contact ${escapeHtml(support)}.</p>`,
-        textBody:
-          `Hi ${name},\n\nWelcome to ${company}. Your account is ready.\n` +
-          `${v(vars, 'loginLink') || v(vars, 'website')}\n\nNeed help? ${support}`,
-      };
+      return buildWelcomeTemplate(vars);
 
     case 'reset_password_success':
+      return buildResetPasswordSuccessTemplate(vars);
+
     case 'password_changed':
-      return {
-        title: 'Password updated',
-        htmlBody:
-          `<p style="margin:0 0 12px 0">Hi ${escapeHtml(name)},</p>` +
-          `<p style="margin:0 0 12px 0">Your password was updated successfully.</p>` +
-          `<p style="margin:16px 0 0 0;font-size:13px;color:#64748b">If you did not make this change, contact ${escapeHtml(support)}.</p>`,
-        textBody:
-          `Hi ${name},\n\nYour password was updated successfully.\n` +
-          `If you did not make this change, contact ${support}.`,
-      };
+      return buildPasswordChangedTemplate(vars);
 
     case 'invitation':
     case 'organization_invitation':
