@@ -19,6 +19,9 @@ export type MailJobStatus =
   | 'retrying'
   | 'cancelled';
 
+/** 4 = IPv4 only (recommended on Render), 6 = IPv6 only, 0 = OS default. */
+export type SmtpIpFamily = 0 | 4 | 6;
+
 export interface MailTransportSnapshot {
   timestamp: string;
   nodeEnv: string;
@@ -28,6 +31,12 @@ export interface MailTransportSnapshot {
   secure: boolean;
   pool: boolean;
   verifyOnBoot: boolean;
+  family: SmtpIpFamily;
+  connectionTimeoutMs: number;
+  greetingTimeoutMs: number;
+  socketTimeoutMs: number;
+  dnsTimeoutMs: number;
+  resolvedAddress: string | null;
   fromEmail: string | null;
   fromName: string | null;
   smtpUserExists: boolean;
