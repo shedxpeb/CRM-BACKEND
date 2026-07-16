@@ -39,4 +39,11 @@ export class MailController {
   verify() {
     return this.health.verifyNow();
   }
+
+  /** Probe 587/STARTTLS and 465/SSL over forced IPv4 (Option 1 Gmail connectivity test). */
+  @Post('probe-smtp')
+  @Public()
+  probeSmtp() {
+    return this.health.probeSmtp();
+  }
 }
