@@ -239,7 +239,10 @@ export class OtpService {
         { email, purpose: params.purpose, userId: challenge.userId || undefined },
         { purpose: params.purpose, status: 'FAILED' },
       );
-      throw new BadRequestException({ message: 'OTP expired. Request a new OTP.', code: 'OTP_EXPIRED' });
+      throw new BadRequestException({
+        message: 'OTP has expired. Please request a new one.',
+        code: 'OTP_EXPIRED',
+      });
     }
 
     if (challenge.attempts >= challenge.maxAttempts) {
