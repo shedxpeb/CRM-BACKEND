@@ -3,18 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { getMailTransportSnapshot, resolveMailProvider, resolveSmtpIpFamily } from './mail.config';
-import { resolveSmtpEndpoint } from './mail.dns';
+import { assertIpv4ConnectHost, isIpv4Literal, resolveSmtpEndpoint } from './mail.dns';
 import type { MailProviderName } from './mail.types';
 
 /**
  * Provider factory — switches by MAIL_PROVIDER only.
- * Current implementation uses SMTP transport for all providers that expose SMTP.
- * SES/SendGrid/Mailgun can later return native SDK transporters without changing callers.
+ * SMTP path always prefers IPv4 when SMTP_IP_FAMILY=4 (default).
  */
 @Injectable()
 export class MailProviderFactory {
   private readonly logger = new Logger(MailProviderFactory.name);
   private lastResolvedAddress: string | null = null;
+  private lastConnectHost: string | null = null;
+  private lastHostname: string | null = null;
 
   constructor(private readonly config: ConfigService) {}
 
@@ -24,6 +25,14 @@ export class MailProviderFactory {
 
   getLastResolvedAddress(): string | null {
     return this.lastResolvedAddress;
+  }
+
+  getLastConnectHost(): string | null {
+    return this.lastConnectHost;
+  }
+
+  getLastHostname(): string | null {
+    return this.lastHostname;
   }
 
   async createTransporter(): Promise<Transporter> {
@@ -39,14 +48,24 @@ export class MailProviderFactory {
     }
 
     const endpoint = await resolveSmtpEndpoint(configuredHost, family, snapshot.dnsTimeoutMs);
-    this.lastResolvedAddress = endpoint.resolvedAddress;
 
+    if (family === 4) {
+      assertIpv4ConnectHost(endpoint.connectHost, endpoint.hostname);
+    }
+
+    this.lastResolvedAddress = endpoint.resolvedAddress;
+    this.lastConnectHost = endpoint.connectHost;
+    this.lastHostname = endpoint.hostname;
+
+    const ipv4Only = family === 4;
     this.logger.log(
       `SMTP endpoint resolved ${JSON.stringify({
         provider,
         hostname: endpoint.hostname,
         connectHost: endpoint.connectHost,
         family: endpoint.family,
+        ipv4Only,
+        isIpv4Connect: isIpv4Literal(endpoint.connectHost),
         resolvedAddress: endpoint.resolvedAddress,
         port,
         secure,
@@ -57,6 +76,19 @@ export class MailProviderFactory {
         dnsTimeoutMs: snapshot.dnsTimeoutMs,
       })}`,
     );
+
+    if (ipv4Only) {
+      this.logger.log(
+        `IPv4-only SMTP connect ${JSON.stringify({
+          hostname: endpoint.hostname,
+          connectHost: endpoint.connectHost,
+          note: 'AAAA/IPv6 paths are disabled',
+        })}`,
+      );
+    }
+
+    // When forcing IPv4, always pass family:4 even if endpoint already has a literal IP.
+    const transportFamily = family === 0 ? 0 : family;
 
     return nodemailer.createTransport({
       host: endpoint.connectHost,
@@ -74,8 +106,7 @@ export class MailProviderFactory {
       connectionTimeout: snapshot.connectionTimeoutMs,
       greetingTimeout: snapshot.greetingTimeoutMs,
       socketTimeout: snapshot.socketTimeoutMs,
-      // Hint for any remaining DNS inside nodemailer / pooled reconnects.
-      family: endpoint.family === 0 ? 0 : endpoint.family,
+      family: transportFamily,
       tls: {
         servername: endpoint.hostname,
         minVersion: 'TLSv1.2',
@@ -97,6 +128,8 @@ export class MailProviderFactory {
       case 'ses':
       case 'sendgrid':
       case 'mailgun':
+      case 'resend':
+      case 'auto':
       default:
         return configuredHost;
     }

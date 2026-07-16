@@ -22,10 +22,13 @@ export type MailJobStatus =
 /** 4 = IPv4 only (recommended on Render), 6 = IPv6 only, 0 = OS default. */
 export type SmtpIpFamily = 0 | 4 | 6;
 
+export type MailDeliveryChannel = 'smtp' | 'resend';
+
 export interface MailTransportSnapshot {
   timestamp: string;
   nodeEnv: string;
   provider: MailProviderName;
+  deliveryChannel: MailDeliveryChannel;
   host: string | null;
   port: number;
   secure: boolean;
@@ -37,10 +40,26 @@ export interface MailTransportSnapshot {
   socketTimeoutMs: number;
   dnsTimeoutMs: number;
   resolvedAddress: string | null;
+  connectHost: string | null;
+  smtpHostname: string | null;
+  ipv4Only: boolean;
+  isIpv4Connect: boolean;
   fromEmail: string | null;
   fromName: string | null;
   smtpUserExists: boolean;
   smtpPassExists: boolean;
+  resendApiKeyExists: boolean;
+}
+
+export interface MailIpv4Diagnostics {
+  ipv4Only: boolean;
+  isIpv4Connect: boolean;
+  family: SmtpIpFamily;
+  hostname: string | null;
+  connectHost: string | null;
+  resolvedAddress: string | null;
+  /** Manual check: must be true when SMTP_IP_FAMILY=4 and SMTP channel is active. */
+  ipv4GuardPassed: boolean;
 }
 
 export interface MailHealthSnapshot {
@@ -53,6 +72,8 @@ export interface MailHealthSnapshot {
   failureType: SmtpFailureType | null;
   recoveryAttempt: number;
   nextRecoveryAt: string | null;
+  deliveryChannel: MailDeliveryChannel;
+  ipv4: MailIpv4Diagnostics;
 }
 
 export interface ClassifiedSmtpError {

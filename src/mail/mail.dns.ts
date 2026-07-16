@@ -19,6 +19,29 @@ export class SmtpDnsError extends Error {
   }
 }
 
+const IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+
+export function isIpv4Literal(value: string): boolean {
+  if (!IPV4_RE.test(value)) return false;
+  return value.split('.').every((part) => {
+    const n = Number(part);
+    return Number.isInteger(n) && n >= 0 && n <= 255;
+  });
+}
+
+export function isIpv6Literal(value: string): boolean {
+  return value.includes(':');
+}
+
+/** Hard guard: never pass an IPv6 connect target when SMTP_IP_FAMILY=4. */
+export function assertIpv4ConnectHost(connectHost: string, hostname: string): void {
+  if (isIpv6Literal(connectHost) || !isIpv4Literal(connectHost)) {
+    throw new SmtpDnsError(
+      `Refusing non-IPv4 SMTP connectHost for ${hostname}: ${connectHost} (SMTP_IP_FAMILY=4)`,
+    );
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -46,12 +69,12 @@ export async function resolveSmtpEndpoint(
   }
 
   // Already an IPv4 literal — keep as-is.
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+  if (isIpv4Literal(host)) {
     return { hostname: host, connectHost: host, family: 4, resolvedAddress: host };
   }
 
   // Already an IPv6 literal.
-  if (host.includes(':')) {
+  if (isIpv6Literal(host)) {
     if (family === 4) {
       throw new SmtpDnsError(`SMTP host is IPv6 but SMTP_IP_FAMILY=4: ${host}`);
     }
@@ -69,8 +92,13 @@ export async function resolveSmtpEndpoint(
       host,
     );
 
-    if (family === 4 && result.family !== 4) {
-      throw new SmtpDnsError(`Expected IPv4 for ${host}, got family=${result.family}`);
+    if (family === 4) {
+      if (result.family !== 4 || !isIpv4Literal(result.address) || isIpv6Literal(result.address)) {
+        throw new SmtpDnsError(
+          `Expected IPv4 for ${host}, got family=${result.family} address=${result.address}`,
+        );
+      }
+      assertIpv4ConnectHost(result.address, host);
     }
 
     return {

@@ -100,9 +100,10 @@ export class MailService implements OnModuleInit {
 
     const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
     const health = this.getMailHealth();
-    if (nodeEnv === 'production' && !this.transport.isReady()) {
+    if (nodeEnv === 'production' && !this.transport.canDeliver()) {
       this.logger.error(
-        `SMTP unavailable for transactional message ${JSON.stringify({
+        `Mail unavailable for transactional message ${JSON.stringify({
+          ...this.transport.getConfigSnapshot(),
           requestId: context.requestId || null,
           purpose: context.purpose || null,
           recipient: to,
@@ -110,7 +111,6 @@ export class MailService implements OnModuleInit {
           smtpReady: false,
           failureType: health.failureType || 'SMTP_UNKNOWN',
           state: health.state,
-          ...this.transport.getConfigSnapshot(),
         })}`,
       );
       throw new ServiceUnavailableException('Email delivery is temporarily unavailable');
@@ -166,26 +166,28 @@ export class MailService implements OnModuleInit {
   }
 
   private async deliver(job: MailJob): Promise<void> {
-    if (!this.transport.getTransporter()) {
+    if (!this.transport.canDeliver()) {
       const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
       this.logger.error(
-        `SMTP transporter missing ${JSON.stringify({
+        `Mail transport not ready ${JSON.stringify({
           requestId: job.requestId || null,
           purpose: job.purpose || null,
           recipient: job.to,
           templateId: job.templateId || null,
+          deliveryChannel: this.transport.getDeliveryChannel(),
           failureType: this.transport.getFailureType() || 'SMTP_NOT_CONFIGURED',
           state: this.getMailHealth().state,
         })}`,
       );
       if (nodeEnv === 'production') {
-        throw new ServiceUnavailableException('SMTP transporter is not configured');
+        throw new ServiceUnavailableException('Email delivery is not configured');
       }
       return;
     }
 
     const fromName = this.config.get<string>('smtp.fromName') || this.config.get<string>('branding.companyName') || 'Account';
     const fromEmail =
+      this.config.get<string>('mail.resendFromEmail') ||
       this.config.get<string>('smtp.fromEmail') ||
       this.config.get<string>('smtp.user') ||
       '';
@@ -193,9 +195,10 @@ export class MailService implements OnModuleInit {
       this.config.get<string>('branding.supportEmail') ||
       fromEmail;
     const appName = this.config.get<string>('branding.companyName') || 'App';
+    const channel = this.transport.getDeliveryChannel();
 
     if (!fromEmail) {
-      this.logger.error('SMTP_FROM_EMAIL / SMTP_USER missing — cannot deliver');
+      this.logger.error('FROM email missing (SMTP_FROM_EMAIL / RESEND_FROM_EMAIL) — cannot deliver');
       throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
     }
 
@@ -216,13 +219,13 @@ export class MailService implements OnModuleInit {
     const startedAt = Date.now();
     const health = this.getMailHealth();
     this.logger.log(
-      `SMTP send started ${JSON.stringify({
+      `Mail send started ${JSON.stringify({
         requestId: job.requestId || null,
         purpose: job.purpose || null,
         recipient: job.to,
         templateId: job.templateId || null,
+        deliveryChannel: channel,
         smtpReady: this.transport.isReady(),
-        transportVerified: this.transport.isReady(),
         state: health.state,
         failureType: health.failureType,
         provider: health.provider,
@@ -237,58 +240,50 @@ export class MailService implements OnModuleInit {
         text: job.text,
         html: job.html && job.html.trim() ? job.html : undefined,
         replyTo: supportEmail || fromEmail,
-        headers,
+        headers: channel === 'smtp' ? headers : undefined,
         date: new Date(),
         priority: 'normal',
       });
 
       if (!result.accepted?.length) {
         this.logger.error(
-          `SMTP send rejected ${JSON.stringify({
+          `Mail send rejected ${JSON.stringify({
             requestId: job.requestId || null,
             purpose: job.purpose || null,
             recipient: job.to,
             templateId: job.templateId || null,
+            deliveryChannel: channel,
             failureType: 'SMTP_PROVIDER_REJECTED',
             messageId: result.messageId,
-            accepted: result.accepted,
-            rejected: result.rejected,
-            pending: result.pending,
-            envelope: result.envelope,
-            response: result.response,
             elapsedMs: Date.now() - startedAt,
           })}`,
         );
-        throw new ServiceUnavailableException('SMTP did not accept the email for delivery');
+        throw new ServiceUnavailableException('Mail provider did not accept the email for delivery');
       }
 
       this.logger.log(
-        `SMTP send accepted ${JSON.stringify({
+        `Mail send accepted ${JSON.stringify({
           requestId: job.requestId || null,
           purpose: job.purpose || null,
           recipient: job.to,
           templateId: job.templateId || null,
+          deliveryChannel: channel,
           messageId: result.messageId,
-          accepted: result.accepted,
-          rejected: result.rejected,
-          pending: result.pending,
-          envelope: result.envelope,
-          response: result.response,
           elapsedMs: Date.now() - startedAt,
         })}`,
       );
     } catch (error: unknown) {
       this.logger.error(
-        `SMTP send failed ${JSON.stringify({
+        `Mail send failed ${JSON.stringify({
           requestId: job.requestId || null,
           purpose: job.purpose || null,
           recipient: job.to,
           templateId: job.templateId || null,
+          deliveryChannel: channel,
           elapsedMs: Date.now() - startedAt,
           failureType: this.transport.getFailureType() || 'SMTP_UNKNOWN',
           state: this.getMailHealth().state,
           errorName: error instanceof Error ? error.name : typeof error,
-          errorMessage: error instanceof Error ? error.message : String(error),
         })}`,
       );
       throw error;

@@ -1,11 +1,23 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SendMailOptions, SentMessageInfo, Transporter } from 'nodemailer';
-import { isTransientSmtpFailure, MAIL_RECOVERY_BACKOFF_MS } from './mail.constants';
-import { getMailTransportSnapshot, isSmtpFullyConfigured } from './mail.config';
+import {
+  isSmtpEgressFailure,
+  isTransientSmtpFailure,
+  MAIL_RECOVERY_BACKOFF_MS,
+} from './mail.constants';
+import {
+  getMailTransportSnapshot,
+  getResendApiKey,
+  isResendConfigured,
+  isSmtpFullyConfigured,
+  resolveMailProvider,
+} from './mail.config';
 import { MailProviderFactory } from './mail.provider';
+import { ResendHttpClient } from './mail.resend';
 import type {
   ClassifiedSmtpError,
+  MailDeliveryChannel,
   MailHealthSnapshot,
   MailHealthState,
   MailTransportSnapshot,
@@ -16,6 +28,8 @@ import type {
 export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MailTransportService.name);
   private transporter: Transporter | null = null;
+  private resend: ResendHttpClient | null = null;
+  private deliveryChannel: MailDeliveryChannel = 'smtp';
   private state: MailHealthState = 'UNKNOWN';
   private failureType: SmtpFailureType | null = null;
   private lastError: string | null = null;
@@ -43,8 +57,18 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     return this.transporter;
   }
 
+  getDeliveryChannel(): MailDeliveryChannel {
+    return this.deliveryChannel;
+  }
+
   isReady(): boolean {
     return this.state === 'READY';
+  }
+
+  /** True when any delivery channel can accept messages. */
+  canDeliver(): boolean {
+    if (this.deliveryChannel === 'resend') return this.state === 'READY' && !!this.resend;
+    return this.state === 'READY' && !!this.transporter;
   }
 
   getFailureType(): SmtpFailureType | null {
@@ -54,13 +78,22 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   getConfigSnapshot(): MailTransportSnapshot {
     return getMailTransportSnapshot(this.config, {
       resolvedAddress: this.providers.getLastResolvedAddress(),
+      connectHost: this.providers.getLastConnectHost(),
+      smtpHostname: this.providers.getLastHostname(),
+      deliveryChannel: this.deliveryChannel,
     });
   }
 
   getHealth(queuePending = 0): MailHealthSnapshot {
+    const config = this.getConfigSnapshot();
+    const ipv4GuardPassed =
+      this.deliveryChannel !== 'smtp'
+        ? true
+        : !config.ipv4Only || (config.isIpv4Connect && !!config.connectHost && !config.connectHost.includes(':'));
+
     return {
       state: this.state,
-      provider: this.providers.getProviderName(),
+      provider: this.deliveryChannel === 'resend' ? 'resend' : this.providers.getProviderName(),
       verified: this.state === 'READY',
       queue: queuePending,
       lastVerify: this.lastVerify,
@@ -68,21 +101,55 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       failureType: this.failureType,
       recoveryAttempt: this.recoveryAttempt,
       nextRecoveryAt: this.nextRecoveryAt?.toISOString() || null,
+      deliveryChannel: this.deliveryChannel,
+      ipv4: {
+        ipv4Only: config.ipv4Only,
+        isIpv4Connect: config.isIpv4Connect,
+        family: config.family,
+        hostname: config.smtpHostname,
+        connectHost: config.connectHost,
+        resolvedAddress: config.resolvedAddress,
+        ipv4GuardPassed,
+      },
     };
   }
 
   async forceVerify(): Promise<boolean> {
+    if (this.deliveryChannel === 'resend' || resolveMailProvider(this.config) === 'resend') {
+      return this.activateResend('manual');
+    }
     try {
       this.closeTransporter();
       this.transporter = await this.providers.createTransporter();
     } catch (error: unknown) {
       this.markFailed(error, 'manual-create');
-      return false;
+      return this.tryResendFallback('manual-create');
     }
-    return this.verifyTransport('manual');
+    const ok = await this.verifyTransport('manual');
+    if (!ok) return this.tryResendFallback('manual');
+    return true;
   }
 
   async sendMail(options: SendMailOptions): Promise<SentMessageInfo> {
+    if (this.deliveryChannel === 'resend') {
+      if (!this.resend) {
+        throw Object.assign(new Error('Resend client is not configured'), { code: 'SMTP_NOT_CONFIGURED' });
+      }
+      const to = String(options.to || '');
+      const from = String(options.from || '');
+      const subject = String(options.subject || '');
+      const text = String(options.text || '');
+      const html = typeof options.html === 'string' ? options.html : undefined;
+      const replyTo = typeof options.replyTo === 'string' ? options.replyTo : undefined;
+      try {
+        const result = await this.resend.send({ from, to, subject, text, html, replyTo });
+        return result as unknown as SentMessageInfo;
+      } catch (error: unknown) {
+        this.markFailed(error, 'send');
+        throw error;
+      }
+    }
+
     if (!this.transporter) {
       throw Object.assign(new Error('SMTP transporter is not configured'), { code: 'SMTP_NOT_CONFIGURED' });
     }
@@ -95,10 +162,22 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async initialize() {
+    const provider = resolveMailProvider(this.config);
     const snapshot = this.getConfigSnapshot();
     this.logger.log(`SMTP Configuration ${JSON.stringify(snapshot)}`);
 
+    if (provider === 'resend') {
+      await this.activateResend('boot');
+      return;
+    }
+
+    // auto / smtp / gmail / … — prefer SMTP, fall back to Resend HTTPS if egress blocked.
     if (!isSmtpFullyConfigured(snapshot)) {
+      if (isResendConfigured(this.config) && (provider === 'auto' || hasHttpFallback(provider))) {
+        this.logger.warn('SMTP incomplete — activating Resend HTTPS fallback');
+        await this.activateResend('boot');
+        return;
+      }
       this.state = 'FAILED';
       this.failureType = 'SMTP_NOT_CONFIGURED';
       this.lastError = 'SMTP_HOST / SMTP_USER / SMTP_PASS incomplete';
@@ -112,11 +191,13 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    this.deliveryChannel = 'smtp';
     this.state = 'CONNECTING';
     try {
       this.transporter = await this.providers.createTransporter();
     } catch (error: unknown) {
       this.markFailed(error, 'create');
+      await this.tryResendFallback('create');
       return;
     }
 
@@ -129,7 +210,83 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    await this.verifyTransport('boot');
+    const ok = await this.verifyTransport('boot');
+    if (!ok) {
+      await this.tryResendFallback('boot');
+    }
+  }
+
+  private async activateResend(phase: string): Promise<boolean> {
+    const apiKey = getResendApiKey(this.config);
+    if (!apiKey) {
+      this.state = 'FAILED';
+      this.failureType = 'SMTP_NOT_CONFIGURED';
+      this.lastError = 'RESEND_API_KEY missing';
+      this.logger.error(
+        `Transport Verify Result FAILED ${JSON.stringify({
+          phase,
+          failureType: this.failureType,
+          reason: this.lastError,
+          deliveryChannel: 'resend',
+        })}`,
+      );
+      return false;
+    }
+
+    this.closeTransporter();
+    this.deliveryChannel = 'resend';
+    this.resend = new ResendHttpClient(apiKey);
+    this.state = 'CONNECTING';
+    this.verifying = true;
+
+    try {
+      await this.resend.verify();
+      this.state = 'READY';
+      this.failureType = null;
+      this.lastError = null;
+      this.lastVerify = new Date().toISOString();
+      this.recoveryAttempt = 0;
+      this.nextRecoveryAt = null;
+      this.clearRecoveryTimer();
+      this.logger.log(
+        `Transport Verify Result SUCCESS ${JSON.stringify({
+          phase,
+          deliveryChannel: 'resend',
+          provider: 'resend',
+          note: 'HTTPS port 443 — bypasses Render SMTP egress blocks',
+        })}`,
+      );
+      return true;
+    } catch (error: unknown) {
+      this.markFailed(error, `resend-${phase}`);
+      return false;
+    } finally {
+      this.verifying = false;
+    }
+  }
+
+  private async tryResendFallback(phase: string): Promise<boolean> {
+    if (!isResendConfigured(this.config)) {
+      if (isSmtpEgressFailure(this.failureType)) {
+        this.failureType = 'SMTP_EGRESS_BLOCKED';
+        this.logger.error(
+          `SMTP egress blocked on this host ${JSON.stringify({
+            phase,
+            failureType: this.failureType,
+            hint: 'Render free tier blocks ports 25/465/587. Set RESEND_API_KEY and MAIL_PROVIDER=auto|resend, or upgrade Render plan / use Hostinger SMTP.',
+          })}`,
+        );
+      }
+      return false;
+    }
+
+    this.logger.warn(
+      `Switching to Resend HTTPS fallback ${JSON.stringify({
+        phase,
+        previousFailure: this.failureType,
+      })}`,
+    );
+    return this.activateResend(`fallback-${phase}`);
   }
 
   private async verifyTransport(phase: 'boot' | 'recovery' | 'manual'): Promise<boolean> {
@@ -151,6 +308,7 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(
         `Transport Verify Result SUCCESS ${JSON.stringify({
           phase,
+          deliveryChannel: 'smtp',
           host: snapshot.host,
           resolvedAddress: snapshot.resolvedAddress,
           family: snapshot.family,
@@ -173,19 +331,30 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
 
   private markFailed(error: unknown, phase: string) {
     const classified = this.classifySmtpFailure(error);
+    let failureType = classified.failureType;
+    if (
+      this.deliveryChannel === 'smtp' &&
+      (failureType === 'SMTP_TIMEOUT' || failureType === 'SMTP_IPV4_ERROR' || failureType === 'SMTP_IPV6_ERROR')
+    ) {
+      // IPv4 resolved but TCP still times out → platform egress block (common on Render free).
+      if (this.providers.getLastResolvedAddress() && failureType === 'SMTP_TIMEOUT') {
+        failureType = 'SMTP_EGRESS_BLOCKED';
+      }
+    }
+
     this.state = phase === 'send' ? 'DEGRADED' : 'FAILED';
-    this.failureType = classified.failureType;
+    this.failureType = failureType;
     this.lastError = classified.message;
     this.lastVerify = new Date().toISOString();
 
     this.logger.error(
       `Transport Verify Result FAILED ${JSON.stringify({
-        phase,
-        failureType: classified.failureType,
-        state: this.state,
         ...this.getConfigSnapshot(),
+        phase,
+        failureType,
+        state: this.state,
         error: {
-          failureType: classified.failureType,
+          failureType,
           name: classified.name,
           message: classified.message,
           code: classified.code,
@@ -197,12 +366,16 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       })}`,
     );
 
-    if (isTransientSmtpFailure(classified.failureType)) {
+    // Do not keep hammering SMTP when Resend fallback is available / already active.
+    if (this.deliveryChannel === 'resend') return;
+    if (isResendConfigured(this.config) && isSmtpEgressFailure(failureType)) return;
+
+    if (isTransientSmtpFailure(failureType) || failureType === 'SMTP_EGRESS_BLOCKED') {
       this.scheduleRecovery();
     } else {
       this.logger.warn(
         `Mail transport recovery skipped (non-transient) ${JSON.stringify({
-          failureType: classified.failureType,
+          failureType,
           phase,
         })}`,
       );
@@ -211,8 +384,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
 
   private scheduleRecovery() {
     if (this.recoveryTimer) return;
+    if (this.deliveryChannel === 'resend') return;
     if (!isSmtpFullyConfigured(this.getConfigSnapshot())) return;
-    if (!isTransientSmtpFailure(this.failureType)) return;
+    if (!isTransientSmtpFailure(this.failureType) && this.failureType !== 'SMTP_EGRESS_BLOCKED') return;
 
     const delay =
       MAIL_RECOVERY_BACKOFF_MS[Math.min(this.recoveryAttempt, MAIL_RECOVERY_BACKOFF_MS.length - 1)];
@@ -233,16 +407,19 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       this.recoveryTimer = null;
       this.state = 'RECOVERING';
       try {
-        // Recreate transporter each recovery cycle (fresh IPv4 DNS + sockets).
         this.closeTransporter();
         this.transporter = await this.providers.createTransporter();
       } catch (error: unknown) {
         this.markFailed(error, 'recovery-create');
+        await this.tryResendFallback('recovery-create');
         return;
       }
-      await this.verifyTransport('recovery');
-      if (!this.isReady() && isTransientSmtpFailure(this.failureType)) {
-        this.scheduleRecovery();
+      const ok = await this.verifyTransport('recovery');
+      if (!ok) {
+        const switched = await this.tryResendFallback('recovery');
+        if (!switched && (isTransientSmtpFailure(this.failureType) || this.failureType === 'SMTP_EGRESS_BLOCKED')) {
+          this.scheduleRecovery();
+        }
       }
     }, delay);
   }
@@ -313,7 +490,6 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     ) {
       failureType = 'SMTP_TLS_ERROR';
     } else if (code === 'ESOCKET') {
-      // Generic socket error — prefer IPv6 classification when address/message shows it.
       failureType = looksIpv6 ? 'SMTP_IPV6_ERROR' : 'SMTP_TIMEOUT';
     } else if (responseCode === 421 || responseCode === 450 || lower.includes('rate') || lower.includes('too many')) {
       failureType = 'SMTP_RATE_LIMIT';
@@ -338,4 +514,8 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       cause: value.cause && depth < 3 ? this.classifySmtpFailure(value.cause, depth + 1) : null,
     };
   }
+}
+
+function hasHttpFallback(provider: string): boolean {
+  return provider === 'auto' || provider === 'smtp' || provider === 'gmail';
 }
