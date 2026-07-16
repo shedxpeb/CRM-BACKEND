@@ -46,15 +46,15 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Register a new account' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: FastifyRequest) {
+    return this.authService.register(dto, req.requestId);
   }
 
   @Public()
   @Post('send-registration-otp')
   @ApiOperation({ summary: 'Send registration OTP' })
-  sendRegistrationOtp(@Body() dto: SendRegistrationOtpDto) {
-    return this.authService.sendRegistrationOtp(dto);
+  sendRegistrationOtp(@Body() dto: SendRegistrationOtpDto, @Req() req: FastifyRequest) {
+    return this.authService.sendRegistrationOtp(dto, req.requestId);
   }
 
   @Public()
@@ -120,16 +120,16 @@ export class AuthController {
   @Public()
   @Post('send-forgot-password-otp')
   @ApiOperation({ summary: 'Send forgot-password OTP' })
-  sendForgotPasswordOtp(@Body() dto: SendForgotPasswordOtpDto) {
-    return this.authService.sendForgotPasswordOtp(dto);
+  sendForgotPasswordOtp(@Body() dto: SendForgotPasswordOtpDto, @Req() req: FastifyRequest) {
+    return this.authService.sendForgotPasswordOtp(dto, req.requestId);
   }
 
   /** Legacy alias */
   @Public()
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset OTP (legacy alias)' })
-  forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto);
+  forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: FastifyRequest) {
+    return this.authService.forgotPassword(dto, req.requestId);
   }
 
   @Public()
@@ -149,8 +149,8 @@ export class AuthController {
   @Public()
   @Post('resend-otp')
   @ApiOperation({ summary: 'Resend OTP' })
-  resendOtp(@Body() dto: ResendOtpDto) {
-    return this.authService.resendOtp(dto);
+  resendOtp(@Body() dto: ResendOtpDto, @Req() req: FastifyRequest) {
+    return this.authService.resendOtp(dto, req.requestId);
   }
 
   @Post('send-email-verification')

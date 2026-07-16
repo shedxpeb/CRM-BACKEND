@@ -8,6 +8,8 @@ export interface MailJob {
   text: string;
   html?: string;
   templateId?: string;
+  requestId?: string;
+  purpose?: string;
   attempts: number;
   nextAttemptAt?: number;
 }

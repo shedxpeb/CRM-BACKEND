@@ -132,7 +132,7 @@ export class AuthService {
 
   // ─── REGISTER ─────────────────────────────────────────
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, requestId?: string) {
     if (dto.password !== dto.confirmPassword) {
       throw new BadRequestException('Passwords do not match');
     }
@@ -147,6 +147,7 @@ export class AuthService {
         userName: existingUser.name || undefined,
         organizationId: existingUser.organizationId,
         isResend: true,
+        requestId,
       });
       return {
         message: 'Your account is awaiting email verification. A new OTP has been sent.',
@@ -193,6 +194,7 @@ export class AuthService {
       userId: result.user.id,
       userName: result.user.name || undefined,
       organizationId: result.organization.id,
+      requestId,
     });
 
     await this.auditService.log({
@@ -209,7 +211,7 @@ export class AuthService {
     };
   }
 
-  async sendRegistrationOtp(dto: SendRegistrationOtpDto) {
+  async sendRegistrationOtp(dto: SendRegistrationOtpDto, requestId?: string) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
     if (!user) throw new BadRequestException('No account found with this email');
     if (user.isVerified) throw new BadRequestException('Email already verified.');
@@ -220,6 +222,7 @@ export class AuthService {
       userId: user.id,
       userName: user.name || undefined,
       organizationId: user.organizationId,
+      requestId,
     });
 
     return { message: 'OTP sent successfully.', email: user.email, ...otp };
@@ -453,7 +456,7 @@ export class AuthService {
 
   // ─── PASSWORD / EMAIL ─────────────────────────────────
 
-  async sendForgotPasswordOtp(dto: ForgotPasswordDto | SendForgotPasswordOtpDto) {
+  async sendForgotPasswordOtp(dto: ForgotPasswordDto | SendForgotPasswordOtpDto, requestId?: string) {
     const email = dto.email.toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Anti-enumeration: same message whether user exists or not
@@ -467,6 +470,7 @@ export class AuthService {
       userId: user.id,
       userName: user.name || undefined,
       organizationId: user.organizationId,
+      requestId,
     });
 
     await this.auditService.log({
@@ -660,7 +664,7 @@ export class AuthService {
     return { message: 'Email verified successfully.', email };
   }
 
-  async resendOtp(dto: ResendOtpDto) {
+  async resendOtp(dto: ResendOtpDto, requestId?: string) {
     const email = dto.email.toLowerCase();
     const purpose = (dto.purpose || 'REGISTRATION') as OtpPurposeKey;
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -680,6 +684,7 @@ export class AuthService {
       userName: user?.name || undefined,
       organizationId: user?.organizationId,
       isResend: true,
+      requestId,
     });
 
     return { message: 'OTP sent successfully.', email, ...otp };
@@ -690,8 +695,8 @@ export class AuthService {
     return this.verifyRegistrationOtp(dto, ip, ua);
   }
 
-  async forgotPassword(dto: ForgotPasswordDto) {
-    return this.sendForgotPasswordOtp(dto);
+  async forgotPassword(dto: ForgotPasswordDto, requestId?: string) {
+    return this.sendForgotPasswordOtp(dto, requestId);
   }
 
   private async ensurePasswordNotReused(user: { passwordHistory: any }, newPassword: string) {

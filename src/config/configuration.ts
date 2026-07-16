@@ -72,6 +72,7 @@ export default () => ({
     verifyOnBoot: process.env.SMTP_VERIFY_ON_BOOT !== 'false',
   },
   mail: {
+    provider: (process.env.MAIL_PROVIDER || 'smtp').toLowerCase(),
     queueEnabled: process.env.MAIL_QUEUE_ENABLED !== 'false',
     queueConcurrency: parseInt(process.env.MAIL_QUEUE_CONCURRENCY || '2', 10),
     queueMaxAttempts: parseInt(process.env.MAIL_QUEUE_MAX_ATTEMPTS || '5', 10),

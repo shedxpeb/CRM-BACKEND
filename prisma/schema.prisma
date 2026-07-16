@@ -282,7 +282,8 @@ enum OtpPurpose {
   ORGANIZATION_INVITE
 }
 
-/// Hashed OTP challenges — never store plaintext OTP
+/// Hashed OTP challenges only — never plaintext OTP, never email HTML/text/subject.
+/// Rows are hard-deleted immediately after successful verification, expiry, or invalidation.
 model OtpChallenge {
   id           String     @id @default(uuid())
   email        String
@@ -294,8 +295,10 @@ model OtpChallenge {
   maxAttempts  Int
   resendCount  Int        @default(0)
   maxResends   Int
+  /// Legacy soft-consume marker; runtime prefers hard-delete after use/expiry.
   consumedAt   DateTime?
   lastSentAt   DateTime   @default(now())
+  /// Operational metadata only — never OTP, HTML, subject, or secrets.
   metadata     Json?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
