@@ -11,4 +11,6 @@ import { WorkflowModule } from '../workflow/workflow.module';
   providers: [ProjectService],
   exports: [ProjectService],
 })
-export class ProjectModule {}
+export class ProjectModule {
+  static readonly moduleCapability = { capability: 'project' } as const;
+}

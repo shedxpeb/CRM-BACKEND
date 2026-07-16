@@ -9,7 +9,6 @@ import { BulkDeleteDto } from './dto/bulk-delete.dto';
 import { ConvertLeadDto } from './dto/convert-lead.dto';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('customer')
 @ApiBearerAuth()
@@ -40,6 +39,31 @@ export class CustomerController {
   async checkDuplicate(@Query('mobile') mobile: string, @Query('email') email: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.customerService.checkDuplicate(mobile, email, organizationId);
     return { message: 'Duplicate check completed.', data };
+  }
+
+  /** Static routes MUST be registered before :id to avoid shadowing */
+  @Get('export')
+  @RequirePermissions('customer:list')
+  @ApiOperation({ summary: 'Export customers' })
+  async export(@Query() query: GetCustomersDto, @CurrentUser('organizationId') organizationId: string) {
+    const data = await this.customerService.findAll({ ...query, pageSize: 500 }, organizationId);
+    return { message: 'Export data fetched.', data };
+  }
+
+  @Get('combobox')
+  @RequirePermissions('customer:list')
+  @ApiOperation({ summary: 'Customer combobox for dropdowns' })
+  async combobox(@Query() query: Record<string, unknown>, @CurrentUser('organizationId') organizationId: string) {
+    const data = await this.customerService.getCombobox(query, organizationId, ['id', 'customerName', 'companyName', 'mobile']);
+    return { message: 'Customers fetched.', data };
+  }
+
+  @Post(':id/restore')
+  @RequirePermissions('customer:restore')
+  @ApiOperation({ summary: 'Restore soft-deleted customer' })
+  async restore(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+    const data = await this.customerService.restore(id, organizationId);
+    return { message: 'Customer restored.', data };
   }
 
   @Get(':id')
@@ -129,22 +153,5 @@ export class CustomerController {
   ) {
     const data = await this.customerService.bulkDelete(dto.ids, deletedById, organizationId);
     return { message: 'Customers deleted.', data };
-  }
-
-  @Get('export')
-  @RequirePermissions('customer:list')
-  @ApiOperation({ summary: 'Export customers' })
-  async export(@Query() query: GetCustomersDto, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.customerService.findAll({ ...query, pageSize: 10000 }, organizationId);
-    return { message: 'Export data fetched.', data };
-  }
-
-  @Get('combobox')
-  @RequirePermissions('customer:list')
-  @Public()
-  @ApiOperation({ summary: 'Customer combobox for dropdowns' })
-  async combobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.customerService.getCombobox(query, organizationId, ['id', 'customerName', 'companyName', 'mobile']);
-    return { message: 'Customers fetched.', data };
   }
 }

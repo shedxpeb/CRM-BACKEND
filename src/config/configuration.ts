@@ -74,5 +74,6 @@ export default () => ({
   mail: {
     queueEnabled: process.env.MAIL_QUEUE_ENABLED !== 'false',
     queueConcurrency: parseInt(process.env.MAIL_QUEUE_CONCURRENCY || '2', 10),
+    queueMaxAttempts: parseInt(process.env.MAIL_QUEUE_MAX_ATTEMPTS || '5', 10),
   },
 });

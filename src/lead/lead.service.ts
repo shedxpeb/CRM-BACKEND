@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService, WhereClause } from '../common/services/base-query.service';
 import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
@@ -31,7 +31,10 @@ export class LeadService extends BaseQueryService {
     const result = await super.findAll(restQuery, organizationId);
 
     const where: WhereClause = { isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    where.organizationId = organizationId;
 
     if (statusMode === 'in-progress') {
       where.status = { notIn: ['New', 'Contacted', 'Converted'] };
@@ -69,8 +72,10 @@ export class LeadService extends BaseQueryService {
   }
 
   async getKanban(filters: { search?: string; priority?: string; city?: string; assignedTo?: string } = {}, organizationId?: string) {
-    const where: any = { isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const where: any = { isDeleted: false, organizationId };
 
     if (filters.search && filters.search.length >= 2) {
       where.OR = [
@@ -114,8 +119,10 @@ export class LeadService extends BaseQueryService {
   }
 
   async getCalendar(filters: { search?: string; status?: string; priority?: string; city?: string } = {}, organizationId?: string) {
-    const where: any = { isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const where: any = { isDeleted: false, organizationId };
 
     if (filters.search && filters.search.length >= 2) {
       where.OR = [
@@ -274,6 +281,7 @@ export class LeadService extends BaseQueryService {
   }
 
   async getLogs(id: string, organizationId: string) {
+    await this.findById(id, undefined, organizationId);
     return this.prisma.auditLog.findMany({
       where: { resource: 'lead', resourceId: id, organizationId },
       orderBy: { createdAt: 'desc' },
@@ -347,8 +355,22 @@ export class LeadService extends BaseQueryService {
     return result;
   }
 
-  async updateWorkflow(id: string, stage: string, notes?: string, updatedById?: string) {
-    const lead = await this.client.findFirst({ where: { id, isDeleted: false } });
+  async checkDuplicate(mobile: string, email: string | undefined, organizationId: string) {
+    const existing = await this.client.findFirst({
+      where: {
+        organizationId,
+        isDeleted: false,
+        OR: [
+          { mobile },
+          ...(email ? [{ email }] : []),
+        ],
+      },
+    });
+    return { exists: !!existing, lead: existing || undefined };
+  }
+
+  async updateWorkflow(id: string, stage: string, notes: string | undefined, updatedById: string | undefined, organizationId: string) {
+    const lead = await this.client.findFirst({ where: { id, isDeleted: false, organizationId } });
     if (!lead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
     const updated = await this.client.update({

@@ -10,4 +10,6 @@ import { WorkflowModule } from '../workflow/workflow.module';
   providers: [CustomerService],
   exports: [CustomerService],
 })
-export class CustomerModule {}
+export class CustomerModule {
+  static readonly moduleCapability = { capability: 'customer' } as const;
+}

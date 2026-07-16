@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
@@ -425,10 +425,19 @@ export class TrackingService {
     return approval;
   }
 
-  async respondToApproval(approvalId: string, status: 'Approved' | 'Rejected', organizationId: string, comment?: string) {
+  async respondToApproval(
+    approvalId: string,
+    status: 'Approved' | 'Rejected',
+    organizationId: string,
+    actorUserId: string,
+    comment?: string,
+  ) {
     const approval = await this.prisma.approvalRequest.findFirst({ where: { id: approvalId, organizationId } });
     if (!approval) throw new NotFoundException('Approval request not found');
     if (approval.status !== 'Pending') throw new BadRequestException('Approval already responded');
+    if (approval.approverId !== actorUserId) {
+      throw new ForbiddenException('Only the assigned approver can respond');
+    }
 
     const updated = await this.prisma.approvalRequest.update({
       where: { id: approvalId },

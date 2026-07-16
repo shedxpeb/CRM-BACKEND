@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -88,9 +88,13 @@ export class UsersService {
     return user;
   }
 
-  async create(organizationId: string, dto: CreateUserDto, createdById: string) {
+  async create(organizationId: string, dto: CreateUserDto, createdById: string, actorRole?: string) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('A user with this email already exists');
+
+    if (dto.role === 'OWNER' && actorRole !== 'OWNER' && actorRole !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only an owner can assign the owner role');
+    }
 
     const password = dto.password || this.generateTempPassword();
     const passwordHash = await bcrypt.hash(password, 12);

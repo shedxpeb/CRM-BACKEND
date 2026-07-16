@@ -1,4 +1,4 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationResult, PaginationMeta } from '../types';
 
@@ -32,6 +32,15 @@ export class BaseQueryService {
     return (this.prisma as any)[this.config.model];
   }
 
+  /** Fail closed: org-scoped models must never query without a tenant id. */
+  protected requireOrganizationId(organizationId?: string): string {
+    if (!this.config.orgScoped) return organizationId || '';
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    return organizationId;
+  }
+
   async findAll(
     query: Record<string, any>,
     organizationId?: string,
@@ -52,8 +61,8 @@ export class BaseQueryService {
     const skip = (page - 1) * pageSize;
     const where: WhereClause = { isDeleted: false };
 
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     if (search && search.length >= 2) {
@@ -96,11 +105,13 @@ export class BaseQueryService {
       throw new BadRequestException(`Invalid sortBy column: ${sortBy}`);
     }
 
+    const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 500);
+
     const [rows, total] = await Promise.all([
       this.client.findMany({
         where,
         skip,
-        take: pageSize,
+        take: safePageSize,
         orderBy: { [sortBy]: sortOrder },
       }),
       this.client.count({ where }),
@@ -108,10 +119,10 @@ export class BaseQueryService {
 
     const pagination: PaginationMeta = {
       page,
-      pageSize,
+      pageSize: safePageSize,
       total,
-      totalPages: Math.ceil(total / pageSize),
-      hasNext: page * pageSize < total,
+      totalPages: Math.ceil(total / safePageSize),
+      hasNext: page * safePageSize < total,
       hasPrevious: page > 1,
     };
 
@@ -125,8 +136,8 @@ export class BaseQueryService {
 
   async findById(id: string, extraInclude?: any, organizationId?: string): Promise<any> {
     const where: any = { id, isDeleted: false };
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
     const options: any = { where };
     if (extraInclude) options.include = extraInclude;
@@ -140,8 +151,8 @@ export class BaseQueryService {
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
     const where: any = { id, isDeleted: false };
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     const record = await this.client.findFirst({ where });
@@ -161,8 +172,8 @@ export class BaseQueryService {
 
   async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
     const where: any = { id: { in: ids }, isDeleted: false };
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     const result = await this.client.updateMany({
@@ -182,8 +193,8 @@ export class BaseQueryService {
     organizationId?: string,
   ): Promise<{ count: number }> {
     const where: any = { id: { in: ids }, isDeleted: false };
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     const result = await this.client.updateMany({
@@ -195,8 +206,8 @@ export class BaseQueryService {
 
   async restore(id: string, organizationId?: string): Promise<any> {
     const where: any = { id, isDeleted: true };
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     const record = await this.client.findFirst({ where });
@@ -217,8 +228,8 @@ export class BaseQueryService {
   async getStats(organizationId?: string, extraWhere?: WhereClause): Promise<Record<string, any>> {
     const where: WhereClause = { isDeleted: false };
 
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     if (extraWhere) {
@@ -242,8 +253,8 @@ export class BaseQueryService {
 
     const where: WhereClause = { isDeleted: false };
 
-    if (this.config.orgScoped && organizationId) {
-      where.organizationId = organizationId;
+    if (this.config.orgScoped) {
+      where.organizationId = this.requireOrganizationId(organizationId);
     }
 
     if (search && search.length >= 1) {
@@ -251,11 +262,13 @@ export class BaseQueryService {
       where.OR = [{ [searchField]: { contains: search, mode: 'insensitive' } }];
     }
 
+    const safePageSize = Math.min(Math.max(Number(pageSize) || 50, 1), 100);
+
     const [rows, total] = await Promise.all([
       this.client.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * safePageSize,
+        take: safePageSize,
         orderBy: { createdAt: 'desc' },
         select,
       }),
@@ -266,10 +279,10 @@ export class BaseQueryService {
       rows,
       pagination: {
         page,
-        pageSize,
+        pageSize: safePageSize,
         total,
-        totalPages: Math.ceil(total / pageSize),
-        hasNext: page * pageSize < total,
+        totalPages: Math.ceil(total / safePageSize),
+        hasNext: page * safePageSize < total,
         hasPrevious: page > 1,
       },
     };
@@ -283,4 +296,3 @@ export class BaseQueryService {
     return enumFilters.includes(key);
   }
 }
-

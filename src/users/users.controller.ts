@@ -37,8 +37,9 @@ export class UsersController {
     @Body() dto: CreateUserDto,
     @CurrentUser('organizationId') organizationId: string,
     @CurrentUser('id') createdById: string,
+    @CurrentUser('role') actorRole: string,
   ) {
-    const data = await this.usersService.create(organizationId, dto, createdById);
+    const data = await this.usersService.create(organizationId, dto, createdById, actorRole);
     return { message: 'User created successfully.', data };
   }
 

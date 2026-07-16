@@ -12,4 +12,6 @@ import { WorkflowModule } from '../workflow/workflow.module';
   providers: [LeadService, ExcelImportService],
   exports: [LeadService],
 })
-export class LeadModule {}
+export class LeadModule {
+  static readonly moduleCapability = { capability: 'lead' } as const;
+}

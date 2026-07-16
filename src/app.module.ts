@@ -11,6 +11,8 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { OrganizationGuard } from './common/guards/organization.guard';
 import { CustomerModule } from './customer/customer.module';
 import { ProjectModule } from './project/project.module';
 import { OrganizationModule } from './organization/organization.module';
@@ -18,6 +20,7 @@ import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { SystemModule } from './system/system.module';
 
 @Module({
   imports: [
@@ -27,7 +30,7 @@ import { WorkflowModule } from './workflow/workflow.module';
       useFactory: (config: ConfigService) => [
         {
           ttl: config.get<number>('throttle.ttlMs') || 60000,
-          limit: config.get<number>('throttle.limit') || 20,
+          limit: config.get<number>('throttle.limit') || 60,
         },
       ],
     }),
@@ -44,10 +47,13 @@ import { WorkflowModule } from './workflow/workflow.module';
     RolesModule,
     TrackingModule,
     WorkflowModule,
+    SystemModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: OrganizationGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })

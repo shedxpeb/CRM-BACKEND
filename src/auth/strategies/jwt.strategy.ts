@@ -43,6 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         isActive: true,
         isVerified: true,
         isLocked: true,
+        lockedUntil: true,
         passwordVersion: true,
       },
     });
@@ -52,6 +53,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     if (user.isLocked) {
       throw new UnauthorizedException('Account has been locked');
+    }
+    // Temporary lockout (failed login protection)
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new UnauthorizedException('Account is temporarily locked. Try again later.');
     }
     if (payload.passwordVersion !== undefined && payload.passwordVersion !== user.passwordVersion) {
       throw new UnauthorizedException('Session is no longer valid. Please sign in again.');

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
@@ -26,6 +26,9 @@ export class ProjectService extends BaseQueryService {
   }
 
   async findAll(query: GetProjectsDto, organizationId?: string) {
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
     const {
       page = 1, pageSize = 25, search,
       status, stage, priority, projectManager, customer, city, healthStatus,
@@ -33,10 +36,9 @@ export class ProjectService extends BaseQueryService {
       sortBy = 'createdAt', sortOrder = 'desc',
     } = query;
 
-    const skip = (page - 1) * pageSize;
-    const where: any = { isDeleted: false };
-
-    if (organizationId) where.organizationId = organizationId;
+    const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 500);
+    const skip = (page - 1) * safePageSize;
+    const where: any = { isDeleted: false, organizationId };
 
     if (search && search.length >= 2) {
       where.OR = [
@@ -79,7 +81,7 @@ export class ProjectService extends BaseQueryService {
       this.client.findMany({
         where,
         skip,
-        take: pageSize,
+        take: safePageSize,
         orderBy: { [sortBy]: sortOrder },
         include: { milestones: true, teamMembers: true },
       }),
@@ -88,10 +90,10 @@ export class ProjectService extends BaseQueryService {
 
     const pagination = {
       page,
-      pageSize,
+      pageSize: safePageSize,
       total,
-      totalPages: Math.ceil(total / pageSize),
-      hasNext: page * pageSize < total,
+      totalPages: Math.ceil(total / safePageSize),
+      hasNext: page * safePageSize < total,
       hasPrevious: page > 1,
     };
 
@@ -99,8 +101,10 @@ export class ProjectService extends BaseQueryService {
   }
 
   async getStats(organizationId?: string) {
-    const where: any = { isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const where: any = { isDeleted: false, organizationId };
 
     const [
       totalProjects, activeProjects, completedProjects, healthyProjects,
@@ -136,8 +140,10 @@ export class ProjectService extends BaseQueryService {
   }
 
   async findById(id: string, extraInclude?: any, organizationId?: string) {
-    const where: any = { id, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const where: any = { id, isDeleted: false, organizationId };
     const project = await this.client.findFirst({
       where,
       include: extraInclude || { milestones: true, teamMembers: true },
@@ -360,20 +366,16 @@ export class ProjectService extends BaseQueryService {
     return result;
   }
 
-  async getActivities(id: string) {
-    const project = await this.client.findFirst({ where: { id, isDeleted: false } });
-    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
-
+  async getActivities(id: string, organizationId: string) {
+    await this.findById(id, undefined, organizationId);
     return this.prisma.projectActivity.findMany({
       where: { projectId: id },
       orderBy: { performedAt: 'desc' },
     });
   }
 
-  async getTasks(id: string) {
-    const project = await this.client.findFirst({ where: { id, isDeleted: false } });
-    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
-
+  async getTasks(id: string, organizationId: string) {
+    await this.findById(id, undefined, organizationId);
     return this.prisma.projectTask.findMany({
       where: { projectId: id },
       orderBy: { createdAt: 'desc' },

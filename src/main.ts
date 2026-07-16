@@ -3,6 +3,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
+import helmet from '@fastify/helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,9 +14,11 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
-    bufferLogs: true,
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ trustProxy: true }),
+    { bufferLogs: true },
+  );
 
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get<string>('nodeEnv', 'development');
@@ -31,8 +34,13 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
+  await app.register(helmet, {
+    contentSecurityPolicy: nodeEnv === 'production',
+    crossOriginEmbedderPolicy: false,
+  });
+
   const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:3000');
-  const allowedOrigins = frontendUrl.split(',').map(u => u.trim());
+  const allowedOrigins = frontendUrl.split(',').map((u) => u.trim()).filter(Boolean);
   await app.register(cors, {
     origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,

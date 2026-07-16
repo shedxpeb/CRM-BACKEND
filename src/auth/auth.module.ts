@@ -46,4 +46,6 @@ import { CookieInterceptor } from './cookie.interceptor';
     JwtModule,
   ],
 })
-export class AuthModule {}
+export class AuthModule {
+  static readonly moduleCapability = { capability: 'auth' } as const;
+}

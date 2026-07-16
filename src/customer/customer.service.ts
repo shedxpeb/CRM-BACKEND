@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
@@ -49,7 +49,7 @@ export class CustomerService extends BaseQueryService {
 
       if (data.leadId) {
         const lead = await this.prisma.lead.findFirst({
-          where: { id: data.leadId, isDeleted: false },
+          where: { id: data.leadId, organizationId, isDeleted: false },
         });
 
         if (lead && !lead.isConverted) {
@@ -98,14 +98,16 @@ export class CustomerService extends BaseQueryService {
   }
 
   async update(id: string, data: UpdateCustomerDto, updatedById?: string, organizationId?: string) {
-    const where: any = { id, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const where: any = { id, isDeleted: false, organizationId };
     const existing = await this.client.findFirst({ where });
     if (!existing) throw new NotFoundException(`Customer not found`);
 
     if (data.mobile && data.mobile !== existing.mobile) {
       const dup = await this.client.findFirst({
-        where: { mobile: data.mobile, isDeleted: false, id: { not: id } },
+        where: { mobile: data.mobile, organizationId, isDeleted: false, id: { not: id } },
       });
       if (dup) throw new BadRequestException('Another customer with this mobile exists');
     }
@@ -162,10 +164,11 @@ export class CustomerService extends BaseQueryService {
     const existing = await this.prisma.customer.findFirst({
       where: {
         organizationId,
-        OR: [{ mobile }, { email }],
+        OR: [{ mobile }, ...(email ? [{ email }] : [])],
+        isDeleted: false,
       },
     });
-    return { isDuplicate: !!existing, existingCustomer: existing };
+    return { isDuplicate: !!existing, existingCustomer: existing, exists: !!existing, customer: existing || undefined };
   }
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
@@ -235,11 +238,16 @@ export class CustomerService extends BaseQueryService {
   }
 
   async convertLead(data: ConvertLeadDto, createdById?: string, organizationId?: string) {
-    const lead = await this.prisma.lead.findFirst({ where: { id: data.leadId, isDeleted: false } });
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: data.leadId, organizationId, isDeleted: false },
+    });
     if (!lead) throw new NotFoundException('Lead not found');
     if (lead.isConverted) throw new BadRequestException('Lead already converted');
 
-    const orgId = organizationId || lead.organizationId;
+    const orgId = organizationId;
     const existingMobile = await this.client.findFirst({
       where: { mobile: data.mobile, organizationId: orgId, isDeleted: false },
     });

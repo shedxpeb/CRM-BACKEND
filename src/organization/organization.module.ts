@@ -7,4 +7,6 @@ import { OrganizationService } from './organization.service';
   providers: [OrganizationService],
   exports: [OrganizationService],
 })
-export class OrganizationModule {}
+export class OrganizationModule {
+  static readonly moduleCapability = { capability: 'organization' } as const;
+}
