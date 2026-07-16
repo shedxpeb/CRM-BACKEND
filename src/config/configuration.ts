@@ -70,6 +70,12 @@ export default () => ({
     maxConnections: parseInt(process.env.SMTP_MAX_CONNECTIONS || '5', 10),
     maxMessages: parseInt(process.env.SMTP_MAX_MESSAGES || '100', 10),
     verifyOnBoot: process.env.SMTP_VERIFY_ON_BOOT !== 'false',
+    // 4 = IPv4 only (required on Render where Gmail IPv6 is often ENETUNREACH)
+    family: parseInt(process.env.SMTP_IP_FAMILY || '4', 10),
+    connectionTimeoutMs: parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || '10000', 10),
+    greetingTimeoutMs: parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || '10000', 10),
+    socketTimeoutMs: parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || '15000', 10),
+    dnsTimeoutMs: parseInt(process.env.SMTP_DNS_TIMEOUT_MS || '5000', 10),
   },
   mail: {
     provider: (process.env.MAIL_PROVIDER || 'smtp').toLowerCase(),

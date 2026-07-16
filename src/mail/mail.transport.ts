@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SendMailOptions, SentMessageInfo, Transporter } from 'nodemailer';
-import { MAIL_RECOVERY_BACKOFF_MS } from './mail.constants';
+import { isTransientSmtpFailure, MAIL_RECOVERY_BACKOFF_MS } from './mail.constants';
 import { getMailTransportSnapshot, isSmtpFullyConfigured } from './mail.config';
 import { MailProviderFactory } from './mail.provider';
 import type {
@@ -36,13 +36,7 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     this.clearRecoveryTimer();
-    if (this.transporter && typeof (this.transporter as any).close === 'function') {
-      try {
-        (this.transporter as any).close();
-      } catch {
-        // ignore close errors during shutdown
-      }
-    }
+    this.closeTransporter();
   }
 
   getTransporter(): Transporter | null {
@@ -58,7 +52,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   }
 
   getConfigSnapshot(): MailTransportSnapshot {
-    return getMailTransportSnapshot(this.config);
+    return getMailTransportSnapshot(this.config, {
+      resolvedAddress: this.providers.getLastResolvedAddress(),
+    });
   }
 
   getHealth(queuePending = 0): MailHealthSnapshot {
@@ -76,6 +72,13 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   }
 
   async forceVerify(): Promise<boolean> {
+    try {
+      this.closeTransporter();
+      this.transporter = await this.providers.createTransporter();
+    } catch (error: unknown) {
+      this.markFailed(error, 'manual-create');
+      return false;
+    }
     return this.verifyTransport('manual');
   }
 
@@ -111,10 +114,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
 
     this.state = 'CONNECTING';
     try {
-      this.transporter = this.providers.createTransporter();
+      this.transporter = await this.providers.createTransporter();
     } catch (error: unknown) {
       this.markFailed(error, 'create');
-      this.scheduleRecovery();
       return;
     }
 
@@ -150,6 +152,8 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
         `Transport Verify Result SUCCESS ${JSON.stringify({
           phase,
           host: snapshot.host,
+          resolvedAddress: snapshot.resolvedAddress,
+          family: snapshot.family,
           port: snapshot.port,
           secure: snapshot.secure,
           pool: snapshot.pool,
@@ -180,16 +184,35 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
         failureType: classified.failureType,
         state: this.state,
         ...this.getConfigSnapshot(),
-        error: classified,
+        error: {
+          failureType: classified.failureType,
+          name: classified.name,
+          message: classified.message,
+          code: classified.code,
+          responseCode: classified.responseCode,
+          command: classified.command,
+          address: classified.address,
+          port: classified.port,
+        },
       })}`,
     );
 
-    this.scheduleRecovery();
+    if (isTransientSmtpFailure(classified.failureType)) {
+      this.scheduleRecovery();
+    } else {
+      this.logger.warn(
+        `Mail transport recovery skipped (non-transient) ${JSON.stringify({
+          failureType: classified.failureType,
+          phase,
+        })}`,
+      );
+    }
   }
 
   private scheduleRecovery() {
     if (this.recoveryTimer) return;
     if (!isSmtpFullyConfigured(this.getConfigSnapshot())) return;
+    if (!isTransientSmtpFailure(this.failureType)) return;
 
     const delay =
       MAIL_RECOVERY_BACKOFF_MS[Math.min(this.recoveryAttempt, MAIL_RECOVERY_BACKOFF_MS.length - 1)];
@@ -210,14 +233,15 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       this.recoveryTimer = null;
       this.state = 'RECOVERING';
       try {
-        // Recreate transporter each recovery cycle to clear stale sockets.
-        this.transporter = this.providers.createTransporter();
+        // Recreate transporter each recovery cycle (fresh IPv4 DNS + sockets).
+        this.closeTransporter();
+        this.transporter = await this.providers.createTransporter();
       } catch (error: unknown) {
         this.markFailed(error, 'recovery-create');
         return;
       }
       await this.verifyTransport('recovery');
-      if (!this.isReady()) {
+      if (!this.isReady() && isTransientSmtpFailure(this.failureType)) {
         this.scheduleRecovery();
       }
     }, delay);
@@ -228,6 +252,17 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       clearTimeout(this.recoveryTimer);
       this.recoveryTimer = null;
     }
+  }
+
+  private closeTransporter() {
+    if (this.transporter && typeof (this.transporter as { close?: () => void }).close === 'function') {
+      try {
+        (this.transporter as { close: () => void }).close();
+      } catch {
+        // ignore close errors
+      }
+    }
+    this.transporter = null;
   }
 
   private classifySmtpFailure(error: unknown, depth = 0): ClassifiedSmtpError {
@@ -242,26 +277,44 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     const lower = message.toLowerCase();
     const response = typeof value.response === 'string' ? value.response.toLowerCase() : '';
     const responseCode = typeof value.responseCode === 'number' ? value.responseCode : null;
+    const address = typeof value.address === 'string' ? value.address : null;
+    const looksIpv6 =
+      (!!address && address.includes(':')) ||
+      /([0-9a-f]{0,4}:){2,}[0-9a-f]{0,4}/i.test(message) ||
+      lower.includes(':::');
 
     let failureType: SmtpFailureType = 'SMTP_UNKNOWN';
     if (code === 'EAUTH' || lower.includes('invalid login') || lower.includes('authentication') || response.includes('auth')) {
       failureType = 'SMTP_AUTH_FAILED';
+    } else if (
+      code === 'ENETUNREACH' ||
+      code === 'EHOSTUNREACH' ||
+      lower.includes('enetunreach') ||
+      lower.includes('ehostunreach')
+    ) {
+      failureType = looksIpv6 ? 'SMTP_IPV6_ERROR' : 'SMTP_IPV4_ERROR';
     } else if (code === 'ETIMEDOUT' || code === 'ESOCKETTIMEDOUT' || lower.includes('timeout')) {
       failureType = 'SMTP_TIMEOUT';
-    } else if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
-      failureType = 'SMTP_DNS_ERROR';
     } else if (
-      code === 'ESOCKET' ||
+      code === 'ENOTFOUND' ||
+      code === 'EAI_AGAIN' ||
+      code === 'SMTP_DNS_ERROR' ||
+      value.name === 'SmtpDnsError' ||
+      lower.includes('dns lookup')
+    ) {
+      failureType = 'SMTP_DNS_ERROR';
+    } else if (code === 'ECONNREFUSED') {
+      failureType = 'SMTP_CONNECTION_REFUSED';
+    } else if (
       lower.includes('tls') ||
       lower.includes('ssl') ||
       lower.includes('certificate') ||
       lower.includes('wrong version number')
     ) {
       failureType = 'SMTP_TLS_ERROR';
-    } else if (code === 'ECONNREFUSED') {
-      failureType = 'SMTP_CONNECTION_REFUSED';
-    } else if (code === 'ENETUNREACH' || code === 'EHOSTUNREACH') {
-      failureType = lower.includes('ipv6') ? 'SMTP_IPV6_ERROR' : 'SMTP_IPV4_ERROR';
+    } else if (code === 'ESOCKET') {
+      // Generic socket error — prefer IPv6 classification when address/message shows it.
+      failureType = looksIpv6 ? 'SMTP_IPV6_ERROR' : 'SMTP_TIMEOUT';
     } else if (responseCode === 421 || responseCode === 450 || lower.includes('rate') || lower.includes('too many')) {
       failureType = 'SMTP_RATE_LIMIT';
     } else if (responseCode !== null && responseCode >= 400) {
@@ -278,7 +331,7 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       responseCode,
       response: typeof value.response === 'string' ? value.response : null,
       command: typeof value.command === 'string' ? value.command : null,
-      address: typeof value.address === 'string' ? value.address : null,
+      address,
       port: typeof value.port === 'number' ? value.port : null,
       hostname: typeof value.hostname === 'string' ? value.hostname : null,
       stack: typeof value.stack === 'string' ? value.stack : error instanceof Error ? error.stack || null : null,

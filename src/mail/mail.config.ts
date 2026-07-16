@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import type { MailProviderName, MailTransportSnapshot } from './mail.types';
+import type { MailProviderName, MailTransportSnapshot, SmtpIpFamily } from './mail.types';
 import { MAIL_PROVIDERS } from './mail.constants';
 
 export function resolveMailProvider(config: ConfigService): MailProviderName {
@@ -10,7 +10,17 @@ export function resolveMailProvider(config: ConfigService): MailProviderName {
   return 'smtp';
 }
 
-export function getMailTransportSnapshot(config: ConfigService): MailTransportSnapshot {
+export function resolveSmtpIpFamily(config: ConfigService): SmtpIpFamily {
+  const raw = config.get<number | string>('smtp.family');
+  const n = typeof raw === 'number' ? raw : parseInt(String(raw ?? '4'), 10);
+  if (n === 0 || n === 6) return n;
+  return 4;
+}
+
+export function getMailTransportSnapshot(
+  config: ConfigService,
+  extras?: { resolvedAddress?: string | null },
+): MailTransportSnapshot {
   const host = config.get<string>('smtp.host') || null;
   const user = config.get<string>('smtp.user') || null;
   const pass = config.get<string>('smtp.pass');
@@ -30,6 +40,12 @@ export function getMailTransportSnapshot(config: ConfigService): MailTransportSn
     secure,
     pool,
     verifyOnBoot,
+    family: resolveSmtpIpFamily(config),
+    connectionTimeoutMs: config.get<number>('smtp.connectionTimeoutMs') || 10_000,
+    greetingTimeoutMs: config.get<number>('smtp.greetingTimeoutMs') || 10_000,
+    socketTimeoutMs: config.get<number>('smtp.socketTimeoutMs') || 15_000,
+    dnsTimeoutMs: config.get<number>('smtp.dnsTimeoutMs') || 5_000,
+    resolvedAddress: extras?.resolvedAddress ?? null,
     fromEmail,
     fromName,
     smtpUserExists: !!user,

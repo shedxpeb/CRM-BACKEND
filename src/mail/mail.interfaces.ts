@@ -3,7 +3,7 @@ import type { MailHealthSnapshot, MailProviderName, MailTransportSnapshot } from
 
 export interface MailProviderDefinition {
   name: MailProviderName;
-  createTransporter(): Transporter;
+  createTransporter(): Promise<Transporter> | Transporter;
 }
 
 export interface MailTransportManager {

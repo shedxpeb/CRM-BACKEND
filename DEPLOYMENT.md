@@ -92,7 +92,23 @@ See `.env.example` for the full contract. Critical keys:
 - Branding: `BRAND_*`
 - Sessions: `SESSION_*`
 
-Moving hosts = change `.env` only.
+Moving hosts = change `.env` only. Switch mail providers via `MAIL_PROVIDER` + `SMTP_*` (Gmail → Zoho → Hostinger SMTP) without code changes.
+
+## Render SMTP / IPv6 note
+
+On some Render networks, DNS for `smtp.gmail.com` returns IPv6 first and Node connects to an unreachable IPv6 address (`ENETUNREACH` / `ETIMEDOUT`). That blocks OTP send with `503` before any OTP row is stored (correct fail-safe).
+
+Mitigation already in the mail transport:
+
+- `SMTP_IP_FAMILY=4` (default) — resolve and connect over IPv4 only (no hostname fallback that reopens AAAA)
+- Explicit timeouts: connection 10s / greeting 10s / socket 15s / DNS 5s
+- Auto-recovery only for transient network failures (not auth failures): 5s → 15s → 30s → 1m → 5m
+
+After deploy, expect boot logs:
+
+`SMTP endpoint resolved` (IPv4 `connectHost`) → `Transport Verify Result SUCCESS` → mail state `READY`.
+
+Render Dashboard must also set `SMTP_IP_FAMILY=4` if not applying the Blueprint.
 
 ## Architecture validation
 

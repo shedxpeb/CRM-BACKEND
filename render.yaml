@@ -27,6 +27,8 @@ services:
         sync: false
       - key: BACKEND_URL
         sync: false
+      - key: MAIL_PROVIDER
+        value: smtp
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -41,6 +43,18 @@ services:
         sync: false
       - key: SMTP_SECURE
         sync: false
+      - key: SMTP_IP_FAMILY
+        value: "4"
+      - key: SMTP_CONNECTION_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_GREETING_TIMEOUT_MS
+        value: "10000"
+      - key: SMTP_SOCKET_TIMEOUT_MS
+        value: "15000"
+      - key: SMTP_DNS_TIMEOUT_MS
+        value: "5000"
+      - key: SMTP_VERIFY_ON_BOOT
+        value: "true"
       - key: SMTP_REQUIRED
         value: "true"
       - key: BRAND_COMPANY_NAME

@@ -24,6 +24,22 @@ export const SMTP_FAILURE_TYPES = [
 /** Recovery backoff schedule (ms): 5s → 15s → 30s → 1m → 5m (then holds at 5m). */
 export const MAIL_RECOVERY_BACKOFF_MS = [5_000, 15_000, 30_000, 60_000, 300_000] as const;
 
+/** Network/transient failures eligible for automatic recovery — never auth/config. */
+export const TRANSIENT_SMTP_FAILURES = [
+  'SMTP_TIMEOUT',
+  'SMTP_DNS_ERROR',
+  'SMTP_IPV4_ERROR',
+  'SMTP_IPV6_ERROR',
+  'SMTP_CONNECTION_REFUSED',
+  'SMTP_RATE_LIMIT',
+  'SMTP_TLS_ERROR',
+  'SMTP_UNKNOWN',
+] as const;
+
+export function isTransientSmtpFailure(failureType: string | null | undefined): boolean {
+  return !!failureType && (TRANSIENT_SMTP_FAILURES as readonly string[]).includes(failureType);
+}
+
 export const MAIL_PROVIDERS = [
   'smtp',
   'gmail',
