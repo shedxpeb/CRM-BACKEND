@@ -51,6 +51,10 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
+  customerName?: string;
+
+  @IsOptional()
+  @IsString()
   leadId?: string;
 
   @IsString()

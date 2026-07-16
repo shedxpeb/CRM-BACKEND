@@ -3,9 +3,7 @@ export function validateEnv(): void {
   const missing: string[] = [];
 
   const requireVar = (name: string) => {
-    if (!process.env[name]?.trim()) {
-      missing.push(name);
-    }
+    if (!process.env[name]?.trim()) missing.push(name);
   };
 
   requireVar('DATABASE_URL');
@@ -22,12 +20,19 @@ export function validateEnv(): void {
   }
 
   if (isProd) {
-    if (process.env.JWT_SECRET === 'change-this-to-a-random-secret') {
-      throw new Error('JWT_SECRET must be changed in production');
+    const weakSecrets = [
+      'change-this-to-a-random-secret',
+      'change-this-to-a-random-secret-at-least-32-chars',
+      'change-this-to-a-random-cookie-secret-at-least-32-chars',
+    ];
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32 || weakSecrets.includes(process.env.JWT_SECRET)) {
+      throw new Error('JWT_SECRET must be a strong secret of at least 32 characters in production');
     }
-    if (process.env.JWT_SECRET!.length < 32) {
-      throw new Error('JWT_SECRET must be at least 32 characters in production');
+    if (!process.env.COOKIE_SECRET || process.env.COOKIE_SECRET.length < 32 || weakSecrets.includes(process.env.COOKIE_SECRET)) {
+      throw new Error('COOKIE_SECRET must be a strong secret of at least 32 characters in production');
     }
+    // SMTP required in production for auth emails
+    ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM_EMAIL'].forEach(requireVar);
   }
 
   if (missing.length > 0) {

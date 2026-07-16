@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SessionService } from '../services/session.service';
 
 export interface JwtPayload {
   sub: string;
@@ -12,6 +13,7 @@ export interface JwtPayload {
   sessionId: string;
   permissionVersion: number;
   tokenVersion: number;
+  passwordVersion?: number;
 }
 
 @Injectable()
@@ -19,6 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
     private prisma: PrismaService,
+    private sessionService: SessionService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -47,27 +50,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Account is not active');
     }
-
     if (user.isLocked) {
       throw new UnauthorizedException('Account has been locked');
     }
-
-    // Validate session still exists and is not revoked
-    if (payload.sessionId) {
-      const session = await this.prisma.session.findUnique({
-        where: { id: payload.sessionId },
-      });
-      if (!session || session.isRevoked) {
-        throw new UnauthorizedException('Session has been revoked');
-      }
-      // Touch session activity
-      await this.prisma.session.update({
-        where: { id: payload.sessionId },
-        data: { lastActivity: new Date() },
-      });
-    } else {
-      // Legacy tokens without sessionId — still allow but warn
+    if (payload.passwordVersion !== undefined && payload.passwordVersion !== user.passwordVersion) {
+      throw new UnauthorizedException('Session is no longer valid. Please sign in again.');
     }
+
+    if (!payload.sessionId) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    const session = await this.sessionService.validateSessionById(payload.sessionId);
+    if (!session) {
+      throw new UnauthorizedException('Session has expired or been revoked');
+    }
+
+    await this.sessionService.touchSession(payload.sessionId);
 
     return {
       id: user.id,

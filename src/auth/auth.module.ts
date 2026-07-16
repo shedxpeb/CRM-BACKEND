@@ -9,6 +9,8 @@ import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
 import { AuditService } from './services/audit.service';
 import { LoginProtectionService } from './services/login-protection.service';
+import { OtpService } from './services/otp.service';
+import { CookieInterceptor } from './cookie.interceptor';
 
 @Module({
   imports: [
@@ -32,12 +34,15 @@ import { LoginProtectionService } from './services/login-protection.service';
     SessionService,
     AuditService,
     LoginProtectionService,
+    OtpService,
+    CookieInterceptor,
   ],
   exports: [
     AuthService,
     TokenService,
     SessionService,
     AuditService,
+    OtpService,
     JwtModule,
   ],
 })

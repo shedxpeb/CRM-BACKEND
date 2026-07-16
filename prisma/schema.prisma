@@ -273,6 +273,38 @@ model LoginAttempt {
   @@index([email, createdAt])
 }
 
+enum OtpPurpose {
+  REGISTRATION
+  FORGOT_PASSWORD
+  EMAIL_VERIFICATION
+  CHANGE_EMAIL
+  TWO_FACTOR
+  ORGANIZATION_INVITE
+}
+
+/// Hashed OTP challenges — never store plaintext OTP
+model OtpChallenge {
+  id           String     @id @default(uuid())
+  email        String
+  userId       String?
+  purpose      OtpPurpose
+  codeHash     String
+  expiresAt    DateTime
+  attempts     Int        @default(0)
+  maxAttempts  Int
+  resendCount  Int        @default(0)
+  maxResends   Int
+  consumedAt   DateTime?
+  lastSentAt   DateTime   @default(now())
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([email, purpose, consumedAt])
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
 model AuditLog {
   id              String    @id @default(uuid())
   organizationId  String?
@@ -729,4 +761,157 @@ model Lead {
   @@index([isDeleted])
   @@index([organizationId])
   @@index([organizationId, status])
+}
+
+// ──────────────────────────────────────────────
+// UNIVERSAL TRACKING ENGINE — Models
+// ──────────────────────────────────────────────
+// These models use polymorphic (entityType + entityId) pairs
+// to track status, history, comments, attachments, approvals, and notifications
+// for ANY business entity: lead, customer, quotation, drawing, boq, project,
+// purchaseOrder, inventory, production, dispatch, siteExecution, payment, warranty.
+
+model StatusPipeline {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  entityType         String
+  status             String
+  order              Int
+  label              String?
+  color              String?
+  allowedTransitions String[]
+  isInitial          Boolean  @default(false)
+  isFinal            Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([organizationId, entityType, status])
+  @@index([organizationId, entityType, order])
+  @@index([organizationId, entityType])
+}
+
+model StatusHistory {
+  id             String   @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  fromStatus     String?
+  toStatus       String
+  changedById    String?
+  changedAt      DateTime @default(now())
+  reason         String?
+  metadata       Json?
+
+  @@index([entityType, entityId, changedAt])
+  @@index([entityType, entityId])
+  @@index([organizationId, entityType, changedAt])
+}
+
+model Comment {
+  id             String    @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  content        String
+  authorId       String
+  parentId       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  isDeleted      Boolean   @default(false)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([entityType, entityId])
+  @@index([authorId])
+}
+
+model Attachment {
+  id             String    @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  fileName       String
+  originalName   String
+  mimeType       String
+  size           Int
+  url            String
+  category       String?
+  uploadedById   String?
+  createdAt      DateTime  @default(now())
+  isDeleted      Boolean   @default(false)
+
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, createdAt])
+}
+
+model ApprovalRequest {
+  id             String    @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  level          Int       @default(1)
+  requestedById  String
+  approverId     String
+  status         String    @default("Pending")
+  comment        String?
+  requestedAt    DateTime  @default(now())
+  respondedAt    DateTime?
+  escalatedAt    DateTime?
+  metadata       Json?
+
+  @@index([entityType, entityId, level])
+  @@index([entityType, entityId])
+  @@index([approverId, status])
+  @@index([organizationId])
+}
+
+model Notification {
+  id             String    @id @default(uuid())
+  organizationId String
+  userId         String
+  title          String
+  message        String
+  type           String    @default("info")
+  entityType     String?
+  entityId       String?
+  isRead         Boolean   @default(false)
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([organizationId])
+}
+
+model BusinessEvent {
+  id             String   @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  eventType      String
+  data           Json?
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, entityType, entityId, createdAt])
+  @@index([organizationId, entityType, eventType])
+  @@index([entityType, entityId])
+}
+
+model EventRule {
+  id             String   @id @default(uuid())
+  organizationId String
+  entityType     String
+  eventType      String
+  fromStatus     String?
+  toStatus       String
+  fromStage      String?
+  toStage        String?
+  condition      Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, entityType, eventType, fromStatus])
+  @@index([organizationId, entityType, isActive])
 }

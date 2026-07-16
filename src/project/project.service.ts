@@ -1,5 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BaseQueryService } from '../common/services/base-query.service';
+import { AuditService } from '../auth/services/audit.service';
+import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { GetProjectsDto } from './dto/get-projects.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -7,32 +10,33 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
-export class ProjectService {
-  private readonly logger = new Logger(ProjectService.name);
+export class ProjectService extends BaseQueryService {
+  constructor(
+    protected readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+    private readonly workflowEngine: WorkflowEngineService,
+  ) {
+    super(prisma, {
+      model: 'project',
+      searchFields: ['projectName', 'projectCode', 'customerName', 'location', 'city'],
+      filterFields: ['status', 'stage', 'priority', 'healthStatus', 'city', 'projectManager'],
+      sortColumns: ['createdAt', 'projectName', 'projectCode', 'status', 'priority', 'stage', 'progress', 'city', 'customerName'],
+      orgScoped: true,
+    });
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findAll(query: GetProjectsDto) {
-    const startTime = Date.now();
+  async findAll(query: GetProjectsDto, organizationId?: string) {
     const {
-      page = 1,
-      pageSize = 25,
-      search,
-      status,
-      stage,
-      priority,
-      projectManager,
-      customer,
-      city,
-      healthStatus,
-      dateFrom,
-      dateTo,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      page = 1, pageSize = 25, search,
+      status, stage, priority, projectManager, customer, city, healthStatus,
+      dateFrom, dateTo,
+      sortBy = 'createdAt', sortOrder = 'desc',
     } = query;
 
     const skip = (page - 1) * pageSize;
     const where: any = { isDeleted: false };
+
+    if (organizationId) where.organizationId = organizationId;
 
     if (search && search.length >= 2) {
       where.OR = [
@@ -66,136 +70,90 @@ export class ProjectService {
       }
     }
 
-    const allowedSortColumns = [
-      'createdAt', 'projectName', 'projectCode', 'status', 'priority',
-      'stage', 'progress', 'city', 'customerName', 'projectId',
-    ];
-
+    const allowedSortColumns = ['createdAt', 'projectName', 'projectCode', 'status', 'priority', 'stage', 'progress', 'city', 'customerName'];
     if (!allowedSortColumns.includes(sortBy)) {
       throw new BadRequestException(`Invalid sortBy column: ${sortBy}`);
     }
 
     const [rows, total] = await Promise.all([
-      this.prisma.project.findMany({
+      this.client.findMany({
         where,
         skip,
         take: pageSize,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          milestones: true,
-          teamMembers: true,
-        },
+        include: { milestones: true, teamMembers: true },
       }),
-      this.prisma.project.count({ where }),
+      this.client.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / pageSize);
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /project - Rows: ${rows.length}, Total: ${total}, Time: ${executionTime}ms`);
-
-    return {
-      rows,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrevious: page > 1,
-      },
+    const pagination = {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+      hasNext: page * pageSize < total,
+      hasPrevious: page > 1,
     };
+
+    return { rows, pagination };
   }
 
-  async getStats() {
-    const startTime = Date.now();
+  async getStats(organizationId?: string) {
+    const where: any = { isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
 
     const [
-      totalProjects,
-      activeProjects,
-      completedProjects,
-      healthyProjects,
-      atRiskProjects,
-      criticalProjects,
-      totalRevenue,
-      totalMaterialCost,
-      delayedProjects,
-      upcomingDeadlines,
-      projectsInDesign,
-      projectsInProcurement,
-      projectsInFabrication,
-      projectsInInstallation,
-      pendingApprovals,
+      totalProjects, activeProjects, completedProjects, healthyProjects,
+      atRiskProjects, criticalProjects, totalRevenue, totalMaterialCost,
+      delayedProjects, upcomingDeadlines, projectsInDesign, projectsInProcurement,
+      projectsInFabrication, projectsInInstallation, pendingApprovals,
     ] = await Promise.all([
-      this.prisma.project.count({ where: { isDeleted: false } }),
-      this.prisma.project.count({ where: { isDeleted: false, status: { notIn: ['Completion', 'Cancelled', 'After Sales'] } } }),
-      this.prisma.project.count({ where: { isDeleted: false, status: 'Completion' } }),
-      this.prisma.project.count({ where: { isDeleted: false, healthStatus: 'Healthy' } }),
-      this.prisma.project.count({ where: { isDeleted: false, healthStatus: 'At Risk' } }),
-      this.prisma.project.count({ where: { isDeleted: false, healthStatus: 'Critical' } }),
-      this.prisma.project.aggregate({ where: { isDeleted: false }, _sum: { value: true } }),
-      this.prisma.project.aggregate({ where: { isDeleted: false }, _sum: { materialCost: true } }),
-      this.prisma.project.count({ where: { isDeleted: false, endDate: { lt: new Date() }, status: { not: 'Completion' } } }),
-      this.prisma.project.count({ where: { isDeleted: false, endDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } } }),
-      this.prisma.project.count({ where: { isDeleted: false, stage: 'Design' } }),
-      this.prisma.project.count({ where: { isDeleted: false, stage: 'Procurement' } }),
-      this.prisma.project.count({ where: { isDeleted: false, stage: 'Fabrication' } }),
-      this.prisma.project.count({ where: { isDeleted: false, stage: 'Installation' } }),
-      this.prisma.project.count({ where: { isDeleted: false, status: { in: ['Lead', 'Estimate', 'Proposal', 'Quotation'] } } }),
+      this.client.count({ where }),
+      this.client.count({ where: { ...where, status: { notIn: ['Completion', 'Cancelled', 'After Sales'] } } }),
+      this.client.count({ where: { ...where, status: 'Completion' } }),
+      this.client.count({ where: { ...where, healthStatus: 'Healthy' } }),
+      this.client.count({ where: { ...where, healthStatus: 'At Risk' } }),
+      this.client.count({ where: { ...where, healthStatus: 'Critical' } }),
+      this.client.aggregate({ where, _sum: { value: true } }),
+      this.client.aggregate({ where, _sum: { materialCost: true } }),
+      this.client.count({ where: { ...where, endDate: { lt: new Date() }, status: { not: 'Completion' } } }),
+      this.client.count({ where: { ...where, endDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } } }),
+      this.client.count({ where: { ...where, stage: 'Design' } }),
+      this.client.count({ where: { ...where, stage: 'Procurement' } }),
+      this.client.count({ where: { ...where, stage: 'Fabrication' } }),
+      this.client.count({ where: { ...where, stage: 'Installation' } }),
+      this.client.count({ where: { ...where, status: { in: ['Lead', 'Estimate', 'Proposal', 'Quotation'] } } }),
     ]);
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /project/stats - Time: ${executionTime}ms`);
-
     return {
-      totalProjects,
-      activeProjects,
-      completedProjects,
-      delayedProjects,
-      upcomingDeadlines,
-      projectsInDesign,
-      projectsInProcurement,
-      projectsInFabrication,
-      projectsInInstallation,
-      pendingApprovals,
+      totalProjects, activeProjects, completedProjects, delayedProjects,
+      upcomingDeadlines, projectsInDesign, projectsInProcurement,
+      projectsInFabrication, projectsInInstallation, pendingApprovals,
       projectRevenue: totalRevenue._sum.value || 0,
       materialCost: totalMaterialCost._sum.materialCost || 0,
-      healthyProjects,
-      atRiskProjects,
-      criticalProjects,
+      healthyProjects, atRiskProjects, criticalProjects,
     };
   }
 
-  async findById(id: string) {
-    const startTime = Date.now();
-
-    const project = await this.prisma.project.findFirst({
-      where: { id, isDeleted: false },
-      include: {
-        milestones: true,
-        teamMembers: true,
-      },
+  async findById(id: string, extraInclude?: any, organizationId?: string) {
+    const where: any = { id, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const project = await this.client.findFirst({
+      where,
+      include: extraInclude || { milestones: true, teamMembers: true },
     });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /project/:id - ID: ${id}, Time: ${executionTime}ms`);
-
+    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
     return project;
   }
 
   async create(data: CreateProjectDto, createdById: string, organizationId?: string) {
-    const startTime = Date.now();
-
     if (!organizationId) {
       throw new BadRequestException('Organization context is required to create a project');
     }
 
     const { milestones, team, customFields, ...restData } = data as any;
 
-    const project = await this.prisma.project.create({
+    const project = await this.client.create({
       data: {
         ...restData,
         organizationId,
@@ -203,52 +161,55 @@ export class ProjectService {
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         createdById,
         milestones: milestones?.length
-          ? {
-              create: milestones.map((m: any) => ({
-                name: m.name,
-                plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
-                actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-              })),
-            }
+          ? { create: milestones.map((m: any) => ({
+              name: m.name,
+              plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
+              actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
+            }))}
           : undefined,
         teamMembers: team?.length
-          ? {
-              create: team.map((t: any) => ({
-                employeeId: t.employeeId,
-                name: t.name,
-                role: t.role,
-                workload: t.workload,
-              })),
-            }
+          ? { create: team.map((t: any) => ({
+              employeeId: t.employeeId,
+              name: t.name,
+              role: t.role,
+              workload: t.workload,
+            }))}
           : undefined,
         customFields: customFields && Object.keys(customFields).length > 0 ? customFields : undefined,
       },
-      include: {
-        milestones: true,
-        teamMembers: true,
-      },
+      include: { milestones: true, teamMembers: true },
     });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`POST /project - ProjectId: ${project.projectId}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'project.created',
+      organizationId,
+      userId: createdById,
+      resource: 'project',
+      resourceId: project.id,
+      metadata: { projectName: data.projectName, customerName: data.customerName },
+    });
+
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: project.id,
+      eventType: 'created',
+      data: { projectName: data.projectName, customerName: data.customerName },
+      createdById,
+    });
 
     return project;
   }
 
-  async update(id: string, data: UpdateProjectDto, updatedById?: string) {
-    const startTime = Date.now();
-
-    const existing = await this.prisma.project.findFirst({
-      where: { id, isDeleted: false },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
+  async update(id: string, data: UpdateProjectDto, updatedById?: string, organizationId?: string) {
+    const where: any = { id, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const existing = await this.client.findFirst({ where });
+    if (!existing) throw new NotFoundException(`Project with ID ${id} not found`);
 
     const { milestones, team, customFields, ...restData } = data as any;
 
-    const project = await this.prisma.project.update({
+    const project = await this.client.update({
       where: { id },
       data: {
         ...restData,
@@ -257,84 +218,62 @@ export class ProjectService {
         updatedBy: updatedById,
         ...(customFields !== undefined ? { customFields } : {}),
       },
-      include: {
-        milestones: true,
-        teamMembers: true,
-      },
+      include: { milestones: true, teamMembers: true },
     });
 
-    // Handle milestones replacement if provided
     if (milestones) {
       await this.prisma.projectMilestone.deleteMany({ where: { projectId: id } });
       if (milestones.length > 0) {
         await this.prisma.projectMilestone.createMany({
           data: milestones.map((m: any) => ({
-            projectId: id,
-            name: m.name,
+            projectId: id, name: m.name,
             plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
             actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-            status: m.status || 'Pending',
-            delay: m.delay,
+            status: m.status || 'Pending', delay: m.delay,
           })),
         });
       }
     }
 
-    // Handle team replacement if provided
     if (team) {
       await this.prisma.projectTeamMember.deleteMany({ where: { projectId: id } });
       if (team.length > 0) {
         await this.prisma.projectTeamMember.createMany({
           data: team.map((t: any) => ({
-            projectId: id,
-            employeeId: t.employeeId,
-            name: t.name,
-            role: t.role,
-            workload: t.workload,
+            projectId: id, employeeId: t.employeeId,
+            name: t.name, role: t.role, workload: t.workload,
           })),
         });
       }
     }
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`PATCH /project/:id - ID: ${id}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'project.updated',
+      userId: updatedById,
+      resource: 'project',
+      resourceId: id,
+      metadata: { changes: Object.keys(data) },
+    });
+
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: id,
+      eventType: 'updated',
+      data: { changes: Object.keys(data) },
+      createdById: updatedById,
+    });
 
     return project;
   }
 
-  async softDelete(id: string, deletedById: string) {
-    const startTime = Date.now();
-
-    const existing = await this.prisma.project.findFirst({
-      where: { id, isDeleted: false },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    const project = await this.prisma.project.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      },
-    });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`DELETE /project/:id - ID: ${id}, Time: ${executionTime}ms`);
-
-    return project;
-  }
-
-  async bulkUpdate(ids: string[], data: UpdateProjectDto, updatedById: string) {
-    const startTime = Date.now();
-
+  async bulkUpdate(ids: string[], data: UpdateProjectDto, updatedById: string, organizationId?: string) {
     const { milestones, team, customFields, ...restData } = data as any;
+    const where: any = { id: { in: ids }, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
 
-    const result = await this.prisma.project.updateMany({
-      where: { id: { in: ids }, isDeleted: false },
+    const result = await this.client.updateMany({
+      where,
       data: {
         ...restData,
         ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
@@ -343,143 +282,196 @@ export class ProjectService {
       },
     });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`PATCH /project/bulk - Count: ${result.count}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'project.bulk-updated',
+      userId: updatedById,
+      resource: 'project',
+      resourceId: ids.join(','),
+      metadata: { count: result.count, changes: Object.keys(data), ids },
+    });
+
+    if (organizationId) {
+      for (const id of ids) {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'project',
+          entityId: id,
+          eventType: 'bulk-updated',
+          data: { changes: Object.keys(data), count: result.count },
+          createdById: updatedById,
+        });
+      }
+    }
 
     return { count: result.count };
   }
 
-  async bulkDelete(ids: string[], deletedById: string) {
-    const startTime = Date.now();
-
-    const result = await this.prisma.project.updateMany({
-      where: { id: { in: ids }, isDeleted: false },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      },
+  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
+    const result = await super.softDelete(id, deletedById, organizationId);
+    await this.auditService.log({
+      action: 'project.deleted',
+      userId: deletedById,
+      resource: 'project',
+      resourceId: id,
     });
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: id,
+      eventType: 'deleted',
+      createdById: deletedById,
+    });
+    return result;
+  }
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`DELETE /project/bulk - Count: ${result.count}, Time: ${executionTime}ms`);
+  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+    const result = await super.bulkDelete(ids, deletedById, organizationId);
+    await this.auditService.log({
+      action: 'project.bulk-deleted',
+      userId: deletedById,
+      resource: 'project',
+      resourceId: ids.join(','),
+      metadata: { count: result.count, ids },
+    });
+    if (organizationId) {
+      for (const id of ids) {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'project',
+          entityId: id,
+          eventType: 'bulk-deleted',
+          data: { count: result.count },
+          createdById: deletedById,
+        });
+      }
+    }
+    return result;
+  }
 
-    return { count: result.count };
+  async bulkStatusUpdate(ids: string[], status: string, updatedById?: string, organizationId?: string): Promise<{ count: number }> {
+    const result = await super.bulkStatusUpdate(ids, status, organizationId);
+    await this.auditService.log({
+      action: 'project.bulk-status-updated',
+      userId: updatedById,
+      resource: 'project',
+      resourceId: ids.join(','),
+      metadata: { count: result.count, status, ids },
+    });
+    return result;
   }
 
   async getActivities(id: string) {
-    const startTime = Date.now();
+    const project = await this.client.findFirst({ where: { id, isDeleted: false } });
+    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
 
-    const project = await this.prisma.project.findFirst({
-      where: { id, isDeleted: false },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    const activities = await this.prisma.projectActivity.findMany({
+    return this.prisma.projectActivity.findMany({
       where: { projectId: id },
       orderBy: { performedAt: 'desc' },
     });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /project/:id/activities - ID: ${id}, Count: ${activities.length}, Time: ${executionTime}ms`);
-
-    return activities;
   }
 
   async getTasks(id: string) {
-    const startTime = Date.now();
+    const project = await this.client.findFirst({ where: { id, isDeleted: false } });
+    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
 
-    const project = await this.prisma.project.findFirst({
-      where: { id, isDeleted: false },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    const tasks = await this.prisma.projectTask.findMany({
+    return this.prisma.projectTask.findMany({
       where: { projectId: id },
       orderBy: { createdAt: 'desc' },
     });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /project/:id/tasks - ID: ${id}, Count: ${tasks.length}, Time: ${executionTime}ms`);
-
-    return tasks;
   }
 
-  async createTask(projectId: string, data: CreateTaskDto) {
-    const startTime = Date.now();
+  async createTask(projectId: string, data: CreateTaskDto, organizationId?: string) {
+    const where: any = { id: projectId, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const project = await this.client.findFirst({ where });
+    if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, isDeleted: false },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${projectId} not found`);
-    }
-
-    const task = await this.prisma.projectTask.create({
+    const createdTask = await this.prisma.projectTask.create({
       data: {
-        projectId,
-        title: data.title,
-        description: data.description,
-        assignedTo: data.assignedTo,
-        assignedToName: data.assignedToName,
+        projectId, title: data.title, description: data.description,
+        assignedTo: data.assignedTo, assignedToName: data.assignedToName,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        priority: data.priority,
-        dependencies: data.dependencies || [],
+        priority: data.priority, dependencies: data.dependencies || [],
       },
     });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`POST /project/:id/tasks - ProjectId: ${projectId}, TaskId: ${task.id}, Time: ${executionTime}ms`);
-
-    return task;
-  }
-
-  async updateTask(projectId: string, taskId: string, data: UpdateTaskDto) {
-    const startTime = Date.now();
-
-    const task = await this.prisma.projectTask.findFirst({
-      where: { id: taskId, projectId },
+    await this.auditService.log({
+      action: 'project.task-created',
+      resource: 'project',
+      resourceId: projectId,
+      metadata: { taskId: createdTask.id, title: data.title },
     });
 
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
-    }
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: projectId,
+      eventType: 'task-created',
+      data: { taskId: createdTask.id, title: data.title },
+    });
+
+    return createdTask;
+  }
+
+  async updateTask(projectId: string, taskId: string, data: UpdateTaskDto, updatedById?: string, organizationId?: string) {
+    const where: any = { id: projectId, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const project = await this.client.findFirst({ where });
+    if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
+
+    const task = await this.prisma.projectTask.findFirst({ where: { id: taskId, projectId } });
+    if (!task) throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
 
     const updated = await this.prisma.projectTask.update({
       where: { id: taskId },
-      data: {
-        ...data,
-        ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {}),
-      },
+      data: { ...data, ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {}) },
     });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`PATCH /project/:id/tasks/:taskId - TaskId: ${taskId}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'project.task-updated',
+      userId: updatedById,
+      resource: 'project',
+      resourceId: projectId,
+      metadata: { taskId, changes: Object.keys(data) },
+    });
+
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: projectId,
+      eventType: 'task-updated',
+      data: { taskId, changes: Object.keys(data) },
+      createdById: updatedById,
+    });
 
     return updated;
   }
 
-  async deleteTask(projectId: string, taskId: string) {
-    const startTime = Date.now();
+  async deleteTask(projectId: string, taskId: string, deletedById?: string, organizationId?: string) {
+    const where: any = { id: projectId, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const project = await this.client.findFirst({ where });
+    if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
-    const task = await this.prisma.projectTask.findFirst({
-      where: { id: taskId, projectId },
-    });
-
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
-    }
-
+    const task = await this.prisma.projectTask.findFirst({ where: { id: taskId, projectId } });
+    if (!task) throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
     await this.prisma.projectTask.delete({ where: { id: taskId } });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`DELETE /project/:id/tasks/:taskId - TaskId: ${taskId}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'project.task-deleted',
+      userId: deletedById,
+      resource: 'project',
+      resourceId: projectId,
+      metadata: { taskId, title: task.title },
+    });
+
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'project',
+      entityId: projectId,
+      eventType: 'task-deleted',
+      data: { taskId, title: task.title },
+      createdById: deletedById,
+    });
   }
 }
