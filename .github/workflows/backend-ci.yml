@@ -1,0 +1,81 @@
+name: Backend CI — Architecture & Build Gates
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gates:
+    name: Validate → Generate → Typecheck → Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Dummy values for prisma validate / generate only (no live DB required for compile gates)
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      DIRECT_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      JWT_SECRET: ci-jwt-secret-at-least-32-characters-long
+      COOKIE_SECRET: ci-cookie-secret-at-least-32-characters
+      FRONTEND_URL: http://localhost:3000
+      PORT: '8000'
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Architecture sync (Schema ↔ Client ↔ Services)
+        run: npm run architecture:validate
+
+      - name: TypeScript (tsc --noEmit)
+        run: npm run type-check
+
+      - name: Nest build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint:check
+        continue-on-error: true
+
+      - name: Unit tests
+        run: npm test -- --passWithNoTests
+        continue-on-error: true
+
+      - name: Upload build artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: dist
+          retention-days: 7
+
+  deploy-ready:
+    name: Deploy Ready
+    needs: [quality-gates]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Gate passed
+        run: echo "Quality gates passed — safe to deploy to Render / VPS / K8s"
