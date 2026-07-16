@@ -94,21 +94,55 @@ See `.env.example` for the full contract. Critical keys:
 
 Moving hosts = change `.env` only. Switch mail providers via `MAIL_PROVIDER` + `SMTP_*` (Gmail → Zoho → Hostinger SMTP) without code changes.
 
-## Render SMTP / IPv6 note
+## Render mail / SMTP egress (critical)
 
-On some Render networks, DNS for `smtp.gmail.com` returns IPv6 first and Node connects to an unreachable IPv6 address (`ENETUNREACH` / `ETIMEDOUT`). That blocks OTP send with `503` before any OTP row is stored (correct fail-safe).
+Two separate production failure modes appear in logs:
 
-Mitigation already in the mail transport:
+1. **IPv6 unreachable** — DNS returns Gmail AAAA (`2607:…`), Node connects over IPv6 → `ENETUNREACH`.
+2. **SMTP egress blocked** — IPv4 resolves (`172.x…`) but TCP to `:587` / `:465` times out. Common on **Render free tier** (outbound SMTP ports 25/465/587 blocked since 2025-09).
 
-- `SMTP_IP_FAMILY=4` (default) — resolve and connect over IPv4 only (no hostname fallback that reopens AAAA)
-- Explicit timeouts: connection 10s / greeting 10s / socket 15s / DNS 5s
-- Auto-recovery only for transient network failures (not auth failures): 5s → 15s → 30s → 1m → 5m
+Mitigations in this codebase:
 
-After deploy, expect boot logs:
+- `SMTP_IP_FAMILY=4` — resolve/connect IPv4 only
+- Bounded timeouts: connection 10s / greeting 10s / socket 15s / DNS 5s
+- Recovery backoff: 5s → 15s → 30s → 1m → 5m
+- **`MAIL_PROVIDER=auto` + `RESEND_API_KEY`** — if SMTP egress fails, switch to Resend HTTPS (port 443)
 
-`SMTP endpoint resolved` (IPv4 `connectHost`) → `Transport Verify Result SUCCESS` → mail state `READY`.
+### Render Dashboard env (required for OTP on free / blocked SMTP)
 
-Render Dashboard must also set `SMTP_IP_FAMILY=4` if not applying the Blueprint.
+```
+MAIL_PROVIDER=auto
+RESEND_API_KEY=re_xxxxxxxx
+RESEND_FROM_EMAIL=noreply@your-verified-domain.com
+SMTP_IP_FAMILY=4
+```
+
+Create a free API key at https://resend.com — verify a sending domain (Gmail addresses cannot be used as Resend `from` without domain verify).
+
+Local/dev can keep `MAIL_PROVIDER=smtp` with Gmail App Password (SMTP works on your PC).
+
+After deploy, expect either:
+
+- `Transport Verify Result SUCCESS` with `deliveryChannel: smtp`, or
+- `Switching to Resend HTTPS fallback` → `deliveryChannel: resend` → `READY`
+
+Then `GET /mail/health` → `state: READY`.
+
+### If logs show IPv4 `resolvedAddress` but still `SMTP_TIMEOUT`
+
+IPv4 preference is working. The remaining failure is **platform egress**, not DNS:
+
+- Render **free** web services block outbound SMTP ports `25`, `465`, and `587` (since 2025-09-26).
+- Paid plans (Starter+) allow `465`/`587`; port `25` stays blocked on AWS.
+- Local PC can reach Gmail SMTP while free Render cannot.
+
+Fixes (env / plan only — no OTP code changes):
+
+1. Set `MAIL_PROVIDER=auto` + `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (HTTPS, works on free Render), **or**
+2. Upgrade the Render web service to a paid plan that allows SMTP `465`/`587`, **or**
+3. Move SMTP to Hostinger / another host that allows egress.
+
+Confirm with `GET /mail/status`: `deliveryChannel` is `smtp` or `resend`, and `mail.state=READY`.
 
 ## Architecture validation
 

@@ -18,6 +18,7 @@ export const SMTP_FAILURE_TYPES = [
   'SMTP_PROVIDER_REJECTED',
   'SMTP_RATE_LIMIT',
   'SMTP_NOT_CONFIGURED',
+  'SMTP_EGRESS_BLOCKED',
   'SMTP_UNKNOWN',
 ] as const;
 
@@ -33,6 +34,7 @@ export const TRANSIENT_SMTP_FAILURES = [
   'SMTP_CONNECTION_REFUSED',
   'SMTP_RATE_LIMIT',
   'SMTP_TLS_ERROR',
+  'SMTP_EGRESS_BLOCKED',
   'SMTP_UNKNOWN',
 ] as const;
 
@@ -48,4 +50,19 @@ export const MAIL_PROVIDERS = [
   'ses',
   'sendgrid',
   'mailgun',
+  'resend',
+  'auto',
 ] as const;
+
+/** Failures that usually mean the host blocks outbound SMTP (use HTTPS provider). */
+export const SMTP_EGRESS_FAILURES = [
+  'SMTP_TIMEOUT',
+  'SMTP_IPV4_ERROR',
+  'SMTP_IPV6_ERROR',
+  'SMTP_CONNECTION_REFUSED',
+  'SMTP_EGRESS_BLOCKED',
+] as const;
+
+export function isSmtpEgressFailure(failureType: string | null | undefined): boolean {
+  return !!failureType && (SMTP_EGRESS_FAILURES as readonly string[]).includes(failureType);
+}

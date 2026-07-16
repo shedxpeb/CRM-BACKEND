@@ -1,5 +1,10 @@
 import { ConfigService } from '@nestjs/config';
-import type { MailProviderName, MailTransportSnapshot, SmtpIpFamily } from './mail.types';
+import type {
+  MailDeliveryChannel,
+  MailProviderName,
+  MailTransportSnapshot,
+  SmtpIpFamily,
+} from './mail.types';
 import { MAIL_PROVIDERS } from './mail.constants';
 
 export function resolveMailProvider(config: ConfigService): MailProviderName {
@@ -17,9 +22,17 @@ export function resolveSmtpIpFamily(config: ConfigService): SmtpIpFamily {
   return 4;
 }
 
+export function hasResendApiKey(config: ConfigService): boolean {
+  return !!(config.get<string>('mail.resendApiKey') || process.env.RESEND_API_KEY || '').trim();
+}
+
+export function getResendApiKey(config: ConfigService): string {
+  return (config.get<string>('mail.resendApiKey') || process.env.RESEND_API_KEY || '').trim();
+}
+
 export function getMailTransportSnapshot(
   config: ConfigService,
-  extras?: { resolvedAddress?: string | null },
+  extras?: { resolvedAddress?: string | null; deliveryChannel?: MailDeliveryChannel },
 ): MailTransportSnapshot {
   const host = config.get<string>('smtp.host') || null;
   const user = config.get<string>('smtp.user') || null;
@@ -28,13 +41,21 @@ export function getMailTransportSnapshot(
   const secure = config.get<boolean>('smtp.secure') === true || port === 465;
   const pool = config.get<boolean>('smtp.pool') !== false;
   const verifyOnBoot = config.get<boolean>('smtp.verifyOnBoot') !== false;
-  const fromEmail = config.get<string>('smtp.fromEmail') || user || null;
+  const fromEmail =
+    config.get<string>('mail.resendFromEmail') ||
+    config.get<string>('smtp.fromEmail') ||
+    user ||
+    null;
   const fromName = config.get<string>('smtp.fromName') || null;
+  const provider = resolveMailProvider(config);
+  const deliveryChannel: MailDeliveryChannel =
+    extras?.deliveryChannel || (provider === 'resend' ? 'resend' : 'smtp');
 
   return {
     timestamp: new Date().toISOString(),
     nodeEnv: config.get<string>('nodeEnv') || 'development',
-    provider: resolveMailProvider(config),
+    provider,
+    deliveryChannel,
     host,
     port,
     secure,
@@ -50,9 +71,14 @@ export function getMailTransportSnapshot(
     fromName,
     smtpUserExists: !!user,
     smtpPassExists: !!pass,
+    resendApiKeyExists: hasResendApiKey(config),
   };
 }
 
 export function isSmtpFullyConfigured(snapshot: MailTransportSnapshot): boolean {
   return !!(snapshot.host && snapshot.smtpUserExists && snapshot.smtpPassExists);
+}
+
+export function isResendConfigured(config: ConfigService): boolean {
+  return hasResendApiKey(config);
 }

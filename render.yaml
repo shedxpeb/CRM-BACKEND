@@ -27,8 +27,13 @@ services:
         sync: false
       - key: BACKEND_URL
         sync: false
+      # auto = SMTP first, Resend HTTPS fallback when Render blocks SMTP egress
       - key: MAIL_PROVIDER
-        value: smtp
+        value: auto
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

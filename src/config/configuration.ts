@@ -78,9 +78,12 @@ export default () => ({
     dnsTimeoutMs: parseInt(process.env.SMTP_DNS_TIMEOUT_MS || '5000', 10),
   },
   mail: {
+    // smtp | gmail | zoho | resend | auto (SMTP first, Resend HTTPS fallback)
     provider: (process.env.MAIL_PROVIDER || 'smtp').toLowerCase(),
     queueEnabled: process.env.MAIL_QUEUE_ENABLED !== 'false',
     queueConcurrency: parseInt(process.env.MAIL_QUEUE_CONCURRENCY || '2', 10),
     queueMaxAttempts: parseInt(process.env.MAIL_QUEUE_MAX_ATTEMPTS || '5', 10),
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    resendFromEmail: process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
   },
 });

@@ -22,10 +22,13 @@ export type MailJobStatus =
 /** 4 = IPv4 only (recommended on Render), 6 = IPv6 only, 0 = OS default. */
 export type SmtpIpFamily = 0 | 4 | 6;
 
+export type MailDeliveryChannel = 'smtp' | 'resend';
+
 export interface MailTransportSnapshot {
   timestamp: string;
   nodeEnv: string;
   provider: MailProviderName;
+  deliveryChannel: MailDeliveryChannel;
   host: string | null;
   port: number;
   secure: boolean;
@@ -41,6 +44,7 @@ export interface MailTransportSnapshot {
   fromName: string | null;
   smtpUserExists: boolean;
   smtpPassExists: boolean;
+  resendApiKeyExists: boolean;
 }
 
 export interface MailHealthSnapshot {
