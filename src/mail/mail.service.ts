@@ -4,6 +4,7 @@ import * as nodemailer from 'nodemailer';
 import { BrandingService } from './branding.service';
 import { MailQueueService, MailJob } from './mail-queue.service';
 import { buildMailTemplate, MailTemplateId, TemplateVars } from './template.engine';
+import { buildMailHeaders, formatFromAddress } from './mail.headers';
 
 @Injectable()
 export class MailService implements OnModuleInit {
@@ -83,20 +84,38 @@ export class MailService implements OnModuleInit {
       ...vars,
       email: (vars.email as string) || to,
     };
+
     const built = buildMailTemplate(templateId, merged);
+
+    // Always enqueue both text + html (multipart/alternative at send time)
+    if (!built.text?.trim() || !built.html?.trim()) {
+      this.logger.error(`Template ${templateId} missing text or html — refusing to queue incomplete message`);
+      return;
+    }
+
     this.queue.enqueue({
       to,
       subject: built.subject,
       text: built.text,
       html: built.html,
+      templateId,
     });
   }
 
-  /** @deprecated use sendTemplate — kept for gradual migration */
-  async sendOtpEmail(email: string, otp: string, purpose: 'registration' | 'forgot-password', organizationId?: string): Promise<void> {
+  async sendOtpEmail(
+    email: string,
+    otp: string,
+    purpose: 'registration' | 'forgot-password',
+    organizationId?: string,
+  ): Promise<void> {
     const expiryMinutes = this.config.get<number>('otp.expiryMinutes') || 10;
     const templateId: MailTemplateId = purpose === 'registration' ? 'register_otp' : 'forgot_password_otp';
-    await this.sendTemplate(email, templateId, { otp, expiry: `${expiryMinutes} minutes`, email }, organizationId);
+    await this.sendTemplate(
+      email,
+      templateId,
+      { otp, expiry: `${expiryMinutes} minutes`, email },
+      organizationId,
+    );
   }
 
   async sendWelcomeEmail(email: string, name: string, organizationId?: string): Promise<void> {
@@ -109,7 +128,18 @@ export class MailService implements OnModuleInit {
   }
 
   async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    this.queue.enqueue({ to, subject, text, html });
+    // Raw sends must still include plain text
+    const plain = text?.trim() || (html ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : '');
+    if (!plain) {
+      this.logger.error('Refusing to send email without plain-text body');
+      return;
+    }
+    this.queue.enqueue({
+      to,
+      subject,
+      text: plain,
+      html: html || undefined,
+    });
   }
 
   private async deliver(job: MailJob): Promise<void> {
@@ -118,18 +148,50 @@ export class MailService implements OnModuleInit {
       return;
     }
 
-    const fromName = this.config.get<string>('smtp.fromName') || 'App';
-    const fromEmail = this.config.get<string>('smtp.fromEmail') || this.config.get<string>('smtp.user');
+    const fromName = this.config.get<string>('smtp.fromName') || this.config.get<string>('branding.companyName') || 'Account';
+    const fromEmail =
+      this.config.get<string>('smtp.fromEmail') ||
+      this.config.get<string>('smtp.user') ||
+      '';
+    const supportEmail =
+      this.config.get<string>('branding.supportEmail') ||
+      fromEmail;
+    const appName = this.config.get<string>('branding.companyName') || 'App';
+
+    if (!fromEmail) {
+      this.logger.error('SMTP_FROM_EMAIL / SMTP_USER missing — cannot deliver');
+      return;
+    }
+
+    // Require multipart: text always present; html optional but preferred
+    if (!job.text?.trim()) {
+      this.logger.error(`Missing plain-text body for ${job.to} — aborting send`);
+      return;
+    }
+
+    const headers = buildMailHeaders({
+      fromName,
+      fromEmail,
+      to: job.to,
+      replyTo: supportEmail || fromEmail,
+      subject: job.subject,
+      appName,
+    });
 
     try {
       await this.transporter.sendMail({
-        from: `"${fromName}" <${fromEmail}>`,
+        from: formatFromAddress(fromName, fromEmail),
         to: job.to,
         subject: job.subject,
+        // Nodemailer builds multipart/alternative when both text + html are set
         text: job.text,
-        html: job.html,
+        html: job.html && job.html.trim() ? job.html : undefined,
+        replyTo: supportEmail || fromEmail,
+        headers,
+        date: new Date(),
+        priority: 'normal',
       });
-      this.logger.log(`Email delivered to ${job.to}: ${job.subject}`);
+      this.logger.log(`Email delivered to ${job.to}: ${job.subject}${job.templateId ? ` [${job.templateId}]` : ''}`);
     } catch (error: any) {
       this.logger.error(`Failed to deliver email to ${job.to}: ${error?.message || error}`);
       throw error;

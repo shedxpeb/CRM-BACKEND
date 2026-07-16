@@ -1,0 +1,49 @@
+# Render Blueprint — change host later without changing application code.
+# Only environment variables differ between Render / Hostinger / AWS / etc.
+services:
+  - type: web
+    name: peb-crm-api
+    runtime: node
+    plan: starter
+    region: oregon
+    # CRITICAL: always generate Prisma Client before tsc/nest build
+    buildCommand: npm ci && npx prisma generate && npm run architecture:validate && npm run type-check && npm run build
+    startCommand: npx prisma migrate deploy && node dist/main.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8000"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: COOKIE_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: BRAND_COMPANY_NAME
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        value: lax

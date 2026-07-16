@@ -1,5 +1,15 @@
 # PEB-CRM Backend
 
+## Quality gates (required before deploy)
+
+```bash
+npm run ci
+```
+
+Runs: `prisma validate` → `prisma generate` → architecture sync → `tsc --noEmit` → `nest build`.
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for Render build command, branch strategy, and env contract.
+
 ## Supported Runtime
 
 - Node.js `22.x` LTS

@@ -7,6 +7,7 @@ export interface MailJob {
   subject: string;
   text: string;
   html?: string;
+  templateId?: string;
   attempts: number;
 }
 
