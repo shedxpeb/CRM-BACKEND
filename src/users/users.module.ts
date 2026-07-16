@@ -7,4 +7,6 @@ import { UsersService } from './users.service';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule {
+  static readonly moduleCapability = { capability: 'users' } as const;
+}

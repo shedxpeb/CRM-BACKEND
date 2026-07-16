@@ -49,6 +49,9 @@ jobs:
       - name: Architecture sync (Schema ↔ Client ↔ Services)
         run: npm run architecture:validate
 
+      - name: Mail template QA
+        run: npm run mail:qa
+
       - name: TypeScript (tsc --noEmit)
         run: npm run type-check
 

@@ -79,6 +79,14 @@ export class SessionService {
 
   async touchSession(sessionId: string) {
     const now = new Date();
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { lastActivity: true },
+    });
+    // Throttle DB writes: only touch if last activity older than 60s
+    if (session?.lastActivity && now.getTime() - session.lastActivity.getTime() < 60_000) {
+      return;
+    }
     await this.prisma.session.update({
       where: { id: sessionId },
       data: {

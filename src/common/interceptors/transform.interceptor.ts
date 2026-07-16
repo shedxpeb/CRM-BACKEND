@@ -26,7 +26,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
     const requestId = request.requestId || 'unknown';
     const path = request.url?.split('?')[0] || '';
 
-    if (path === '/health' || path.startsWith('/health/')) {
+    if (path === '/health' || path.startsWith('/health/') || path === '/live' || path === '/ready' || path === '/') {
       return next.handle();
     }
 

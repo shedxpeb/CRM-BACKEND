@@ -20,8 +20,9 @@ This runs, in order:
 1. `prisma validate`
 2. `prisma generate`
 3. `architecture:validate` (Schema ↔ Client ↔ Services)
-4. `tsc --noEmit`
-5. `nest build`
+4. `mail:qa`
+5. `tsc --noEmit`
+6. `nest build`
 
 If any step fails → **do not deploy**.
 
@@ -35,9 +36,10 @@ Push / PR
   → prisma validate
   → prisma generate
   → architecture validate
+  → mail:qa
   → tsc --noEmit
   → nest build
-  → (lint / tests)
+  → (lint / tests — currently non-blocking)
   → Deploy Ready signal
 ```
 
@@ -52,10 +54,19 @@ npm ci && npx prisma generate && npm run architecture:validate && npm run type-c
 Start:
 
 ```bash
-npx prisma migrate deploy && node dist/main.js
+node scripts/deploy-db.mjs && node dist/main.js
 ```
 
-Health check: `GET /health`
+`deploy-db.mjs` runs `prisma migrate deploy`, then falls back to `prisma db push` if migrations are behind the schema (current state until a baseline migration is approved). Set `PRISMA_DEPLOY_MODE=push` to skip migrate and push only.
+
+Health probes:
+
+| Path | Purpose |
+|------|---------|
+| `GET /live` | Liveness (Render `healthCheckPath`) |
+| `GET /ready` | Readiness (DB; SMTP if `SMTP_REQUIRED=true`) |
+| `GET /health` | Deep check (DB + memory) |
+| `GET /` | Service identity |
 
 ## Branch strategy
 
@@ -76,8 +87,10 @@ See `.env.example` for the full contract. Critical keys:
 - `DATABASE_URL` / `DIRECT_DATABASE_URL`
 - `JWT_SECRET` / `COOKIE_SECRET`
 - `FRONTEND_URL` / `BACKEND_URL`
-- `SMTP_*`
-- `COOKIE_SECURE` / `COOKIE_SAME_SITE` / `COOKIE_DOMAIN`
+- `SMTP_*` / `SMTP_REQUIRED`
+- `COOKIE_SECURE` / `COOKIE_SAME_SITE` (use `none` + `secure` for cross-site SPA)
+- Branding: `BRAND_*`
+- Sessions: `SESSION_*`
 
 Moving hosts = change `.env` only.
 

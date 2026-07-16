@@ -19,6 +19,7 @@ import { SessionService } from './services/session.service';
 import { AuditService } from './services/audit.service';
 import { LoginProtectionService } from './services/login-protection.service';
 import { OtpService, OtpPurposeKey } from './services/otp.service';
+import { bootstrapOrganizationSystem } from '../../prisma/system-bootstrap';
 
 @Injectable()
 export class AuthService {
@@ -137,7 +138,22 @@ export class AuthService {
     }
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
-    if (existingUser) throw new BadRequestException('An account with this email already exists');
+    if (existingUser) {
+      if (existingUser.isVerified) throw new BadRequestException('An account with this email already exists');
+      const otp = await this.otpService.issue({
+        email: existingUser.email,
+        purpose: 'REGISTRATION',
+        userId: existingUser.id,
+        userName: existingUser.name || undefined,
+        organizationId: existingUser.organizationId,
+        isResend: true,
+      });
+      return {
+        message: 'Your account is awaiting email verification. A new OTP has been sent.',
+        email: existingUser.email,
+        ...otp,
+      };
+    }
 
     if (dto.companyName) {
       const existingOrg = await this.prisma.organization.findFirst({
@@ -166,26 +182,12 @@ export class AuthService {
         },
       });
 
-      for (const role of [
-        { name: 'Owner', permissions: ['*'] },
-        { name: 'Admin', permissions: [] },
-        { name: 'Employee', permissions: [] },
-      ]) {
-        await tx.role.create({
-          data: {
-            organizationId: organization.id,
-            name: role.name,
-            permissions: role.permissions,
-            isSystem: true,
-            createdById: user.id,
-          },
-        });
-      }
+      await bootstrapOrganizationSystem(tx, organization.id, user.id);
 
       return { organization, user };
     });
 
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email,
       purpose: 'REGISTRATION',
       userId: result.user.id,
@@ -203,6 +205,7 @@ export class AuthService {
     return {
       message: 'Account created. Please verify your email with the OTP sent.',
       email,
+      ...otp,
     };
   }
 
@@ -211,7 +214,7 @@ export class AuthService {
     if (!user) throw new BadRequestException('No account found with this email');
     if (user.isVerified) throw new BadRequestException('Email already verified.');
 
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email: user.email,
       purpose: 'REGISTRATION',
       userId: user.id,
@@ -219,7 +222,7 @@ export class AuthService {
       organizationId: user.organizationId,
     });
 
-    return { message: 'OTP sent successfully.', email: user.email };
+    return { message: 'OTP sent successfully.', email: user.email, ...otp };
   }
 
   async verifyRegistrationOtp(dto: VerifyOtpDto | VerifyRegistrationOtpDtoLike, ip?: string, ua?: string) {
@@ -321,8 +324,20 @@ export class AuthService {
 
     if (!storedToken) throw new UnauthorizedException('Invalid refresh token');
 
-    // Replay protection: reuse of revoked token → revoke entire session family
+    // Replay protection with grace for concurrent multi-tab refresh
     if (storedToken.isRevoked) {
+      const graceMs = parseInt(process.env.REFRESH_REUSE_GRACE_MS || '10000', 10);
+      const revokedRecently =
+        storedToken.revokedAt &&
+        Date.now() - storedToken.revokedAt.getTime() < graceMs &&
+        storedToken.replacedByTokenHash;
+
+      if (revokedRecently) {
+        // Concurrent refresh race: return the already-rotated token's session access token
+        // without treating this as theft. Client must use latest cookie; reject only if no replacement.
+        throw new UnauthorizedException('Refresh token already rotated. Retry with the latest token.');
+      }
+
       await this.sessionService.revokeAllUserSessions(storedToken.userId);
       throw new UnauthorizedException('Refresh token has been revoked');
     }
@@ -446,7 +461,7 @@ export class AuthService {
       return { message: 'If an account exists for this email, an OTP has been sent.' };
     }
 
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email,
       purpose: 'FORGOT_PASSWORD',
       userId: user.id,
@@ -461,7 +476,7 @@ export class AuthService {
       metadata: { email },
     });
 
-    return { message: 'If an account exists for this email, an OTP has been sent.', email };
+    return { message: 'If an account exists for this email, an OTP has been sent.', email, ...otp };
   }
 
   async verifyForgotPasswordOtp(dto: VerifyForgotPasswordOtpDto) {
@@ -469,7 +484,6 @@ export class AuthService {
       email: dto.email.toLowerCase(),
       purpose: 'FORGOT_PASSWORD',
       code: dto.otp,
-      consume: false, // allow reuse for reset-password step
     });
     return { message: 'OTP verified successfully.', email: dto.email.toLowerCase() };
   }
@@ -566,7 +580,7 @@ export class AuthService {
     const taken = await this.prisma.user.findUnique({ where: { email: newEmail } });
     if (taken) throw new BadRequestException('An account with this email already exists');
 
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email: newEmail,
       purpose: 'CHANGE_EMAIL',
       userId: user.id,
@@ -575,7 +589,7 @@ export class AuthService {
       metadata: { previousEmail: user.email, pendingEmail: newEmail },
     });
 
-    return { message: 'OTP sent successfully.', email: newEmail };
+    return { message: 'OTP sent successfully.', email: newEmail, ...otp };
   }
 
   async verifyChangeEmail(userId: string, dto: VerifyChangeEmailDto, ip?: string, ua?: string) {
@@ -616,14 +630,14 @@ export class AuthService {
     }
 
     const email = (dto?.email || user.email).toLowerCase();
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email,
       purpose: 'EMAIL_VERIFICATION',
       userId: user.id,
       userName: user.name || undefined,
       organizationId: user.organizationId,
     });
-    return { message: 'OTP sent successfully.', email };
+    return { message: 'OTP sent successfully.', email, ...otp };
   }
 
   async verifyEmail(dto: VerifyEmailDto) {
@@ -659,7 +673,7 @@ export class AuthService {
       return { message: 'If an account exists for this email, an OTP has been sent.' };
     }
 
-    await this.otpService.issue({
+    const otp = await this.otpService.issue({
       email,
       purpose,
       userId: user?.id,
@@ -668,7 +682,7 @@ export class AuthService {
       isResend: true,
     });
 
-    return { message: 'OTP sent successfully.', email };
+    return { message: 'OTP sent successfully.', email, ...otp };
   }
 
   // Aliases used by legacy routes

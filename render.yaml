@@ -8,8 +8,8 @@ services:
     region: oregon
     # CRITICAL: always generate Prisma Client before tsc/nest build
     buildCommand: npm ci && npx prisma generate && npm run architecture:validate && npm run type-check && npm run build
-    startCommand: npx prisma migrate deploy && node dist/main.js
-    healthCheckPath: /health
+    startCommand: node scripts/deploy-db.mjs && node dist/main.js
+    healthCheckPath: /live
     envVars:
       - key: NODE_ENV
         value: production
@@ -41,9 +41,23 @@ services:
         sync: false
       - key: SMTP_SECURE
         sync: false
+      - key: SMTP_REQUIRED
+        value: "true"
       - key: BRAND_COMPANY_NAME
+        sync: false
+      - key: BRAND_SUPPORT_EMAIL
         sync: false
       - key: COOKIE_SECURE
         value: "true"
       - key: COOKIE_SAME_SITE
-        value: lax
+        value: none
+      - key: SESSION_ABSOLUTE_DAYS
+        value: "1"
+      - key: SESSION_REMEMBER_ME_DAYS
+        value: "30"
+      - key: THROTTLE_LIMIT
+        value: "60"
+      - key: HEALTH_HEAP_MB
+        value: "1024"
+      - key: HEALTH_RSS_MB
+        value: "1536"

@@ -11,4 +11,6 @@ import { WorkflowModule } from '../workflow/workflow.module';
   providers: [TrackingService],
   exports: [TrackingService],
 })
-export class TrackingModule {}
+export class TrackingModule {
+  static readonly moduleCapability = { capability: 'tracking' } as const;
+}

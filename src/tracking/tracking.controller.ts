@@ -19,6 +19,7 @@ export class TrackingController {
   // ─── UNIFIED TRACKING ENDPOINT ─────────────────────────
 
   @Get(':entityType/:entityId')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get all tracking data for an entity (pipeline, status, timeline, comments, attachments, approvals, stage details)' })
   async getTracking(
     @Param('entityType') entityType: string,
@@ -56,6 +57,7 @@ export class TrackingController {
   }
 
   @Post(':entityType/:entityId/status')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Change entity status' })
   async changeStatus(
     @Param('entityType') entityType: string,
@@ -193,7 +195,7 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.respondToApproval(approvalId, body.status, u.organizationId, body.comment);
+    const data = await this.trackingService.respondToApproval(approvalId, body.status, u.organizationId, u.id, body.comment);
     return { message: `Approval ${body.status.toLowerCase()}`, data };
   }
 
@@ -217,6 +219,10 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
+    // Only allow notifying self unless owner/admin (defense in depth — no arbitrary notify)
+    if (body.userId !== u.id && user?.role !== 'OWNER' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+      throw new UnauthorizedException();
+    }
     const data = await this.trackingService.createNotification({ ...body, organizationId: u.organizationId });
     return { message: 'Notification created', data };
   }

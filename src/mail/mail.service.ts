@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { BrandingService } from './branding.service';
@@ -68,6 +68,33 @@ export class MailService implements OnModuleInit {
     vars: TemplateVars = {},
     organizationId?: string | null,
   ): Promise<void> {
+    const job = await this.buildTemplateJob(to, templateId, vars, organizationId);
+
+    // Transactional emails are intentionally queued; OTPs use sendTemplateNow
+    // so the API only reports success after SMTP accepts the message.
+    this.queue.enqueue(job);
+  }
+
+  /**
+   * Delivers a security-sensitive message synchronously. Nodemailer resolving
+   * means the configured SMTP server accepted responsibility for delivery.
+   */
+  async sendTemplateNow(
+    to: string,
+    templateId: MailTemplateId,
+    vars: TemplateVars = {},
+    organizationId?: string | null,
+  ): Promise<void> {
+    const job = await this.buildTemplateJob(to, templateId, vars, organizationId);
+    await this.deliver({ ...job, id: `mail_sync_${Date.now()}`, attempts: 0 });
+  }
+
+  private async buildTemplateJob(
+    to: string,
+    templateId: MailTemplateId,
+    vars: TemplateVars = {},
+    organizationId?: string | null,
+  ): Promise<Omit<MailJob, 'id' | 'attempts'>> {
     const brand = await this.branding.resolve(organizationId);
     const merged: TemplateVars = {
       companyName: brand.companyName,
@@ -90,16 +117,22 @@ export class MailService implements OnModuleInit {
     // Always enqueue both text + html (multipart/alternative at send time)
     if (!built.text?.trim() || !built.html?.trim()) {
       this.logger.error(`Template ${templateId} missing text or html — refusing to queue incomplete message`);
-      return;
+      throw new ServiceUnavailableException('Email template is unavailable');
     }
 
-    this.queue.enqueue({
+    const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
+    if (nodeEnv === 'production' && !this.smtpReady) {
+      this.logger.error(`SMTP not ready — refusing to queue ${templateId} to ${to}`);
+      throw new ServiceUnavailableException('Email delivery is temporarily unavailable');
+    }
+
+    return {
       to,
       subject: built.subject,
       text: built.text,
       html: built.html,
       templateId,
-    });
+    };
   }
 
   async sendOtpEmail(
@@ -144,7 +177,11 @@ export class MailService implements OnModuleInit {
 
   private async deliver(job: MailJob): Promise<void> {
     if (!this.transporter) {
-      this.logger.log(`[MAIL-FALLBACK] To=${job.to} Subject=${job.subject}`);
+      const nodeEnv = this.config.get<string>('nodeEnv') || 'development';
+      this.logger.error(`[MAIL-FALLBACK] To=${job.to} Subject=${job.subject} — transporter missing`);
+      if (nodeEnv === 'production') {
+        throw new ServiceUnavailableException('SMTP transporter is not configured');
+      }
       return;
     }
 
@@ -160,13 +197,13 @@ export class MailService implements OnModuleInit {
 
     if (!fromEmail) {
       this.logger.error('SMTP_FROM_EMAIL / SMTP_USER missing — cannot deliver');
-      return;
+      throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
     }
 
     // Require multipart: text always present; html optional but preferred
     if (!job.text?.trim()) {
       this.logger.error(`Missing plain-text body for ${job.to} — aborting send`);
-      return;
+      throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
     }
 
     const headers = buildMailHeaders({
@@ -179,7 +216,7 @@ export class MailService implements OnModuleInit {
     });
 
     try {
-      await this.transporter.sendMail({
+      const result = await this.transporter.sendMail({
         from: formatFromAddress(fromName, fromEmail),
         to: job.to,
         subject: job.subject,
@@ -191,7 +228,10 @@ export class MailService implements OnModuleInit {
         date: new Date(),
         priority: 'normal',
       });
-      this.logger.log(`Email delivered to ${job.to}: ${job.subject}${job.templateId ? ` [${job.templateId}]` : ''}`);
+      if (!result.accepted?.length) {
+        throw new ServiceUnavailableException('SMTP did not accept the email for delivery');
+      }
+      this.logger.log(`Email accepted by SMTP for ${job.to}: ${job.subject}${job.templateId ? ` [${job.templateId}]` : ''}`);
     } catch (error: any) {
       this.logger.error(`Failed to deliver email to ${job.to}: ${error?.message || error}`);
       throw error;

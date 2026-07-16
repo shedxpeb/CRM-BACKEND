@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpPurpose } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -71,73 +71,98 @@ export class OtpService {
     organizationId?: string | null;
     metadata?: Record<string, unknown>;
     isResend?: boolean;
-  }): Promise<{ expiresInMinutes: number; resendAvailableInSeconds?: number }> {
+  }): Promise<{ expiresAt: Date; expiresInMinutes: number; resendAvailableInSeconds: number; resendCount: number }> {
     const email = params.email.toLowerCase().trim();
     const purpose = params.purpose as OtpPurpose;
 
-    const active = await this.prisma.otpChallenge.findFirst({
-      where: { email, purpose, consumedAt: null, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
+    const previous = await this.prisma.otpChallenge.findFirst({
+      where: { email, purpose, consumedAt: null },
+      orderBy: { lastSentAt: 'desc' },
     });
 
-    if (active) {
-      const sinceLast = (Date.now() - active.lastSentAt.getTime()) / 1000;
+    if (previous) {
+      const sinceLast = (Date.now() - previous.lastSentAt.getTime()) / 1000;
       if (sinceLast < this.resendCooldown()) {
         const wait = Math.ceil(this.resendCooldown() - sinceLast);
-        throw new BadRequestException(`Please wait ${wait} second(s) before requesting another OTP.`);
+        throw new BadRequestException({
+          message: `Please wait ${wait} second(s) before requesting another OTP.`,
+          code: 'OTP_RESEND_COOLDOWN',
+          retryAfterSeconds: wait,
+        });
       }
-      if (active.resendCount >= active.maxResends) {
-        throw new BadRequestException('Maximum OTP resend limit exceeded. Please try again later.');
+      if (previous.resendCount >= previous.maxResends) {
+        await this.audit('OTP_MAX_RESENDS_REACHED', params, { purpose: params.purpose });
+        throw new BadRequestException({
+          message: 'You have reached the maximum resend limit. Please try again later.',
+          code: 'OTP_MAX_RESENDS_REACHED',
+        });
       }
     }
-
-    // Invalidate previous active challenges for this purpose
-    await this.prisma.otpChallenge.updateMany({
-      where: { email, purpose, consumedAt: null },
-      data: { consumedAt: new Date() },
-    });
 
     const code = this.generateCode();
     const codeHash = await bcrypt.hash(code, this.rounds());
     const expiresAt = new Date(Date.now() + this.expiryMinutes() * 60 * 1000);
-    const resendCount = active ? active.resendCount + 1 : 0;
+    const resendCount = previous ? previous.resendCount + 1 : 0;
 
-    await this.prisma.otpChallenge.create({
-      data: {
+    await this.audit('OTP_REQUESTED', params, { purpose: params.purpose, isResend: !!params.isResend });
+    try {
+      await this.mail.sendTemplateNow(
         email,
-        userId: params.userId,
-        purpose,
-        codeHash,
-        expiresAt,
-        maxAttempts: this.maxAttempts(),
-        maxResends: this.maxResends(),
-        resendCount,
-        metadata: (params.metadata as any) || undefined,
-      },
-    });
-
-    // Clear legacy plaintext OTP fields if present
-    if (params.userId) {
-      await this.prisma.user.update({
-        where: { id: params.userId },
-        data: { otp: null, otpExpiry: null, otpAttempts: 0 },
-      }).catch(() => undefined);
+        PURPOSE_TEMPLATE[params.purpose],
+        {
+          userName: params.userName || email.split('@')[0],
+          otp: code,
+          expiry: `${this.expiryMinutes()} minutes`,
+          email,
+        },
+        params.organizationId,
+      );
+    } catch {
+      await this.audit('OTP_SEND_FAILED', params, { purpose: params.purpose });
+      this.logger.error(`OTP email was not accepted by SMTP for purpose=${params.purpose}`);
+      throw new ServiceUnavailableException("We couldn't send the verification code. Please try again.");
     }
 
-    await this.mail.sendTemplate(
-      email,
-      PURPOSE_TEMPLATE[params.purpose],
-      {
-        userName: params.userName || email.split('@')[0],
-        otp: code,
-        expiry: `${this.expiryMinutes()} minutes`,
-        email,
-      },
-      params.organizationId,
-    );
+    await this.prisma.$transaction(async (tx) => {
+      // A resend always invalidates the preceding code after SMTP acceptance.
+      await tx.otpChallenge.updateMany({
+        where: { email, purpose, consumedAt: null },
+        data: { consumedAt: new Date() },
+      });
 
-    this.logger.log(`OTP issued for ${email} purpose=${params.purpose}`);
-    return { expiresInMinutes: this.expiryMinutes() };
+      await tx.otpChallenge.create({
+        data: {
+          email,
+          userId: params.userId,
+          purpose,
+          codeHash,
+          expiresAt,
+          maxAttempts: this.maxAttempts(),
+          maxResends: this.maxResends(),
+          resendCount,
+          metadata: (params.metadata as any) || undefined,
+        },
+      });
+
+      if (params.userId) {
+        await tx.user.update({
+          where: { id: params.userId },
+          data: { otp: null, otpExpiry: null, otpAttempts: 0 },
+        });
+      }
+    });
+
+    await this.audit(params.isResend ? 'OTP_RESENT' : 'OTP_SENT', params, {
+      purpose: params.purpose,
+      resendCount,
+      expiresAt: expiresAt.toISOString(),
+    });
+    return {
+      expiresAt,
+      expiresInMinutes: this.expiryMinutes(),
+      resendAvailableInSeconds: this.resendCooldown(),
+      resendCount,
+    };
   }
 
   async verify(params: {
@@ -155,10 +180,15 @@ export class OtpService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!challenge) throw new BadRequestException('No OTP has been sent.');
-    if (new Date() > challenge.expiresAt) throw new BadRequestException('OTP expired.');
+    if (!challenge) throw new BadRequestException({ message: 'No OTP has been sent. Request a new OTP.', code: 'OTP_NOT_FOUND' });
+    if (new Date() > challenge.expiresAt) {
+      await this.prisma.otpChallenge.update({ where: { id: challenge.id }, data: { consumedAt: new Date() } });
+      await this.audit('OTP_EXPIRED', { email, purpose: params.purpose, userId: challenge.userId || undefined }, { purpose: params.purpose });
+      throw new BadRequestException({ message: 'OTP expired. Request a new OTP.', code: 'OTP_EXPIRED' });
+    }
     if (challenge.attempts >= challenge.maxAttempts) {
-      throw new BadRequestException('Maximum attempts exceeded.');
+      await this.audit('OTP_MAX_ATTEMPTS_REACHED', { email, purpose: params.purpose, userId: challenge.userId || undefined }, { purpose: params.purpose });
+      throw new BadRequestException({ message: 'Maximum attempts exceeded. Request a new OTP.', code: 'OTP_MAX_ATTEMPTS_REACHED', attemptsRemaining: 0 });
     }
 
     const ok = await bcrypt.compare(params.code.trim(), challenge.codeHash);
@@ -168,9 +198,18 @@ export class OtpService {
         data: { attempts: { increment: 1 } },
       });
       const remaining = challenge.maxAttempts - (challenge.attempts + 1);
-      throw new BadRequestException(
-        remaining > 0 ? `Invalid OTP. ${remaining} attempt(s) remaining.` : 'Invalid OTP. Maximum attempts exceeded.',
-      );
+      if (remaining === 0) {
+        await this.audit('OTP_MAX_ATTEMPTS_REACHED', { email, purpose: params.purpose, userId: challenge.userId || undefined }, { purpose: params.purpose });
+      } else {
+        await this.audit('OTP_VERIFICATION_FAILED', { email, purpose: params.purpose, userId: challenge.userId || undefined }, { purpose: params.purpose, attemptsRemaining: remaining });
+      }
+      throw new BadRequestException({
+        message: remaining > 0
+          ? `Incorrect verification code. Attempts remaining: ${remaining}`
+          : 'Incorrect verification code. Maximum attempts exceeded. Request a new OTP.',
+        code: remaining > 0 ? 'OTP_INVALID' : 'OTP_MAX_ATTEMPTS_REACHED',
+        attemptsRemaining: Math.max(0, remaining),
+      });
     }
 
     if (consume) {
@@ -179,6 +218,7 @@ export class OtpService {
         data: { consumedAt: new Date() },
       });
     }
+    await this.audit('OTP_VERIFICATION_SUCCESS', { email, purpose: params.purpose, userId: challenge.userId || undefined }, { purpose: params.purpose });
 
     const metadata =
       challenge.metadata && typeof challenge.metadata === 'object' && !Array.isArray(challenge.metadata)
@@ -186,5 +226,24 @@ export class OtpService {
         : null;
 
     return { challengeId: challenge.id, metadata, userId: challenge.userId };
+  }
+
+  private async audit(
+    action: string,
+    params: { userId?: string; organizationId?: string | null; email?: string; purpose?: OtpPurposeKey },
+    metadata: Record<string, unknown>,
+  ) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action,
+          userId: params.userId,
+          organizationId: params.organizationId || undefined,
+          metadata: metadata as any,
+        },
+      });
+    } catch (error: any) {
+      this.logger.error(`Failed to record OTP audit event: ${error?.message || error}`);
+    }
   }
 }
