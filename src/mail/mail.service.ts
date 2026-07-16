@@ -1,80 +1,142 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { BrandingService } from './branding.service';
+import { MailQueueService, MailJob } from './mail-queue.service';
+import { buildMailTemplate, MailTemplateId, TemplateVars } from './template.engine';
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private smtpReady = false;
 
-  constructor(private configService: ConfigService) {
-    const host = this.configService.get<string>('smtp.host');
-    const user = this.configService.get<string>('smtp.user');
-    const pass = this.configService.get<string>('smtp.pass');
+  constructor(
+    private readonly config: ConfigService,
+    private readonly branding: BrandingService,
+    private readonly queue: MailQueueService,
+  ) {}
 
-    if (host && user) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port: this.configService.get<number>('smtp.port'),
-        secure: false,
-        auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000,
-        socketTimeout: 10000,
-        family: 4,
-      } as any);
+  async onModuleInit() {
+    this.queue.setSender((job) => this.deliver(job));
+    await this.initTransporter();
+  }
+
+  private async initTransporter() {
+    const host = this.config.get<string>('smtp.host');
+    const user = this.config.get<string>('smtp.user');
+    const pass = this.config.get<string>('smtp.pass');
+    const port = this.config.get<number>('smtp.port') || 587;
+    const secure = this.config.get<boolean>('smtp.secure') === true || port === 465;
+
+    if (!host || !user || !pass) {
+      this.logger.warn('SMTP not fully configured — emails will be queued/logged but may not deliver');
+      return;
+    }
+
+    this.transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      pool: this.config.get<boolean>('smtp.pool') !== false,
+      maxConnections: this.config.get<number>('smtp.maxConnections') || 5,
+      maxMessages: this.config.get<number>('smtp.maxMessages') || 100,
+      connectionTimeout: 15000,
+      socketTimeout: 15000,
+      family: 4,
+    } as any);
+
+    if (this.config.get<boolean>('smtp.verifyOnBoot') !== false) {
+      try {
+        await this.transporter.verify();
+        this.smtpReady = true;
+        this.logger.log(`SMTP verified (${host}:${port})`);
+      } catch (err: any) {
+        this.smtpReady = false;
+        this.logger.error(`SMTP verification failed — app will continue. ${err?.message || err}`);
+      }
     } else {
-      this.logger.warn('SMTP not configured — emails will be logged to console only');
+      this.smtpReady = true;
     }
   }
 
-  async sendOtpEmail(email: string, otp: string, purpose: 'registration' | 'forgot-password'): Promise<void> {
-    const subject = purpose === 'registration'
-      ? 'Verify your email address'
-      : 'Reset your password';
-
-    const text = `Your OTP is: ${otp}\n\nThis OTP is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.`;
-
-    this.logger.log(`[DEV] OTP for ${email}: ${otp}`);
-    await this.sendEmail(email, subject, text);
+  async sendTemplate(
+    to: string,
+    templateId: MailTemplateId,
+    vars: TemplateVars = {},
+    organizationId?: string | null,
+  ): Promise<void> {
+    const brand = await this.branding.resolve(organizationId);
+    const merged: TemplateVars = {
+      companyName: brand.companyName,
+      companyLogo: brand.companyLogo,
+      primaryColor: brand.primaryColor,
+      supportEmail: brand.supportEmail,
+      website: brand.website,
+      address: brand.address,
+      phone: brand.phone,
+      year: brand.year,
+      linkedin: brand.socialLinks.linkedin,
+      twitter: brand.socialLinks.twitter,
+      facebook: brand.socialLinks.facebook,
+      ...vars,
+      email: (vars.email as string) || to,
+    };
+    const built = buildMailTemplate(templateId, merged);
+    this.queue.enqueue({
+      to,
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+    });
   }
 
-  async sendWelcomeEmail(email: string, name: string): Promise<void> {
-    const subject = 'Welcome to PEB CRM';
-    const text = `Welcome ${name}! Your account has been activated successfully.\n\nYou can now log in and start using PEB CRM.`;
-
-    await this.sendEmail(email, subject, text);
+  /** @deprecated use sendTemplate — kept for gradual migration */
+  async sendOtpEmail(email: string, otp: string, purpose: 'registration' | 'forgot-password', organizationId?: string): Promise<void> {
+    const expiryMinutes = this.config.get<number>('otp.expiryMinutes') || 10;
+    const templateId: MailTemplateId = purpose === 'registration' ? 'register_otp' : 'forgot_password_otp';
+    await this.sendTemplate(email, templateId, { otp, expiry: `${expiryMinutes} minutes`, email }, organizationId);
   }
 
-  async sendPasswordResetConfirmation(email: string): Promise<void> {
-    const subject = 'Password reset successful';
-    const text = 'Your password has been reset successfully.\n\nIf you did not make this change, please contact support immediately.';
+  async sendWelcomeEmail(email: string, name: string, organizationId?: string): Promise<void> {
+    const frontend = this.config.get<string>('frontendUrl') || '';
+    await this.sendTemplate(email, 'welcome', { userName: name, loginLink: frontend, email }, organizationId);
+  }
 
-    await this.sendEmail(email, subject, text);
+  async sendPasswordResetConfirmation(email: string, name?: string, organizationId?: string): Promise<void> {
+    await this.sendTemplate(email, 'reset_password_success', { userName: name || 'there', email }, organizationId);
   }
 
   async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    if (process.env.NODE_ENV === 'development') {
-      this.logger.log(`[DEV] Email to ${to}: ${subject}`);
+    this.queue.enqueue({ to, subject, text, html });
+  }
+
+  private async deliver(job: MailJob): Promise<void> {
+    if (!this.transporter) {
+      this.logger.log(`[MAIL-FALLBACK] To=${job.to} Subject=${job.subject}`);
       return;
     }
 
-    if (!this.transporter) {
-      this.logger.log(`[DEV] Email to ${to}: ${subject}`);
-      return;
-    }
+    const fromName = this.config.get<string>('smtp.fromName') || 'App';
+    const fromEmail = this.config.get<string>('smtp.fromEmail') || this.config.get<string>('smtp.user');
 
     try {
       await this.transporter.sendMail({
-        from: `"PEB CRM" <${this.configService.get<string>('smtp.user')}>`,
-        to,
-        subject,
-        text,
-        html,
+        from: `"${fromName}" <${fromEmail}>`,
+        to: job.to,
+        subject: job.subject,
+        text: job.text,
+        html: job.html,
       });
-      this.logger.log(`Email sent to ${to}: ${subject}`);
-    } catch (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+      this.logger.log(`Email delivered to ${job.to}: ${job.subject}`);
+    } catch (error: any) {
+      this.logger.error(`Failed to deliver email to ${job.to}: ${error?.message || error}`);
+      throw error;
     }
+  }
+
+  isSmtpReady(): boolean {
+    return this.smtpReady;
   }
 }

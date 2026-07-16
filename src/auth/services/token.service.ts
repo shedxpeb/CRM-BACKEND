@@ -19,6 +19,7 @@ export class TokenService {
     organizationId?: string;
     sessionId: string;
     permissionVersion?: number;
+    passwordVersion?: number;
   }): string {
     return this.jwtService.sign({
       sub: params.userId,
@@ -28,6 +29,7 @@ export class TokenService {
       sessionId: params.sessionId,
       permissionVersion: params.permissionVersion || 1,
       tokenVersion: 1,
+      passwordVersion: params.passwordVersion || 1,
     } as any, {
       expiresIn: this.configService.get<string>('jwt.accessExpiresIn') || '30m',
     } as any);

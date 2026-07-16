@@ -1,8 +1,8 @@
-import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean, Min, IsArray, ValidateNested, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateProjectDto } from './create-project.dto';
-import { ProjectStage, ProjectPriority } from './get-projects.dto';
+import { ProjectStage } from './get-projects.dto';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @IsOptional()

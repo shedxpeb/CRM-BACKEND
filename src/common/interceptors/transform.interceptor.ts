@@ -8,7 +8,15 @@ export interface Response<T> {
   requestId: string;
   timestamp: string;
   message: string;
-  data: T;
+  data: T | null;
+  meta?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
 }
 
 @Injectable()
@@ -23,13 +31,34 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
     }
 
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        requestId,
-        timestamp: new Date().toISOString(),
-        message: data?.message || 'Success',
-        data: data?.data ?? data,
-      })),
+      map((responseData: any) => {
+        if (responseData && typeof responseData === 'object') {
+          const { message, data, meta, success, clearRefreshCookie, ...rest } = responseData;
+          const payload =
+            data !== undefined
+              ? data
+              : Object.keys(rest).length
+                ? { ...rest, ...(clearRefreshCookie ? { clearRefreshCookie } : {}) }
+                : null;
+
+          return {
+            success: success !== false,
+            requestId,
+            timestamp: new Date().toISOString(),
+            message: message || 'Success',
+            data: payload as T,
+            ...(meta ? { meta } : {}),
+          };
+        }
+
+        return {
+          success: true,
+          requestId,
+          timestamp: new Date().toISOString(),
+          message: 'Success',
+          data: (responseData ?? null) as T,
+        };
+      }),
     );
   }
 }

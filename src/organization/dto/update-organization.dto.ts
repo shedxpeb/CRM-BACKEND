@@ -2,7 +2,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateOrganizationDto } from './create-organization.dto';
 import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
 
-export enum OrgStatus {
+enum OrgStatus {
   Active = 'Active',
   Inactive = 'Inactive',
   Suspended = 'Suspended',

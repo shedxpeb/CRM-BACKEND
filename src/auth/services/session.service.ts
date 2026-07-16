@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -6,7 +7,26 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class SessionService {
   private readonly logger = new Logger(SessionService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+
+  private absoluteMs(rememberMe: boolean) {
+    const days = rememberMe
+      ? this.config.get<number>('session.rememberMeDays') || 30
+      : this.config.get<number>('session.absoluteDays') || 1;
+    return days * 24 * 60 * 60 * 1000;
+  }
+
+  private idleMs() {
+    const minutes = this.config.get<number>('session.idleMinutes') || 120;
+    return minutes * 60 * 1000;
+  }
+
+  private multiDevice() {
+    return this.config.get<boolean>('session.multiDevice') === true;
+  }
 
   async createSession(params: {
     userId: string;
@@ -21,21 +41,13 @@ export class SessionService {
   }) {
     const { userId, organizationId, refreshTokenHash, isRememberMe = false, ...rest } = params;
     const sessionToken = randomBytes(48).toString('hex');
-
     const now = new Date();
-    const absoluteExpiry = new Date(now.getTime() + (isRememberMe ? 30 : 1) * 24 * 60 * 60 * 1000);
-    const idleExpiry = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const absoluteExpiry = new Date(now.getTime() + this.absoluteMs(isRememberMe));
+    const idleExpiry = new Date(now.getTime() + this.idleMs());
 
-    // Revoke any existing sessions for this user
-    await this.prisma.session.updateMany({
-      where: { userId, isRevoked: false },
-      data: { isRevoked: true, revokedAt: now },
-    });
-
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, isRevoked: false },
-      data: { isRevoked: true, revokedAt: now },
-    });
+    if (!this.multiDevice()) {
+      await this.revokeAllUserSessions(userId);
+    }
 
     const session = await this.prisma.session.create({
       data: {
@@ -51,21 +63,17 @@ export class SessionService {
     });
 
     this.logger.log(`Session created: ${session.id} for user ${userId}`);
-
     return session;
   }
 
-  async validateSession(sessionToken: string) {
-    const session = await this.prisma.session.findUnique({
-      where: { token: sessionToken },
-      include: { user: true },
-    });
-
-    if (!session) return null;
-    if (session.isRevoked) return null;
-    if (new Date() > session.expiresAt) return null;
-    if (new Date() > session.idleExpiresAt) return null;
-
+  async validateSessionById(sessionId: string) {
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session || session.isRevoked) return null;
+    const now = new Date();
+    if (now > session.expiresAt || now > session.idleExpiresAt) {
+      await this.revokeSession(session.id);
+      return null;
+    }
     return session;
   }
 
@@ -75,7 +83,7 @@ export class SessionService {
       where: { id: sessionId },
       data: {
         lastActivity: now,
-        idleExpiresAt: new Date(now.getTime() + 2 * 60 * 60 * 1000),
+        idleExpiresAt: new Date(now.getTime() + this.idleMs()),
       },
     });
   }
@@ -92,24 +100,20 @@ export class SessionService {
   }
 
   async revokeAllUserSessions(userId: string, exceptSessionId?: string) {
-    const where: any = { userId, isRevoked: false };
-    if (exceptSessionId) where.id = { not: exceptSessionId };
+    const sessionWhere: any = { userId, isRevoked: false };
+    if (exceptSessionId) sessionWhere.id = { not: exceptSessionId };
 
     await this.prisma.session.updateMany({
-      where,
+      where: sessionWhere,
       data: { isRevoked: true, revokedAt: new Date() },
     });
 
-    const sessionWhere: any = { userId, isRevoked: false };
-    if (exceptSessionId) sessionWhere.sessionId = { not: exceptSessionId };
+    const refreshWhere: any = { userId, isRevoked: false };
+    if (exceptSessionId) refreshWhere.sessionId = { not: exceptSessionId };
 
     await this.prisma.refreshToken.updateMany({
-      where: { userId, isRevoked: false },
+      where: refreshWhere,
       data: { isRevoked: true, revokedAt: new Date() },
     });
-  }
-
-  generateSessionId(): string {
-    return randomBytes(32).toString('hex');
   }
 }

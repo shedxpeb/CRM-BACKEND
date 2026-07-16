@@ -1,389 +1,155 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BaseQueryService, WhereClause } from '../common/services/base-query.service';
+import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
+import { AuditService } from '../auth/services/audit.service';
+import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { GetLeadsDto, LeadStatus } from './dto/get-leads.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { LEAD_IMPORT_CONFIG } from './dto/import-lead.dto';
 
 @Injectable()
-export class LeadService {
-  private readonly logger = new Logger(LeadService.name);
+export class LeadService extends BaseQueryService {
+  constructor(
+    protected readonly prisma: PrismaService,
+    private readonly excelImportService: ExcelImportService,
+    private readonly auditService: AuditService,
+    private readonly workflowEngine: WorkflowEngineService,
+  ) {
+    super(prisma, {
+      model: 'lead',
+      searchFields: ['customerName', 'companyName', 'mobile', 'email', 'designation', 'website', 'panNumber'],
+      filterFields: ['status', 'priority', 'source', 'projectType', 'structureType', 'industry', 'businessType', 'city', 'assignedToId'],
+      sortColumns: ['createdAt', 'companyName', 'customerName', 'priority', 'status', 'leadNumber'],
+      orgScoped: true,
+    });
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
+  async findAll(query: GetLeadsDto, organizationId?: string) {
+    const { statusMode, ...restQuery } = query;
+    const result = await super.findAll(restQuery, organizationId);
 
-  async findAll(query: GetLeadsDto) {
-    const startTime = Date.now();
-    const {
-      page = 1,
-      pageSize = 25,
-      search,
-      status,
-      statusMode,
-      priority,
-      source,
-      projectType,
-      structureType,
-      industry,
-      businessType,
-      city,
-      assignedEmployeeId,
-      dateFrom,
-      dateTo,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = query;
+    const where: WhereClause = { isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
 
-    const skip = (page - 1) * pageSize;
-
-    // Build where clause - always exclude deleted records
-    const where: any = {
-      isDeleted: false,
-    };
-
-    if (search && search.length >= 2) {
-      where.OR = [
-        { customerName: { contains: search, mode: 'insensitive' } },
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { mobile: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { designation: { contains: search, mode: 'insensitive' } },
-        { website: { contains: search, mode: 'insensitive' } },
-        { panNumber: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    // Handle statusMode for in-progress filtering
     if (statusMode === 'in-progress') {
-      // In-progress = total - new - contacted - converted
-      where.status = {
-        notIn: ['New', 'Contacted', 'Converted']
-      };
+      where.status = { notIn: ['New', 'Contacted', 'Converted'] };
     }
 
-    if (priority) {
-      where.priority = priority;
-    }
-
-    if (source) {
-      where.source = source;
-    }
-
-    if (projectType) {
-      where.projectType = projectType;
-    }
-
-    if (structureType) {
-      where.structureType = structureType;
-    }
-
-    if (industry) {
-      where.industry = industry;
-    }
-
-    if (businessType) {
-      where.businessType = businessType;
-    }
-
-    if (city) {
-      where.city = city;
-    }
-
-    if (assignedEmployeeId) {
-      where.assignedToId = assignedEmployeeId;
-    }
-
-    // Handle date range filtering
-    if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) {
-        // Set to start of the day (00:00:00)
-        const fromDate = new Date(dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        where.createdAt.gte = fromDate;
-      }
-      if (dateTo) {
-        // Set to end of the day (23:59:59.999)
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = toDate;
-      }
-    }
-
-    // Validate sortBy
-    const allowedSortColumns = [
-      'createdAt',
-      'companyName',
-      'customerName',
-      'priority',
-      'status',
-      'leadNumber',
-    ];
-
-    if (!allowedSortColumns.includes(sortBy)) {
-      throw new BadRequestException(`Invalid sortBy column: ${sortBy}`);
-    }
-
-    // Fetch data and count in parallel
-    const [rows, total] = await Promise.all([
-      this.prisma.lead.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { [sortBy]: sortOrder },
-      }),
-      this.prisma.lead.count({ where }),
+    const [summaryNew, summaryContacted, summaryConverted, totalFiltered] = await Promise.all([
+      this.client.count({ where: { ...where, status: LeadStatus.New } }),
+      this.client.count({ where: { ...where, status: LeadStatus.Contacted } }),
+      this.client.count({ where: { ...where, isConverted: true } }),
+      this.client.count({ where }),
     ]);
 
-    const totalPages = Math.ceil(total / pageSize);
-    const hasNext = page < totalPages;
-    const hasPrevious = page > 1;
+    const summaryInProgress = Math.max(0, totalFiltered - summaryNew - summaryContacted - summaryConverted);
 
-    // Calculate summary statistics based on current filters (reuse total from earlier)
-    const [summaryNew, summaryContacted, summaryConverted] = await Promise.all([
-      this.prisma.lead.count({ where: { ...where, status: LeadStatus.New } }),
-      this.prisma.lead.count({ where: { ...where, status: LeadStatus.Contacted } }),
-      this.prisma.lead.count({ where: { ...where, isConverted: true } }),
-    ]);
-
-    // Calculate in-progress (total - new - contacted - converted)
-    const summaryInProgress = Math.max(0, total - summaryNew - summaryContacted - summaryConverted);
-
-    const summary = {
-      total,
-      new: summaryNew,
-      contacted: summaryContacted,
-      converted: summaryConverted,
-      inProgress: summaryInProgress,
-    };
-
-    // Build active filters object
     const filters: any = {};
-    if (status) filters.status = status;
-    if (priority) filters.priority = priority;
-    if (source) filters.source = source;
-    if (projectType) filters.projectType = projectType;
-    if (structureType) filters.structureType = structureType;
-    if (city) filters.city = city;
-    if (assignedEmployeeId) filters.assignedEmployeeId = assignedEmployeeId;
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /lead - Rows: ${rows.length}, Total: ${total}, Time: ${executionTime}ms`);
+    if (query.status) filters.status = query.status;
+    if (query.priority) filters.priority = query.priority;
+    if (query.source) filters.source = query.source;
+    if (query.projectType) filters.projectType = query.projectType;
+    if (query.structureType) filters.structureType = query.structureType;
+    if (query.city) filters.city = query.city;
+    if (query.assignedEmployeeId) filters.assignedEmployeeId = query.assignedEmployeeId;
 
     return {
-      rows,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-        hasNext,
-        hasPrevious,
+      ...result,
+      summary: {
+        total: totalFiltered,
+        new: summaryNew,
+        contacted: summaryContacted,
+        converted: summaryConverted,
+        inProgress: summaryInProgress,
       },
-      summary,
       filters,
     };
   }
 
-  async getKanban() {
-    const startTime = Date.now();
+  async getKanban(filters: { search?: string; priority?: string; city?: string; assignedTo?: string } = {}, organizationId?: string) {
+    const where: any = { isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
 
-    // Get all leads excluding deleted records
-    const leads = await this.prisma.lead.findMany({
-      where: { isDeleted: false },
+    if (filters.search && filters.search.length >= 2) {
+      where.OR = [
+        { customerName: { contains: filters.search, mode: 'insensitive' } },
+        { companyName: { contains: filters.search, mode: 'insensitive' } },
+        { mobile: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+    if (filters.priority) where.priority = filters.priority;
+    if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
+    if (filters.assignedTo) where.assignedTo = { contains: filters.assignedTo, mode: 'insensitive' };
+
+    const leads = await this.client.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true,
-        leadNumber: true,
-        customerName: true,
-        companyName: true,
-        designation: true,
-        mobile: true,
-        email: true,
-        city: true,
-        state: true,
-        industry: true,
-        projectTitle: true,
-        projectType: true,
-        structureType: true,
-        width: true,
-        length: true,
-        source: true,
-        priority: true,
-        status: true,
-        score: true,
-        assignedTo: true,
-        remarks: true,
-        isConverted: true,
-        tags: true,
-        createdAt: true,
-        updatedAt: true,
-        lastFollowUp: true,
+        id: true, leadNumber: true, customerName: true, companyName: true,
+        designation: true, mobile: true, email: true, city: true, state: true,
+        industry: true, projectTitle: true, projectType: true, structureType: true,
+        width: true, length: true, source: true, priority: true, status: true,
+        score: true, assignedTo: true, remarks: true, isConverted: true,
+        tags: true, createdAt: true, updatedAt: true, lastFollowUp: true,
         nextFollowUpDate: true,
       },
     });
 
-    // Group by status
-    const statusGroups = leads.reduce((acc, lead) => {
+    const statusGroups: Record<string, any[]> = {};
+    for (const lead of leads) {
       const status = lead.status || 'Unknown';
-      if (!acc[status]) {
-        acc[status] = [];
-      }
-      acc[status].push(lead);
-      return acc;
-    }, {} as Record<string, Array<typeof leads[0]>>);
+      if (!statusGroups[status]) statusGroups[status] = [];
+      statusGroups[status].push(lead);
+    }
 
-    // Build columns
-    const columns = Object.entries(statusGroups).map(([status, cards]: [string, Array<typeof leads[0]>]) => ({
+    const columns = Object.entries(statusGroups).map(([status, cards]) => ({
       status,
       count: cards.length,
       cards,
     }));
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /lead/kanban - Columns: ${columns.length}, Total leads: ${leads.length}, Time: ${executionTime}ms`);
-
     return { columns };
   }
 
-  async getCalendar() {
-    const startTime = Date.now();
+  async getCalendar(filters: { search?: string; status?: string; priority?: string; city?: string } = {}, organizationId?: string) {
+    const where: any = { isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
 
-    // Get all non-deleted leads; calendar groups by nextFollowUpDate or falls back to createdAt
-    const events = await this.prisma.lead.findMany({
-      where: {
-        isDeleted: false,
-      },
+    if (filters.search && filters.search.length >= 2) {
+      where.OR = [
+        { customerName: { contains: filters.search, mode: 'insensitive' } },
+        { companyName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+    if (filters.status) where.status = filters.status;
+    if (filters.priority) where.priority = filters.priority;
+    if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
+
+    const events = await this.client.findMany({
+      where,
       orderBy: { nextFollowUpDate: 'asc' },
       select: {
-        id: true,
-        leadNumber: true,
-        customerName: true,
-        companyName: true,
-        projectTitle: true,
-        status: true,
-        priority: true,
-        nextFollowUpDate: true,
-        createdAt: true,
-        mobile: true,
-        email: true,
-        city: true,
+        id: true, leadNumber: true, customerName: true, companyName: true,
+        projectTitle: true, status: true, priority: true, nextFollowUpDate: true,
+        createdAt: true, mobile: true, email: true, city: true,
       },
     });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /lead/calendar - Events: ${events.length}, Time: ${executionTime}ms`);
 
     return { events };
   }
 
-  async findById(id: string) {
-    const startTime = Date.now();
-
-    const lead = await this.prisma.lead.findFirst({
-      where: { id, isDeleted: false } as any,
-      select: {
-        id: true,
-        leadNumber: true,
-        customerName: true,
-        companyName: true,
-        designation: true,
-        website: true,
-        mobile: true,
-        alternateMobile: true,
-        email: true,
-        gstNumber: true,
-        panNumber: true,
-        industry: true,
-        businessType: true,
-        addressLine1: true,
-        addressLine2: true,
-        area: true,
-        city: true,
-        state: true,
-        country: true,
-        pincode: true,
-        companySize: true,
-        annualRevenue: true,
-        employeeCount: true,
-        linkedin: true,
-        facebook: true,
-        instagram: true,
-        profileImage: true,
-        companyLogo: true,
-        tags: true,
-        projectTitle: true,
-        projectType: true,
-        structureType: true,
-        width: true,
-        length: true,
-        height: true,
-        baySpacing: true,
-        roofType: true,
-        craneRequired: true,
-        craneCapacity: true,
-        mezzanine: true,
-        mezzanineArea: true,
-        mezzanineLoad: true,
-        wallType: true,
-        insulationRequired: true,
-        insulationType: true,
-        insulationThickness: true,
-        materialPreference: true,
-        siteLocation: true,
-        siteAddress: true,
-        mapCoordinates: true,
-        soilNotes: true,
-        customerNotes: true,
-        attachments: true,
-        specialRequirement: true,
-        source: true,
-        priority: true,
-        assignedTo: true,
-        assignedToId: true,
-        status: true,
-        score: true,
-        createdAt: true,
-        lastFollowUp: true,
-        nextFollowUpDate: true,
-        createdBy: true,
-        updatedBy: true,
-        updatedAt: true,
-        customerId: true,
-        convertedDate: true,
-        remarks: true,
-        customFields: true,
-        isConverted: true,
-      },
-    });
-
-    if (!lead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
-    }
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /lead/:id - ID: ${id}, Time: ${executionTime}ms`);
-
-    return lead;
-  }
-
   async create(data: CreateLeadDto, createdById: string, organizationId?: string) {
-    const startTime = Date.now();
-
     if (!organizationId) {
       throw new BadRequestException('Organization context is required to create a lead');
     }
 
-    this.logger.log(`CREATE - Incoming DTO: ${JSON.stringify(data)}`);
-
-    // Check for duplicate mobile/email within the organization
-    const existingLead = await this.prisma.lead.findFirst({
+    const existingLead = await this.client.findFirst({
       where: {
         AND: [
           { organizationId },
-          { isDeleted: false } as any,
+          { isDeleted: false },
           {
             OR: [
               { mobile: data.mobile },
@@ -403,9 +169,8 @@ export class LeadService {
       }
     }
 
-    // Remove customFields from prisma data if present (stored in customFields Json column)
     const { customFields, ...restData } = data as any;
-    
+
     const createData = {
       ...restData,
       email: data.email || '',
@@ -419,54 +184,54 @@ export class LeadService {
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
     };
 
-    this.logger.log(`CREATE - Prisma data: ${JSON.stringify(createData)}`);
-
     try {
-      const lead = await this.prisma.lead.create({
-        data: createData,
+      const lead = await this.client.create({ data: createData });
+      await this.auditService.log({
+        action: 'lead.created',
+        organizationId,
+        userId: createdById,
+        resource: 'lead',
+        resourceId: lead.id,
+        metadata: { customerName: data.customerName, companyName: data.companyName },
       });
-
-      const executionTime = Date.now() - startTime;
-      this.logger.log(`POST /lead - LeadNumber: ${lead.leadNumber}, Time: ${executionTime}ms`);
-
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'lead',
+        entityId: lead.id,
+        eventType: 'created',
+        data: { customerName: data.customerName, companyName: data.companyName, status: lead.status },
+        createdById,
+      });
       return lead;
     } catch (error: any) {
-      this.logger.error(`CREATE - Prisma error: code=${error.code}, message=${error.message}, meta=${JSON.stringify(error.meta)}`);
       if (error.code === 'P2002') {
-        const target = error.meta?.target;
-        throw new BadRequestException(`Duplicate value for field: ${target}`);
+        throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
       }
       throw new BadRequestException(`Database error: ${error.message}`);
     }
   }
 
-  async update(id: string, data: UpdateLeadDto, updatedById?: string) {
-    const startTime = Date.now();
+  async update(id: string, data: UpdateLeadDto, updatedById?: string, organizationId?: string) {
+    const where: any = { id, isDeleted: false };
+    if (organizationId) where.organizationId = organizationId;
+    const existingLead = await this.client.findFirst({ where });
+    if (!existingLead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
-    // Check if lead exists and is not deleted
-    const existingLead = await this.prisma.lead.findFirst({
-      where: { id, isDeleted: false } as any,
-    });
-
-    if (!existingLead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
-    }
-
-    // Check for duplicate mobile/email if being updated
     if (data.mobile || data.email) {
-      const duplicateLead = await this.prisma.lead.findFirst({
-        where: {
-          AND: [
-            { id: { not: id } },
-            { isDeleted: false } as any,
-            {
-              OR: [
-                ...(data.mobile ? [{ mobile: data.mobile }] : []),
-                ...(data.email ? [{ email: data.email }] : []),
-              ],
-            },
-          ],
-        },
+      const duplicateWhere: any[] = [
+        { id: { not: id } },
+        { isDeleted: false },
+      ];
+      if (organizationId) duplicateWhere.push({ organizationId });
+      duplicateWhere.push({
+        OR: [
+          ...(data.mobile ? [{ mobile: data.mobile }] : []),
+          ...(data.email ? [{ email: data.email }] : []),
+        ],
+      });
+
+      const duplicateLead = await this.client.findFirst({
+        where: { AND: duplicateWhere },
       });
 
       if (duplicateLead) {
@@ -479,179 +244,114 @@ export class LeadService {
       }
     }
 
-    // Update lead
     try {
-      const lead = await this.prisma.lead.update({
+      const lead = await this.client.update({
         where: { id },
-        data: {
-          ...(data as any),
-          updatedBy: updatedById,
-        },
+        data: { ...(data as any), updatedBy: updatedById },
       });
-
-      const executionTime = Date.now() - startTime;
-      this.logger.log(`PATCH /lead/:id - ID: ${id}, Time: ${executionTime}ms`);
-
+      await this.auditService.log({
+        action: 'lead.updated',
+        userId: updatedById,
+        resource: 'lead',
+        resourceId: id,
+        metadata: { changes: Object.keys(data) },
+      });
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'lead',
+        entityId: id,
+        eventType: 'updated',
+        data: { changes: Object.keys(data) },
+        createdById: updatedById,
+      });
       return lead;
     } catch (error: any) {
-      this.logger.error(`UPDATE - Prisma error: code=${error.code}, message=${error.message}, meta=${JSON.stringify(error.meta)}`);
       if (error.code === 'P2002') {
-        const target = error.meta?.target;
-        throw new BadRequestException(`Duplicate value for field: ${target}`);
+        throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
       }
       throw new BadRequestException(`Database error: ${error.message}`);
     }
   }
 
-  async softDelete(id: string, deletedById: string) {
-    const startTime = Date.now();
-
-    // Check if lead exists and is not deleted
-    const existingLead = await this.prisma.lead.findFirst({
-      where: { id, isDeleted: false } as any,
+  async getLogs(id: string, organizationId: string) {
+    return this.prisma.auditLog.findMany({
+      where: { resource: 'lead', resourceId: id, organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
-
-    if (!existingLead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
-    }
-
-    // Soft delete
-    const lead = await this.prisma.lead.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      } as any,
-    });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`DELETE /lead/:id - ID: ${id}, Time: ${executionTime}ms`);
-
-    return lead;
   }
 
-  async bulkStatusUpdate(ids: string[], status: string, updatedById: string) {
-    const startTime = Date.now();
-
-    // Validate status
-    const validStatuses = Object.values(LeadStatus);
-    if (!validStatuses.includes(status as LeadStatus)) {
-      throw new BadRequestException(`Invalid status: ${status}`);
-    }
-
-    // Update all leads
-    const result = await this.prisma.lead.updateMany({
-      where: {
-        id: { in: ids },
-        isDeleted: false,
-      },
-      data: {
-        status,
-        updatedAt: new Date(),
-      } as any,
+  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
+    const result = await super.softDelete(id, deletedById, organizationId);
+    await this.auditService.log({
+      action: 'lead.deleted',
+      userId: deletedById,
+      resource: 'lead',
+      resourceId: id,
     });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`PATCH /lead/bulk/status - Count: ${result.count}, Time: ${executionTime}ms`);
-
-    return { count: result.count };
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'lead',
+      entityId: id,
+      eventType: 'deleted',
+      createdById: deletedById,
+    });
+    return result;
   }
 
-  async bulkDelete(ids: string[], deletedById: string) {
-    const startTime = Date.now();
-
-    // Soft delete all leads
-    const result = await this.prisma.lead.updateMany({
-      where: {
-        id: { in: ids },
-        isDeleted: false,
-      },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      } as any,
+  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+    const result = await super.bulkDelete(ids, deletedById, organizationId);
+    await this.auditService.log({
+      action: 'lead.bulk-deleted',
+      userId: deletedById,
+      resource: 'lead',
+      resourceId: ids.join(','),
+      metadata: { count: result.count, ids },
     });
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`DELETE /lead/bulk - Count: ${result.count}, Time: ${executionTime}ms`);
-
-    return { count: result.count };
+    if (organizationId) {
+      for (const id of ids) {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'lead',
+          entityId: id,
+          eventType: 'bulk-deleted',
+          data: { count: result.count },
+          createdById: deletedById,
+        });
+      }
+    }
+    return result;
   }
 
-  async getLogs(id: string) {
-    const startTime = Date.now();
-
-    // Check if lead exists
-    const lead = await this.prisma.lead.findFirst({
-      where: { id, isDeleted: false } as any,
+  async bulkStatusUpdate(ids: string[], status: string, updatedById?: string, organizationId?: string): Promise<{ count: number }> {
+    const result = await super.bulkStatusUpdate(ids, status, organizationId);
+    await this.auditService.log({
+      action: 'lead.bulk-status-updated',
+      userId: updatedById,
+      resource: 'lead',
+      resourceId: ids.join(','),
+      metadata: { count: result.count, status, ids },
     });
-
-    if (!lead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
+    if (organizationId) {
+      for (const id of ids) {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'lead',
+          entityId: id,
+          eventType: 'bulk-status-updated',
+          data: { status, count: result.count },
+          createdById: updatedById,
+        });
+      }
     }
-
-    // Generate activity logs from lead history
-    const logs = [
-      {
-        id: '1',
-        action: 'Created',
-        description: `Lead created by ${lead.createdById || 'system'}`,
-        timestamp: lead.createdAt,
-        userId: lead.createdById,
-      },
-      {
-        id: '2',
-        action: 'Updated',
-        description: `Lead last updated`,
-        timestamp: lead.updatedAt,
-        userId: null,
-      },
-    ];
-
-    // Add status change log if status exists
-    if (lead.status) {
-      logs.push({
-        id: '3',
-        action: 'Status Change',
-        description: `Status changed to ${lead.status}`,
-        timestamp: lead.updatedAt,
-        userId: null,
-      });
-    }
-
-    // Add deletion log if deleted
-    if (lead.isDeleted && lead.deletedAt) {
-      logs.push({
-        id: '4',
-        action: 'Deleted',
-        description: `Lead deleted by ${lead.deletedById || 'system'}`,
-        timestamp: lead.deletedAt,
-        userId: lead.deletedById,
-      });
-    }
-
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`GET /lead/:id/logs - ID: ${id}, Logs: ${logs.length}, Time: ${executionTime}ms`);
-
-    return logs;
+    return result;
   }
 
   async updateWorkflow(id: string, stage: string, notes?: string, updatedById?: string) {
-    const startTime = Date.now();
+    const lead = await this.client.findFirst({ where: { id, isDeleted: false } });
+    if (!lead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
-    // Check if lead exists
-    const lead = await this.prisma.lead.findFirst({
-      where: { id, isDeleted: false } as any,
-    });
-
-    if (!lead) {
-      throw new NotFoundException(`Lead with ID ${id} not found`);
-    }
-
-    // Update lead with workflow stage
-    const updatedLead = await this.prisma.lead.update({
+    const updated = await this.client.update({
       where: { id },
       data: {
         status: stage as LeadStatus,
@@ -660,9 +360,89 @@ export class LeadService {
       },
     });
 
-    const executionTime = Date.now() - startTime;
-    this.logger.log(`POST /lead/:id/workflow - ID: ${id}, Stage: ${stage}, Time: ${executionTime}ms`);
+    await this.auditService.log({
+      action: 'lead.workflow-updated',
+      userId: updatedById,
+      resource: 'lead',
+      resourceId: id,
+      metadata: { from: lead.status, to: stage, notes },
+    });
 
-    return updatedLead;
+    await this.workflowEngine.processEvent({
+      organizationId: lead.organizationId,
+      entityType: 'lead',
+      entityId: id,
+      eventType: 'workflow-updated',
+      data: { from: lead.status, to: stage, notes },
+      createdById: updatedById,
+    });
+
+    return updated;
+  }
+
+  async importLeads(buffer: Buffer, createdById: string, organizationId: string): Promise<ImportResult> {
+    if (!organizationId) {
+      throw new BadRequestException('Organization context is required to import leads');
+    }
+
+    const checkExisting = async () => {
+      const existingLeads = await this.client.findMany({
+        where: { organizationId, isDeleted: false },
+        select: { mobile: true, email: true },
+      });
+
+      const existingValues = new Map<string, Set<string>>();
+      existingValues.set('mobile', new Set(existingLeads.map(l => l.mobile?.toLowerCase()).filter(Boolean)));
+      existingValues.set('email', new Set(existingLeads.map(l => l.email?.toLowerCase()).filter(Boolean)));
+      return existingValues;
+    };
+
+    const config = {
+      ...LEAD_IMPORT_CONFIG,
+      defaults: {
+        ...LEAD_IMPORT_CONFIG.defaults,
+        createdById,
+        organizationId,
+      },
+    };
+
+    const importResult = await this.excelImportService.processImport(
+      buffer,
+      config,
+      async (dto) => {
+        const { assignedToName, createdById: _cbid, organizationId: _oid, ...leadData } = dto;
+
+        const finalData = {
+          ...leadData,
+          organizationId,
+          createdById,
+          email: leadData.email || '',
+          status: leadData.status || LeadStatus.New,
+          isConverted: false,
+          tags: leadData.tags || [],
+          attachments: [],
+        };
+
+        return this.client.create({ data: finalData });
+      },
+      checkExisting,
+    );
+
+    await this.auditService.log({
+      action: 'lead.imported',
+      userId: createdById,
+      organizationId,
+      resource: 'lead',
+      metadata: { imported: importResult.imported, skipped: importResult.skipped, invalid: importResult.invalid, total: importResult.total },
+    });
+    await this.workflowEngine.processEvent({
+      organizationId,
+      entityType: 'lead',
+      entityId: organizationId,
+      eventType: 'imported',
+      data: { imported: importResult.imported, skipped: importResult.skipped, invalid: importResult.invalid, total: importResult.total },
+      createdById,
+    });
+    return importResult;
   }
 }

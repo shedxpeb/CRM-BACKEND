@@ -23,7 +23,7 @@ export class CreateCustomerDto {
   @MaxLength(20)
   alternateMobile?: string;
 
-  @IsOptional()
+  @ValidateIf((obj) => obj.email !== '' && obj.email !== undefined && obj.email !== null)
   @IsEmail({}, { message: 'Invalid email format' })
   email?: string;
 

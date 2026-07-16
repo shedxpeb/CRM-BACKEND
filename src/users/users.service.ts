@@ -171,12 +171,13 @@ export class UsersService {
   }
 
   private generateTempPassword(): string {
+    const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const arr = crypto.randomBytes(12);
     let password = '';
     for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+      password += chars[arr[i] % chars.length];
     }
-    // Ensure it meets requirements
     return password + 'Aa1';
   }
 }
