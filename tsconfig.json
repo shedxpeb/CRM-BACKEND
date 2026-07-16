@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "bundler",
-    "types": ["node", "jest"],
+    "types": ["node"],
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
