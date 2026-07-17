@@ -38,7 +38,11 @@ export interface ImportResult {
 export class ExcelImportService {
   private readonly logger = new Logger(ExcelImportService.name);
 
-  parseExcelBuffer(buffer: Buffer): { headers: string[]; rows: Record<string, any>[]; sheetName: string } {
+  parseExcelBuffer(buffer: Buffer): {
+    headers: string[];
+    rows: Record<string, any>[];
+    sheetName: string;
+  } {
     const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
 
     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
@@ -58,9 +62,9 @@ export class ExcelImportService {
     }
 
     const rawHeaders = Object.keys(jsonData[0]);
-    const headers = rawHeaders.map(h => h.trim());
+    const headers = rawHeaders.map((h) => h.trim());
 
-    const rows = jsonData.map(row => {
+    const rows = jsonData.map((row) => {
       const cleaned: Record<string, any> = {};
       for (const [key, value] of Object.entries(row)) {
         cleaned[key.trim()] = value;
@@ -68,7 +72,9 @@ export class ExcelImportService {
       return cleaned;
     });
 
-    this.logger.log(`Parsed Excel: sheet="${sheetName}", rows=${rows.length}, headers=[${headers.join(', ')}]`);
+    this.logger.log(
+      `Parsed Excel: sheet="${sheetName}", rows=${rows.length}, headers=[${headers.join(', ')}]`,
+    );
 
     return { headers, rows, sheetName };
   }
@@ -76,7 +82,7 @@ export class ExcelImportService {
   mapHeaders(rawHeaders: string[], headerMap: ImportHeaderMap): { [dtoField: string]: string } {
     const normalizedMap: Record<string, string[]> = {};
     for (const [dtoField, aliases] of Object.entries(headerMap)) {
-      normalizedMap[dtoField] = aliases.map(a => this.normalizeHeader(a));
+      normalizedMap[dtoField] = aliases.map((a) => this.normalizeHeader(a));
     }
 
     const mapping: Record<string, string> = {};
@@ -134,10 +140,7 @@ export class ExcelImportService {
     return cleaned;
   }
 
-  mapRowToDto(
-    row: Record<string, any>,
-    mapping: Record<string, string>,
-  ): Record<string, any> {
+  mapRowToDto(row: Record<string, any>, mapping: Record<string, string>): Record<string, any> {
     const dto: Record<string, any> = {};
     for (const [dtoField, excelColumn] of Object.entries(mapping)) {
       if (excelColumn && row[excelColumn] !== undefined) {
@@ -181,18 +184,16 @@ export class ExcelImportService {
         result[fieldName] = mapped;
       } else {
         const validValues = Object.values(valueMap).join(', ');
-        warnings.push(`Unknown ${fieldName}: "${strValue}" — using default (valid: ${validValues})`);
+        warnings.push(
+          `Unknown ${fieldName}: "${strValue}" — using default (valid: ${validValues})`,
+        );
       }
     }
 
     return { dto: result, warnings };
   }
 
-  validateRow(
-    dto: Record<string, any>,
-    requiredFields: string[],
-    rowIndex: number,
-  ): string[] {
+  validateRow(dto: Record<string, any>, requiredFields: string[], _rowIndex: number): string[] {
     const errors: string[] = [];
 
     for (const field of requiredFields) {
@@ -273,11 +274,15 @@ export class ExcelImportService {
 
     const mapping = this.mapHeaders(headers, config.headerMap);
 
-    const mappedRequired = config.requiredFields.filter(f => mapping[f]);
-    const missingRequired = config.requiredFields.filter(f => !mapping[f]);
-    const unmappedOptional = Object.keys(config.headerMap).filter(f => !mapping[f] && !config.requiredFields.includes(f));
+    const mappedRequired = config.requiredFields.filter((f) => mapping[f]);
+    const missingRequired = config.requiredFields.filter((f) => !mapping[f]);
+    const unmappedOptional = Object.keys(config.headerMap).filter(
+      (f) => !mapping[f] && !config.requiredFields.includes(f),
+    );
 
-    this.logger.log(`Required fields mapped: ${mappedRequired.length}/${config.requiredFields.length}`);
+    this.logger.log(
+      `Required fields mapped: ${mappedRequired.length}/${config.requiredFields.length}`,
+    );
     if (missingRequired.length > 0) {
       this.logger.warn(`Missing required field columns: ${missingRequired.join(', ')}`);
     }
@@ -294,7 +299,7 @@ export class ExcelImportService {
       const cleanedRow = this.cleanRowValues(rawRow);
       let dto = this.mapRowToDto(cleanedRow, mapping);
 
-      if (Object.values(dto).every(v => v === '' || v === undefined || v === null)) {
+      if (Object.values(dto).every((v) => v === '' || v === undefined || v === null)) {
         continue;
       }
 
@@ -314,7 +319,7 @@ export class ExcelImportService {
 
     const duplicateResults = config.uniqueCheckFields
       ? this.checkDuplicates(
-          preProcessedDtos.map(d => {
+          preProcessedDtos.map((d) => {
             const { __rowIndex, __rawRow, ...rest } = d;
             return rest;
           }),

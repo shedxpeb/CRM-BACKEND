@@ -1,4 +1,13 @@
-import { IsOptional, IsInt, IsString, IsEnum, Min, Max, MinLength, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  IsString,
+  IsEnum,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum ProjectPriority {

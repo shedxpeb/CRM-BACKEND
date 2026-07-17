@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Req } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { LeadService } from './lead.service';
 import { GetLeadsDto } from './dto/get-leads.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -20,7 +20,10 @@ export class LeadController {
   @Get()
   @RequirePermissions('lead:list')
   @ApiOperation({ summary: 'Get all leads with pagination, search, and filters' })
-  async findAll(@Query() query: GetLeadsDto, @CurrentUser('organizationId') organizationId: string) {
+  async findAll(
+    @Query() query: GetLeadsDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.leadService.findAll(query, organizationId);
     return { message: 'Lead list fetched successfully.', data };
   }
@@ -32,9 +35,13 @@ export class LeadController {
     @Query('priority') priority: string | undefined,
     @Query('city') city: string | undefined,
     @Query('assignedTo') assignedTo: string | undefined,
+    @Query('assignedEmployeeId') assignedEmployeeId: string | undefined,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.leadService.getKanban({ search, priority, city, assignedTo }, organizationId);
+    const data = await this.leadService.getKanban(
+      { search, priority, city, assignedTo, assignedEmployeeId },
+      organizationId,
+    );
     return { message: 'Kanban data fetched.', data };
   }
 
@@ -47,14 +54,17 @@ export class LeadController {
     @Query('city') city: string | undefined,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.leadService.getCalendar({ search, status, priority, city }, organizationId);
+    const data = await this.leadService.getCalendar(
+      { search, status, priority, city },
+      organizationId,
+    );
     return { message: 'Calendar data fetched.', data };
   }
 
   @Get('export')
   @RequirePermissions('lead:list')
   async export(@Query() query: GetLeadsDto, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.leadService.findAll({ ...query, pageSize: 500 }, organizationId);
+    const data = await this.leadService.findAllForExport(query, organizationId);
     return { message: 'Export data fetched.', data };
   }
 
@@ -76,7 +86,12 @@ export class LeadController {
     @CurrentUser('id') updatedById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.leadService.bulkStatusUpdate(body.ids, body.status, updatedById, organizationId);
+    const data = await this.leadService.bulkStatusUpdate(
+      body.ids,
+      body.status,
+      updatedById,
+      organizationId,
+    );
     return { message: 'Leads updated successfully.', data };
   }
 
@@ -141,7 +156,13 @@ export class LeadController {
     @CurrentUser('id') updatedById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.leadService.updateWorkflow(id, body.stage, body.notes, updatedById, organizationId);
+    const data = await this.leadService.updateWorkflow(
+      id,
+      body.stage,
+      body.notes,
+      updatedById,
+      organizationId,
+    );
     return { message: 'Workflow updated.', data };
   }
 

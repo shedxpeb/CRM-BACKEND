@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TrackingService } from './tracking.service';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -11,7 +21,9 @@ import type { CurrentUser as CurrentUserType } from '../common/types';
 export class TrackingController {
   constructor(private readonly trackingService: TrackingService) {}
 
-  private getUser(user: CurrentUserType | undefined): Required<Pick<CurrentUserType, 'id' | 'organizationId'>> {
+  private getUser(
+    user: CurrentUserType | undefined,
+  ): Required<Pick<CurrentUserType, 'id' | 'organizationId'>> {
     if (!user?.organizationId || !user.id) throw new UnauthorizedException();
     return user as Required<Pick<CurrentUserType, 'id' | 'organizationId'>>;
   }
@@ -20,7 +32,10 @@ export class TrackingController {
 
   @Get(':entityType/:entityId')
   @RequirePermissions('tracking:read')
-  @ApiOperation({ summary: 'Get all tracking data for an entity (pipeline, status, timeline, comments, attachments, approvals, stage details)' })
+  @ApiOperation({
+    summary:
+      'Get all tracking data for an entity (pipeline, status, timeline, comments, attachments, approvals, stage details)',
+  })
   async getTracking(
     @Param('entityType') entityType: string,
     @Param('entityId') entityId: string,
@@ -66,7 +81,14 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.changeStatus(entityType, entityId, body.status, u.organizationId, u.id, body.reason);
+    const data = await this.trackingService.changeStatus(
+      entityType,
+      entityId,
+      body.status,
+      u.organizationId,
+      u.id,
+      body.reason,
+    );
     return { message: 'Status updated', data };
   }
 
@@ -107,7 +129,14 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.addComment(entityType, entityId, body.content, u.organizationId, u.id, body.parentId);
+    const data = await this.trackingService.addComment(
+      entityType,
+      entityId,
+      body.content,
+      u.organizationId,
+      u.id,
+      body.parentId,
+    );
     return { message: 'Comment added', data };
   }
 
@@ -141,11 +170,25 @@ export class TrackingController {
   async addAttachment(
     @Param('entityType') entityType: string,
     @Param('entityId') entityId: string,
-    @Body() body: { fileName: string; originalName: string; mimeType: string; size: number; url: string; category?: string },
+    @Body()
+    body: {
+      fileName: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+      url: string;
+      category?: string;
+    },
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.addAttachment(entityType, entityId, body, u.organizationId, u.id);
+    const data = await this.trackingService.addAttachment(
+      entityType,
+      entityId,
+      body,
+      u.organizationId,
+      u.id,
+    );
     return { message: 'Attachment added', data };
   }
 
@@ -183,7 +226,15 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.requestApproval(entityType, entityId, body.approverId, u.organizationId, u.id, body.level, body.metadata);
+    const data = await this.trackingService.requestApproval(
+      entityType,
+      entityId,
+      body.approverId,
+      u.organizationId,
+      u.id,
+      body.level,
+      body.metadata,
+    );
     return { message: 'Approval requested', data };
   }
 
@@ -195,7 +246,13 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.respondToApproval(approvalId, body.status, u.organizationId, u.id, body.comment);
+    const data = await this.trackingService.respondToApproval(
+      approvalId,
+      body.status,
+      u.organizationId,
+      u.id,
+      body.comment,
+    );
     return { message: `Approval ${body.status.toLowerCase()}`, data };
   }
 
@@ -208,31 +265,48 @@ export class TrackingController {
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
-    const data = await this.trackingService.getNotifications(u.id, u.organizationId, unreadOnly === 'true');
+    const data = await this.trackingService.getNotifications(
+      u.id,
+      u.organizationId,
+      unreadOnly === 'true',
+    );
     return { message: 'Notifications fetched', data };
   }
 
   @Post('notifications')
   @ApiOperation({ summary: 'Create notification' })
   async createNotification(
-    @Body() body: { userId: string; title: string; message: string; type?: string; entityType?: string; entityId?: string },
+    @Body()
+    body: {
+      userId: string;
+      title: string;
+      message: string;
+      type?: string;
+      entityType?: string;
+      entityId?: string;
+    },
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);
     // Only allow notifying self unless owner/admin (defense in depth — no arbitrary notify)
-    if (body.userId !== u.id && user?.role !== 'OWNER' && user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+    if (
+      body.userId !== u.id &&
+      user?.role !== 'OWNER' &&
+      user?.role !== 'ADMIN' &&
+      user?.role !== 'SUPER_ADMIN'
+    ) {
       throw new UnauthorizedException();
     }
-    const data = await this.trackingService.createNotification({ ...body, organizationId: u.organizationId });
+    const data = await this.trackingService.createNotification({
+      ...body,
+      organizationId: u.organizationId,
+    });
     return { message: 'Notification created', data };
   }
 
   @Patch('notifications/:id/read')
   @ApiOperation({ summary: 'Mark notification as read' })
-  async markNotificationRead(
-    @Param('id') id: string,
-    @CurrentUser() user?: CurrentUserType,
-  ) {
+  async markNotificationRead(@Param('id') id: string, @CurrentUser() user?: CurrentUserType) {
     const u = this.getUser(user);
     const data = await this.trackingService.markNotificationRead(id, u.id);
     return { message: 'Notification marked as read', data };

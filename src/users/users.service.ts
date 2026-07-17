@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -12,7 +18,14 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, query: GetUsersDto) {
-    const { page = 1, pageSize = 25, search, role, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const {
+      page = 1,
+      pageSize = 25,
+      search,
+      role,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
     const skip = (page - 1) * pageSize;
 
     const where: any = { organizationId };
@@ -88,7 +101,12 @@ export class UsersService {
     return user;
   }
 
-  async create(organizationId: string, dto: CreateUserDto, createdById: string, actorRole?: string) {
+  async create(
+    organizationId: string,
+    dto: CreateUserDto,
+    createdById: string,
+    actorRole?: string,
+  ) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('A user with this email already exists');
 

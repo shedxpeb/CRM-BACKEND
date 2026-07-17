@@ -20,7 +20,9 @@ export class OrganizationService {
   async findById(id: string) {
     const org = await this.prisma.organization.findFirst({
       where: { id, isDeleted: false },
-      include: { _count: { select: { users: true, leads: true, customers: true, projects: true } } },
+      include: {
+        _count: { select: { users: true, leads: true, customers: true, projects: true } },
+      },
     });
     if (!org) throw new NotFoundException(`Organization with ID ${id} not found`);
     return org;

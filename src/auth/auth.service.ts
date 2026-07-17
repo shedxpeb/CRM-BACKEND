@@ -1,5 +1,9 @@
 import {
-  Injectable, BadRequestException, UnauthorizedException, ForbiddenException, Logger,
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -10,9 +14,16 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import {
-  ResetPasswordDto, ResendOtpDto, ChangePasswordDto, ChangeEmailDto,
-  VerifyChangeEmailDto, SendEmailVerificationDto, VerifyEmailDto,
-  SendRegistrationOtpDto, SendForgotPasswordOtpDto, VerifyForgotPasswordOtpDto,
+  ResetPasswordDto,
+  ResendOtpDto,
+  ChangePasswordDto,
+  ChangeEmailDto,
+  VerifyChangeEmailDto,
+  SendEmailVerificationDto,
+  VerifyEmailDto,
+  SendRegistrationOtpDto,
+  SendForgotPasswordOtpDto,
+  VerifyForgotPasswordOtpDto,
 } from './dto/auth-extended.dto';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
@@ -48,8 +59,11 @@ export class AuthService {
     return parseInt(raw, 10) || 1800;
   }
 
-  private orgId(user: { organization?: { id?: string | null } | null; organizationId?: string | null }) {
-    return (user.organization?.id ?? user.organizationId) ?? undefined;
+  private orgId(user: {
+    organization?: { id?: string | null } | null;
+    organizationId?: string | null;
+  }) {
+    return user.organization?.id ?? user.organizationId ?? undefined;
   }
 
   private refreshExpiryDays(rememberMe: boolean) {
@@ -58,9 +72,16 @@ export class AuthService {
       : this.config.get<number>('session.absoluteDays') || 1;
   }
 
-  private async issueSessionTokens(user: any, opts: {
-    ipAddress?: string; userAgent?: string; rememberMe?: boolean; auditAction?: string; auditMeta?: any;
-  }) {
+  private async issueSessionTokens(
+    user: any,
+    opts: {
+      ipAddress?: string;
+      userAgent?: string;
+      rememberMe?: boolean;
+      auditAction?: string;
+      auditMeta?: any;
+    },
+  ) {
     const device = opts.userAgent?.split(' ')[0];
     const browser = this.parseBrowser(opts.userAgent);
     const os = this.parseOS(opts.userAgent);
@@ -137,9 +158,12 @@ export class AuthService {
       throw new BadRequestException('Passwords do not match');
     }
 
-    const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
     if (existingUser) {
-      if (existingUser.isVerified) throw new BadRequestException('An account with this email already exists');
+      if (existingUser.isVerified)
+        throw new BadRequestException('An account with this email already exists');
       const otp = await this.otpService.issue({
         email: existingUser.email,
         purpose: 'REGISTRATION',
@@ -160,7 +184,8 @@ export class AuthService {
       const existingOrg = await this.prisma.organization.findFirst({
         where: { name: dto.companyName, isDeleted: false },
       });
-      if (existingOrg) throw new BadRequestException('An organization with this name already exists');
+      if (existingOrg)
+        throw new BadRequestException('An organization with this name already exists');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.bcryptRounds());
@@ -179,7 +204,9 @@ export class AuthService {
           role: 'OWNER',
           organizationType: 'COMPANY',
           organizationId: organization.id,
-          passwordHistory: JSON.stringify([{ password: passwordHash, changedAt: new Date().toISOString() }]),
+          passwordHistory: JSON.stringify([
+            { password: passwordHash, changedAt: new Date().toISOString() },
+          ]),
         },
       });
 
@@ -228,7 +255,11 @@ export class AuthService {
     return { message: 'OTP sent successfully.', email: user.email, ...otp };
   }
 
-  async verifyRegistrationOtp(dto: VerifyOtpDto | VerifyRegistrationOtpDtoLike, ip?: string, ua?: string) {
+  async verifyRegistrationOtp(
+    dto: VerifyOtpDto | VerifyRegistrationOtpDtoLike,
+    ip?: string,
+    ua?: string,
+  ) {
     const email = dto.email.toLowerCase();
     await this.otpService.verify({ email, purpose: 'REGISTRATION', code: dto.otp });
 
@@ -244,7 +275,11 @@ export class AuthService {
       data: { isVerified: true, isActive: true, otp: null, otpExpiry: null, otpAttempts: 0 },
     });
 
-    await this.mailService.sendWelcomeEmail(user.email, user.name || user.email, user.organizationId || undefined);
+    await this.mailService.sendWelcomeEmail(
+      user.email,
+      user.name || user.email,
+      user.organizationId || undefined,
+    );
     await this.auditService.log({
       action: 'auth.verify-registration-otp',
       organizationId: this.orgId(user),
@@ -271,7 +306,13 @@ export class AuthService {
     });
 
     if (!user) {
-      await this.loginProtection.recordAttempt({ email, success: false, failureReason: 'User not found', ipAddress, userAgent });
+      await this.loginProtection.recordAttempt({
+        email,
+        success: false,
+        failureReason: 'User not found',
+        ipAddress,
+        userAgent,
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -291,22 +332,36 @@ export class AuthService {
     if (!user.isActive || !user.isVerified) {
       throw new UnauthorizedException('Account is not active. Please verify your email.');
     }
-    if (user.isLocked) throw new ForbiddenException('Account has been locked. Contact your administrator.');
+    if (user.isLocked)
+      throw new ForbiddenException('Account has been locked. Contact your administrator.');
 
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) {
       await this.loginProtection.recordAttempt({
-        email, organizationId: this.orgId(user), success: false, failureReason: 'Invalid password', ipAddress, userAgent,
+        email,
+        organizationId: this.orgId(user),
+        success: false,
+        failureReason: 'Invalid password',
+        ipAddress,
+        userAgent,
       });
       await this.auditService.log({
-        action: 'LOGIN_FAILED', organizationId: this.orgId(user), userId: user.id, ipAddress, userAgent,
+        action: 'LOGIN_FAILED',
+        organizationId: this.orgId(user),
+        userId: user.id,
+        ipAddress,
+        userAgent,
         metadata: { reason: 'Invalid password' },
       });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     await this.loginProtection.recordAttempt({
-      email, organizationId: this.orgId(user), success: true, ipAddress, userAgent,
+      email,
+      organizationId: this.orgId(user),
+      success: true,
+      ipAddress,
+      userAgent,
     });
     await this.prisma.user.update({
       where: { id: user.id },
@@ -314,7 +369,9 @@ export class AuthService {
     });
 
     return this.issueSessionTokens(user, {
-      ipAddress, userAgent, rememberMe: dto.rememberMe || false,
+      ipAddress,
+      userAgent,
+      rememberMe: dto.rememberMe || false,
     });
   }
 
@@ -327,7 +384,7 @@ export class AuthService {
 
     if (!storedToken) throw new UnauthorizedException('Invalid refresh token');
 
-    // Replay protection with grace for concurrent multi-tab refresh
+    // Replay protection with grace for concurrent multi-tab / dual-caller refresh
     if (storedToken.isRevoked) {
       const graceMs = parseInt(process.env.REFRESH_REUSE_GRACE_MS || '10000', 10);
       const revokedRecently =
@@ -335,16 +392,38 @@ export class AuthService {
         Date.now() - storedToken.revokedAt.getTime() < graceMs &&
         storedToken.replacedByTokenHash;
 
-      if (revokedRecently) {
-        // Concurrent refresh race: return the already-rotated token's session access token
-        // without treating this as theft. Client must use latest cookie; reject only if no replacement.
-        throw new UnauthorizedException('Refresh token already rotated. Retry with the latest token.');
+      if (revokedRecently && storedToken.replacedByTokenHash) {
+        const current = await this.prisma.refreshToken.findUnique({
+          where: { tokenHash: storedToken.replacedByTokenHash },
+          include: { session: true, user: true },
+        });
+        if (
+          current &&
+          !current.isRevoked &&
+          current.sessionId === storedToken.sessionId &&
+          !current.session.isRevoked &&
+          new Date() <= current.session.expiresAt &&
+          new Date() <= current.session.idleExpiresAt
+        ) {
+          // Race / stale-cookie: rotate from the current token so Set-Cookie advances.
+          return this.issueRotatedRefresh(current, ipAddress, userAgent);
+        }
+        throw new UnauthorizedException(
+          'Refresh token already rotated. Retry with the latest token.',
+        );
+      }
+
+      // Stale rotated cookie after grace — reject without killing the active session.
+      // Full revoke-all is reserved for reuse of a token that was never replaced (theft).
+      if (storedToken.replacedByTokenHash) {
+        throw new UnauthorizedException('Refresh token has been revoked');
       }
 
       await this.sessionService.revokeAllUserSessions(storedToken.userId);
       throw new UnauthorizedException('Refresh token has been revoked');
     }
-    if (new Date() > storedToken.expiresAt) throw new UnauthorizedException('Refresh token has expired');
+    if (new Date() > storedToken.expiresAt)
+      throw new UnauthorizedException('Refresh token has expired');
     if (storedToken.session.isRevoked) {
       await this.prisma.refreshToken.update({
         where: { id: storedToken.id },
@@ -352,11 +431,34 @@ export class AuthService {
       });
       throw new UnauthorizedException('Session has been revoked');
     }
-    if (new Date() > storedToken.session.expiresAt || new Date() > storedToken.session.idleExpiresAt) {
+    if (
+      new Date() > storedToken.session.expiresAt ||
+      new Date() > storedToken.session.idleExpiresAt
+    ) {
       await this.sessionService.revokeSession(storedToken.sessionId);
       throw new UnauthorizedException('Session has expired');
     }
 
+    return this.issueRotatedRefresh(storedToken, ipAddress, userAgent);
+  }
+
+  private async issueRotatedRefresh(
+    storedToken: {
+      id: string;
+      sessionId: string;
+      userId: string;
+      organizationId: string | null;
+      session: { isRememberMe: boolean };
+      user: {
+        id: string;
+        email: string;
+        role: any;
+        passwordVersion: number;
+      };
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const newRefresh = this.tokenService.generateRefreshToken();
     const days = this.refreshExpiryDays(storedToken.session.isRememberMe);
 
@@ -424,17 +526,19 @@ export class AuthService {
       ipAddress: ip,
       userAgent: ua,
     });
-    await this.mailService.sendTemplate(
-      (await this.prisma.user.findUnique({ where: { id: userId } }))!.email,
-      'security_alert',
-      {
-        userName: 'there',
-        alertMessage: 'All active sessions were signed out from your account.',
-        ipAddress: ip,
-        device: ua?.split(' ')[0],
-        timestamp: new Date().toISOString(),
-      },
-    ).catch(() => undefined);
+    await this.mailService
+      .sendTemplate(
+        (await this.prisma.user.findUnique({ where: { id: userId } }))!.email,
+        'security_alert',
+        {
+          userName: 'there',
+          alertMessage: 'All active sessions were signed out from your account.',
+          ipAddress: ip,
+          device: ua?.split(' ')[0],
+          timestamp: new Date().toISOString(),
+        },
+      )
+      .catch(() => undefined);
     return { message: 'All sessions have been revoked.' };
   }
 
@@ -442,10 +546,21 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, email: true, name: true, mobile: true, avatar: true,
-        department: true, designation: true, role: true, organizationType: true,
-        organizationId: true, isActive: true, isVerified: true, isLocked: true,
-        lastLogin: true, createdAt: true,
+        id: true,
+        email: true,
+        name: true,
+        mobile: true,
+        avatar: true,
+        department: true,
+        designation: true,
+        role: true,
+        organizationType: true,
+        organizationId: true,
+        isActive: true,
+        isVerified: true,
+        isLocked: true,
+        lastLogin: true,
+        createdAt: true,
         organization: { select: { name: true } },
       },
     });
@@ -456,7 +571,10 @@ export class AuthService {
 
   // ─── PASSWORD / EMAIL ─────────────────────────────────
 
-  async sendForgotPasswordOtp(dto: ForgotPasswordDto | SendForgotPasswordOtpDto, requestId?: string) {
+  async sendForgotPasswordOtp(
+    dto: ForgotPasswordDto | SendForgotPasswordOtpDto,
+    requestId?: string,
+  ) {
     const email = dto.email.toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Anti-enumeration: same message whether user exists or not
@@ -498,7 +616,12 @@ export class AuthService {
     }
 
     const email = dto.email.toLowerCase();
-    await this.otpService.verify({ email, purpose: 'FORGOT_PASSWORD', code: dto.otp, consume: true });
+    await this.otpService.verify({
+      email,
+      purpose: 'FORGOT_PASSWORD',
+      code: dto.otp,
+      consume: true,
+    });
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) throw new BadRequestException('No account found with this email');
@@ -514,7 +637,9 @@ export class AuthService {
         password: passwordHash,
         passwordVersion: newVersion,
         passwordHistory: JSON.stringify(history),
-        otp: null, otpExpiry: null, otpAttempts: 0,
+        otp: null,
+        otpExpiry: null,
+        otpAttempts: 0,
       },
     });
 
@@ -525,7 +650,11 @@ export class AuthService {
       userId: user.id,
       metadata: { passwordVersion: newVersion, method: 'forgot_password' },
     });
-    await this.mailService.sendPasswordResetConfirmation(user.email, user.name || undefined, user.organizationId || undefined);
+    await this.mailService.sendPasswordResetConfirmation(
+      user.email,
+      user.name || undefined,
+      user.organizationId || undefined,
+    );
 
     return { message: 'Password reset successfully. All other sessions have been logged out.' };
   }
@@ -563,10 +692,15 @@ export class AuthService {
       userAgent: ua,
       metadata: { method: 'change_password' },
     });
-    await this.mailService.sendTemplate(user.email, 'password_changed', {
-      userName: user.name || 'there',
-      email: user.email,
-    }, user.organizationId);
+    await this.mailService.sendTemplate(
+      user.email,
+      'password_changed',
+      {
+        userName: user.name || 'there',
+        email: user.email,
+      },
+      user.organizationId,
+    );
 
     return { message: 'Password changed successfully. Please sign in again.' };
   }
@@ -701,9 +835,10 @@ export class AuthService {
 
   private async ensurePasswordNotReused(user: { passwordHistory: any }, newPassword: string) {
     if (!user.passwordHistory) return;
-    const history: Array<{ password: string }> = typeof user.passwordHistory === 'string'
-      ? JSON.parse(user.passwordHistory)
-      : (user.passwordHistory as any);
+    const history: Array<{ password: string }> =
+      typeof user.passwordHistory === 'string'
+        ? JSON.parse(user.passwordHistory)
+        : (user.passwordHistory as any);
     for (const entry of history || []) {
       if (await bcrypt.compare(newPassword, entry.password)) {
         throw new BadRequestException('You cannot reuse a recent password');
@@ -714,7 +849,9 @@ export class AuthService {
   private pushPasswordHistory(existing: any, passwordHash: string) {
     const size = this.config.get<number>('security.passwordHistorySize') || 10;
     const history: Array<{ password: string; changedAt: string }> = existing
-      ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
+      ? typeof existing === 'string'
+        ? JSON.parse(existing)
+        : existing
       : [];
     history.push({ password: passwordHash, changedAt: new Date().toISOString() });
     while (history.length > size) history.shift();

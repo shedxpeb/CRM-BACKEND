@@ -23,11 +23,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         exception.message.includes('Server has closed the connection') ||
         exception.message.includes('Database is unavailable at'));
 
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : isDatabaseUnavailable
-        ? HttpStatus.SERVICE_UNAVAILABLE
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : isDatabaseUnavailable
+          ? HttpStatus.SERVICE_UNAVAILABLE
+          : HttpStatus.INTERNAL_SERVER_ERROR;
 
     let message =
       exception instanceof HttpException

@@ -9,7 +9,11 @@ import type {
 import { MAIL_PROVIDERS } from './mail.constants';
 
 export function resolveMailProvider(config: ConfigService): MailProviderName {
-  const raw = (config.get<string>('mail.provider') || process.env.MAIL_PROVIDER || 'smtp').toLowerCase();
+  const raw = (
+    config.get<string>('mail.provider') ||
+    process.env.MAIL_PROVIDER ||
+    'smtp'
+  ).toLowerCase();
   if ((MAIL_PROVIDERS as readonly string[]).includes(raw)) {
     return raw as MailProviderName;
   }

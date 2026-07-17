@@ -46,7 +46,12 @@ export function sanitizeMailAuditMetadata(
   const out: Record<string, string | number | boolean | null> = {};
   for (const [key, value] of Object.entries(input)) {
     if (FORBIDDEN_AUDIT_KEYS.has(key)) continue;
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      value === null
+    ) {
       out[key] = value;
       continue;
     }

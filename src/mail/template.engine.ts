@@ -106,19 +106,6 @@ function ctaButton(label: string, url: string, color: string): string {
   );
 }
 
-function otpCard(otp: string, color: string): string {
-  if (!otp) return '';
-  const bg = escapeHtml(color);
-  return (
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0">` +
-    `<tr><td align="center" class="otp-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px 12px">` +
-    `<div class="email-muted" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;letter-spacing:0.4px;margin:0 0 8px 0">Your verification code</div>` +
-    `<div style="font-family:Consolas,'Courier New',monospace;font-size:28px;line-height:1.2;font-weight:700;` +
-    `letter-spacing:6px;color:${bg};user-select:all;-webkit-user-select:all">${escapeHtml(otp)}</div>` +
-    `</td></tr></table>`
-  );
-}
-
 /**
  * Shared layout: Header → Logo → Company → Title → Body → CTA/OTP → Support → Footer
  * One outer centering table + one content table only.
@@ -133,20 +120,22 @@ function layout(vars: TemplateVars, title: string, bodyHtml: string): string {
   const phone = escapeHtml(v(vars, 'phone'));
   const year = escapeHtml(v(vars, 'year', String(new Date().getFullYear())));
 
-  const logo = logoUrl && /^https?:\/\//i.test(logoUrl)
-    ? `<img src="${escapeHtml(logoUrl)}" width="120" height="40" alt="${company}" ` +
-      `style="display:block;border:0;outline:none;height:40px;width:auto;max-width:140px;margin:0 0 10px 0" />`
-    : '';
+  const logo =
+    logoUrl && /^https?:\/\//i.test(logoUrl)
+      ? `<img src="${escapeHtml(logoUrl)}" width="120" height="40" alt="${company}" ` +
+        `style="display:block;border:0;outline:none;height:40px;width:auto;max-width:140px;margin:0 0 10px 0" />`
+      : '';
 
   const supportBlock = support
     ? `<p style="margin:0 0 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#64748b">` +
       `Questions? <a href="mailto:${support}" style="color:${escapeHtml(color)};text-decoration:underline">${support}</a></p>`
     : '';
 
-  const webBlock = website && /^https?:\/\//i.test(website)
-    ? `<p style="margin:0 0 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5">` +
-      `<a href="${escapeHtml(website)}" style="color:#64748b;text-decoration:underline">${escapeHtml(website.replace(/^https?:\/\//i, ''))}</a></p>`
-    : '';
+  const webBlock =
+    website && /^https?:\/\//i.test(website)
+      ? `<p style="margin:0 0 6px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5">` +
+        `<a href="${escapeHtml(website)}" style="color:#64748b;text-decoration:underline">${escapeHtml(website.replace(/^https?:\/\//i, ''))}</a></p>`
+      : '';
 
   const contactLine = [address, phone].filter(Boolean).join(' · ');
 
@@ -222,7 +211,6 @@ interface ContentParts {
 
 function contentFor(id: MailTemplateId, vars: TemplateVars): ContentParts {
   const name = v(vars, 'userName', 'there');
-  const otp = v(vars, 'otp');
   const expiry = v(vars, 'expiry', '10 minutes');
   const color = safeColor(vars);
   const company = v(vars, 'companyName', 'our platform');

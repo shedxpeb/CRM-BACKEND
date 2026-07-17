@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OtpPurpose } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -92,7 +97,12 @@ export class OtpService {
     metadata?: MailAuditJson;
     isResend?: boolean;
     requestId?: string;
-  }): Promise<{ expiresAt: Date; expiresInMinutes: number; resendAvailableInSeconds: number; resendCount: number }> {
+  }): Promise<{
+    expiresAt: Date;
+    expiresInMinutes: number;
+    resendAvailableInSeconds: number;
+    resendCount: number;
+  }> {
     const email = params.email.toLowerCase().trim();
     const purpose = params.purpose as OtpPurpose;
 
@@ -150,7 +160,7 @@ export class OtpService {
         params.organizationId,
         { requestId: params.requestId, purpose: params.purpose },
       );
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       await this.audit('OTP_SEND_FAILED', params, {
         purpose: params.purpose,
         status: 'FAILED',
@@ -166,7 +176,9 @@ export class OtpService {
           failureType: this.mail.getSmtpFailureType() || 'SMTP_UNKNOWN',
         })}`,
       );
-      throw new ServiceUnavailableException("We couldn't send the verification code. Please try again.");
+      throw new ServiceUnavailableException(
+        "We couldn't send the verification code. Please try again.",
+      );
     }
 
     const safeMetadata = toPrismaJson(sanitizeMailAuditMetadata(params.metadata));
@@ -229,7 +241,10 @@ export class OtpService {
     });
 
     if (!challenge) {
-      throw new BadRequestException({ message: 'No OTP has been sent. Request a new OTP.', code: 'OTP_NOT_FOUND' });
+      throw new BadRequestException({
+        message: 'No OTP has been sent. Request a new OTP.',
+        code: 'OTP_NOT_FOUND',
+      });
     }
 
     if (new Date() > challenge.expiresAt) {
@@ -263,7 +278,9 @@ export class OtpService {
     if (!ok) {
       const remaining = challenge.maxAttempts - (challenge.attempts + 1);
       if (remaining <= 0) {
-        await this.prisma.otpChallenge.delete({ where: { id: challenge.id } }).catch(() => undefined);
+        await this.prisma.otpChallenge
+          .delete({ where: { id: challenge.id } })
+          .catch(() => undefined);
         await this.audit(
           'OTP_MAX_ATTEMPTS_REACHED',
           { email, purpose: params.purpose, userId: challenge.userId || undefined },
@@ -291,7 +308,9 @@ export class OtpService {
     }
 
     const metadata =
-      challenge.metadata && typeof challenge.metadata === 'object' && !Array.isArray(challenge.metadata)
+      challenge.metadata &&
+      typeof challenge.metadata === 'object' &&
+      !Array.isArray(challenge.metadata)
         ? sanitizeMailAuditMetadata(challenge.metadata as Record<string, unknown>)
         : null;
     const userId = challenge.userId;
@@ -312,12 +331,20 @@ export class OtpService {
 
   private async audit(
     action: string,
-    params: { userId?: string; organizationId?: string | null; email?: string; purpose?: OtpPurposeKey; requestId?: string },
+    params: {
+      userId?: string;
+      organizationId?: string | null;
+      email?: string;
+      purpose?: OtpPurposeKey;
+      requestId?: string;
+    },
     metadata: MailAuditJson,
   ) {
     try {
       const status =
-        metadata.status === 'SUCCESS' || metadata.status === 'FAILED' || metadata.status === 'PENDING'
+        metadata.status === 'SUCCESS' ||
+        metadata.status === 'FAILED' ||
+        metadata.status === 'PENDING'
           ? metadata.status
           : undefined;
       await this.prisma.auditLog.create({
@@ -338,7 +365,7 @@ export class OtpService {
           ),
         },
       });
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       this.logger.error(
         `OTP audit write failed ${JSON.stringify({
           action,

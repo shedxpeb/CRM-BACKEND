@@ -149,10 +149,14 @@ export async function probeSmtpPorts(params: {
   }
 
   const anyOk = results.some((r) => r.ok);
-  const bothTimeout = results.length > 0 && results.every((r) => !r.ok && r.failureType === 'SMTP_TIMEOUT');
+  const bothTimeout =
+    results.length > 0 && results.every((r) => !r.ok && r.failureType === 'SMTP_TIMEOUT');
   let conclusion: string;
   if (anyOk) {
-    const okPorts = results.filter((r) => r.ok).map((r) => `${r.port}/${r.mode}`).join(', ');
+    const okPorts = results
+      .filter((r) => r.ok)
+      .map((r) => `${r.port}/${r.mode}`)
+      .join(', ');
     conclusion = `At least one SMTP path works over IPv4 (${okPorts}). Prefer that port in SMTP_PORT / SMTP_SECURE.`;
   } else if (bothTimeout) {
     conclusion =

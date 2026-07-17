@@ -7,7 +7,9 @@ import { validateEnv, applyConfigToProcessEnv } from './env.validation';
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      // Production reads .env.production / production.env only; development uses .env.
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? ['.env.production', 'production.env'] : ['.env'],
       load: [configuration],
       validate: (config) => {
         applyConfigToProcessEnv(config);

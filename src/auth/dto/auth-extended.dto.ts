@@ -45,7 +45,8 @@ export class ChangePasswordDto {
   @MinLength(8)
   @MaxLength(128)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   newPassword: string;
 
@@ -98,7 +99,9 @@ export class ResendOtpDto {
   @IsEmail()
   email: string;
 
-  @ApiPropertyOptional({ enum: ['REGISTRATION', 'FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'CHANGE_EMAIL'] })
+  @ApiPropertyOptional({
+    enum: ['REGISTRATION', 'FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'CHANGE_EMAIL'],
+  })
   @IsOptional()
   @IsString()
   purpose?: 'REGISTRATION' | 'FORGOT_PASSWORD' | 'EMAIL_VERIFICATION' | 'CHANGE_EMAIL';
@@ -119,7 +122,8 @@ export class ResetPasswordDto {
   @MinLength(8)
   @MaxLength(128)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   newPassword: string;
 

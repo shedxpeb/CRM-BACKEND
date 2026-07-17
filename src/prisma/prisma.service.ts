@@ -42,7 +42,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         return;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Database connection attempt ${attempt}/${maxAttempts} failed: ${message}`);
+        this.logger.warn(
+          `Database connection attempt ${attempt}/${maxAttempts} failed: ${message}`,
+        );
         if (attempt === maxAttempts) {
           this.logger.error(`Database connection failed after ${maxAttempts} attempts (${target})`);
           throw new Error(

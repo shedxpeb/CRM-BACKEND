@@ -37,14 +37,7 @@ import { CookieInterceptor } from './cookie.interceptor';
     OtpService,
     CookieInterceptor,
   ],
-  exports: [
-    AuthService,
-    TokenService,
-    SessionService,
-    AuditService,
-    OtpService,
-    JwtModule,
-  ],
+  exports: [AuthService, TokenService, SessionService, AuditService, OtpService, JwtModule],
 })
 export class AuthModule {
   static readonly moduleCapability = { capability: 'auth' } as const;

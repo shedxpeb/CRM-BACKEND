@@ -45,9 +45,11 @@ export class BrandingService {
       return { ...defaults, year, socialLinks: { ...defaults.socialLinks } };
     }
 
-    const settings = (org.settings && typeof org.settings === 'object' && !Array.isArray(org.settings)
-      ? (org.settings as Record<string, any>)
-      : {}) as Record<string, any>;
+    const settings = (
+      org.settings && typeof org.settings === 'object' && !Array.isArray(org.settings)
+        ? (org.settings as Record<string, any>)
+        : {}
+    ) as Record<string, any>;
     const branding = (settings.branding || {}) as Record<string, any>;
 
     return {

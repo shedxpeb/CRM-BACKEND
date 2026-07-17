@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "moduleResolution": "bundler",
-    "types": ["node"],
+    "ignoreDeprecations": "6.0",
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types"],
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -24,5 +25,7 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": ["src/**/*", "prisma/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,6 +1,14 @@
-import { Controller, Post, Body, Get, Req, UseInterceptors, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Req,
+  UseInterceptors,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -33,9 +41,11 @@ interface RequestWithUser extends FastifyRequest {
   };
 }
 
+/** Stricter limit for credential / OTP endpoints (not session refresh). */
+const AUTH_STRICT = { default: { limit: 10, ttl: 60_000 } };
+
 @ApiTags('auth')
 @Controller('auth')
-@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -44,6 +54,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('register')
   @ApiOperation({ summary: 'Register a new account' })
   register(@Body() dto: RegisterDto, @Req() req: FastifyRequest) {
@@ -51,6 +62,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('send-registration-otp')
   @ApiOperation({ summary: 'Send registration OTP' })
   sendRegistrationOtp(@Body() dto: SendRegistrationOtpDto, @Req() req: FastifyRequest) {
@@ -58,6 +70,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('verify-registration-otp')
   @UseInterceptors(CookieInterceptor)
   @ApiOperation({ summary: 'Verify registration OTP' })
@@ -67,6 +80,7 @@ export class AuthController {
 
   /** Legacy alias */
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('verify-otp')
   @UseInterceptors(CookieInterceptor)
   @ApiOperation({ summary: 'Verify registration OTP (legacy alias)' })
@@ -75,6 +89,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('login')
   @UseInterceptors(CookieInterceptor)
   @ApiOperation({ summary: 'Login with email and password' })
@@ -83,6 +98,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipThrottle()
   @Post('refresh')
   @UseInterceptors(CookieInterceptor)
   @ApiOperation({ summary: 'Refresh access token' })
@@ -92,13 +108,19 @@ export class AuthController {
     return this.authService.refresh(refreshToken, req.ip, req.headers['user-agent'] as string);
   }
 
+  @SkipThrottle()
   @Post('logout')
   @UseInterceptors(CookieInterceptor)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout and revoke session' })
   async logout(@Req() req: RequestWithUser) {
     if (req.user?.sessionId) {
-      await this.authService.logout(req.user.sessionId, req.user.id, req.ip, req.headers['user-agent'] as string);
+      await this.authService.logout(
+        req.user.sessionId,
+        req.user.id,
+        req.ip,
+        req.headers['user-agent'] as string,
+      );
     }
     return { message: 'Logged out successfully.', clearRefreshCookie: true };
   }
@@ -118,6 +140,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('send-forgot-password-otp')
   @ApiOperation({ summary: 'Send forgot-password OTP' })
   sendForgotPasswordOtp(@Body() dto: SendForgotPasswordOtpDto, @Req() req: FastifyRequest) {
@@ -126,6 +149,7 @@ export class AuthController {
 
   /** Legacy alias */
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset OTP (legacy alias)' })
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: FastifyRequest) {
@@ -133,6 +157,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('verify-forgot-password-otp')
   @ApiOperation({ summary: 'Verify forgot-password OTP' })
   verifyForgotPasswordOtp(@Body() dto: VerifyForgotPasswordOtpDto) {
@@ -140,6 +165,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password with OTP' })
   resetPassword(@Body() dto: ResetPasswordDto) {
@@ -147,6 +173,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_STRICT)
   @Post('resend-otp')
   @ApiOperation({ summary: 'Resend OTP' })
   resendOtp(@Body() dto: ResendOtpDto, @Req() req: FastifyRequest) {
@@ -171,7 +198,12 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password' })
   changePassword(@Req() req: RequestWithUser, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(req.user.id, dto, req.ip, req.headers['user-agent'] as string);
+    return this.authService.changePassword(
+      req.user.id,
+      dto,
+      req.ip,
+      req.headers['user-agent'] as string,
+    );
   }
 
   @Post('change-email')
@@ -195,6 +227,7 @@ export class AuthController {
     return { ...result, clearRefreshCookie: true };
   }
 
+  @SkipThrottle()
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })

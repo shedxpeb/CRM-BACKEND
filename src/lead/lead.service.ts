@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService, WhereClause } from '../common/services/base-query.service';
 import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
@@ -19,16 +24,41 @@ export class LeadService extends BaseQueryService {
   ) {
     super(prisma, {
       model: 'lead',
-      searchFields: ['customerName', 'companyName', 'mobile', 'email', 'designation', 'website', 'panNumber'],
-      filterFields: ['status', 'priority', 'source', 'projectType', 'structureType', 'industry', 'businessType', 'city', 'assignedToId'],
+      searchFields: [
+        'customerName',
+        'companyName',
+        'mobile',
+        'email',
+        'designation',
+        'website',
+        'panNumber',
+      ],
+      filterFields: [
+        'status',
+        'priority',
+        'source',
+        'projectType',
+        'structureType',
+        'industry',
+        'businessType',
+        'city',
+        'assignedToId',
+      ],
       sortColumns: ['createdAt', 'companyName', 'customerName', 'priority', 'status', 'leadNumber'],
       orgScoped: true,
     });
   }
 
   async findAll(query: GetLeadsDto, organizationId?: string) {
-    const { statusMode, ...restQuery } = query;
-    const result = await super.findAll(restQuery, organizationId);
+    const { statusMode, assignedEmployeeId, ...restQuery } = query as GetLeadsDto & {
+      assignedEmployeeId?: string;
+    };
+    // FE sends assignedEmployeeId; Prisma filter field is assignedToId
+    const normalizedQuery = {
+      ...restQuery,
+      ...(assignedEmployeeId ? { assignedToId: assignedEmployeeId } : {}),
+    };
+    const result = await super.findAll(normalizedQuery, organizationId);
 
     const where: WhereClause = { isDeleted: false };
     if (!organizationId) {
@@ -47,7 +77,10 @@ export class LeadService extends BaseQueryService {
       this.client.count({ where }),
     ]);
 
-    const summaryInProgress = Math.max(0, totalFiltered - summaryNew - summaryContacted - summaryConverted);
+    const summaryInProgress = Math.max(
+      0,
+      totalFiltered - summaryNew - summaryContacted - summaryConverted,
+    );
 
     const filters: any = {};
     if (query.status) filters.status = query.status;
@@ -56,7 +89,9 @@ export class LeadService extends BaseQueryService {
     if (query.projectType) filters.projectType = query.projectType;
     if (query.structureType) filters.structureType = query.structureType;
     if (query.city) filters.city = query.city;
-    if (query.assignedEmployeeId) filters.assignedEmployeeId = query.assignedEmployeeId;
+    if (assignedEmployeeId || (query as any).assignedToId) {
+      filters.assignedToId = assignedEmployeeId || (query as any).assignedToId;
+    }
 
     return {
       ...result,
@@ -71,7 +106,16 @@ export class LeadService extends BaseQueryService {
     };
   }
 
-  async getKanban(filters: { search?: string; priority?: string; city?: string; assignedTo?: string } = {}, organizationId?: string) {
+  async getKanban(
+    filters: {
+      search?: string;
+      priority?: string;
+      city?: string;
+      assignedTo?: string;
+      assignedEmployeeId?: string;
+    } = {},
+    organizationId?: string,
+  ) {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
@@ -86,18 +130,43 @@ export class LeadService extends BaseQueryService {
     }
     if (filters.priority) where.priority = filters.priority;
     if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
-    if (filters.assignedTo) where.assignedTo = { contains: filters.assignedTo, mode: 'insensitive' };
+    const assigneeId = filters.assignedEmployeeId || filters.assignedTo;
+    if (assigneeId) where.assignedToId = assigneeId;
+
+    const KANBAN_MAX_TOTAL = 300;
+    const KANBAN_MAX_PER_COLUMN = 50;
 
     const leads = await this.client.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: KANBAN_MAX_TOTAL,
       select: {
-        id: true, leadNumber: true, customerName: true, companyName: true,
-        designation: true, mobile: true, email: true, city: true, state: true,
-        industry: true, projectTitle: true, projectType: true, structureType: true,
-        width: true, length: true, source: true, priority: true, status: true,
-        score: true, assignedTo: true, remarks: true, isConverted: true,
-        tags: true, createdAt: true, updatedAt: true, lastFollowUp: true,
+        id: true,
+        leadNumber: true,
+        customerName: true,
+        companyName: true,
+        designation: true,
+        mobile: true,
+        email: true,
+        city: true,
+        state: true,
+        industry: true,
+        projectTitle: true,
+        projectType: true,
+        structureType: true,
+        width: true,
+        length: true,
+        source: true,
+        priority: true,
+        status: true,
+        score: true,
+        assignedTo: true,
+        remarks: true,
+        isConverted: true,
+        tags: true,
+        createdAt: true,
+        updatedAt: true,
+        lastFollowUp: true,
         nextFollowUpDate: true,
       },
     });
@@ -106,7 +175,9 @@ export class LeadService extends BaseQueryService {
     for (const lead of leads) {
       const status = lead.status || 'Unknown';
       if (!statusGroups[status]) statusGroups[status] = [];
-      statusGroups[status].push(lead);
+      if (statusGroups[status].length < KANBAN_MAX_PER_COLUMN) {
+        statusGroups[status].push(lead);
+      }
     }
 
     const columns = Object.entries(statusGroups).map(([status, cards]) => ({
@@ -118,7 +189,10 @@ export class LeadService extends BaseQueryService {
     return { columns };
   }
 
-  async getCalendar(filters: { search?: string; status?: string; priority?: string; city?: string } = {}, organizationId?: string) {
+  async getCalendar(
+    filters: { search?: string; status?: string; priority?: string; city?: string } = {},
+    organizationId?: string,
+  ) {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
@@ -137,10 +211,20 @@ export class LeadService extends BaseQueryService {
     const events = await this.client.findMany({
       where,
       orderBy: { nextFollowUpDate: 'asc' },
+      take: 200,
       select: {
-        id: true, leadNumber: true, customerName: true, companyName: true,
-        projectTitle: true, status: true, priority: true, nextFollowUpDate: true,
-        createdAt: true, mobile: true, email: true, city: true,
+        id: true,
+        leadNumber: true,
+        customerName: true,
+        companyName: true,
+        projectTitle: true,
+        status: true,
+        priority: true,
+        nextFollowUpDate: true,
+        createdAt: true,
+        mobile: true,
+        email: true,
+        city: true,
       },
     });
 
@@ -158,10 +242,7 @@ export class LeadService extends BaseQueryService {
           { organizationId },
           { isDeleted: false },
           {
-            OR: [
-              { mobile: data.mobile },
-              ...(data.email ? [{ email: data.email }] : []),
-            ],
+            OR: [{ mobile: data.mobile }, ...(data.email ? [{ email: data.email }] : [])],
           },
         ],
       },
@@ -206,7 +287,11 @@ export class LeadService extends BaseQueryService {
         entityType: 'lead',
         entityId: lead.id,
         eventType: 'created',
-        data: { customerName: data.customerName, companyName: data.companyName, status: lead.status },
+        data: {
+          customerName: data.customerName,
+          companyName: data.companyName,
+          status: lead.status,
+        },
         createdById,
       });
       return lead;
@@ -225,10 +310,7 @@ export class LeadService extends BaseQueryService {
     if (!existingLead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
     if (data.mobile || data.email) {
-      const duplicateWhere: any[] = [
-        { id: { not: id } },
-        { isDeleted: false },
-      ];
+      const duplicateWhere: any[] = [{ id: { not: id } }, { isDeleted: false }];
       if (organizationId) duplicateWhere.push({ organizationId });
       duplicateWhere.push({
         OR: [
@@ -282,11 +364,20 @@ export class LeadService extends BaseQueryService {
 
   async getLogs(id: string, organizationId: string) {
     await this.findById(id, undefined, organizationId);
-    return this.prisma.auditLog.findMany({
+    const logs = await this.prisma.auditLog.findMany({
       where: { resource: 'lead', resourceId: id, organizationId },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    return logs.map((log) => ({
+      id: log.id,
+      action: log.action,
+      description: log.action.replace(/[._]/g, ' '),
+      timestamp: log.createdAt,
+      createdAt: log.createdAt,
+      userId: log.userId,
+      metadata: log.metadata,
+    }));
   }
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
@@ -307,7 +398,11 @@ export class LeadService extends BaseQueryService {
     return result;
   }
 
-  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkDelete(
+    ids: string[],
+    deletedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkDelete(ids, deletedById, organizationId);
     await this.auditService.log({
       action: 'lead.bulk-deleted',
@@ -331,7 +426,12 @@ export class LeadService extends BaseQueryService {
     return result;
   }
 
-  async bulkStatusUpdate(ids: string[], status: string, updatedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkStatusUpdate(
+    ids: string[],
+    status: string,
+    updatedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkStatusUpdate(ids, status, organizationId);
     await this.auditService.log({
       action: 'lead.bulk-status-updated',
@@ -360,16 +460,19 @@ export class LeadService extends BaseQueryService {
       where: {
         organizationId,
         isDeleted: false,
-        OR: [
-          { mobile },
-          ...(email ? [{ email }] : []),
-        ],
+        OR: [{ mobile }, ...(email ? [{ email }] : [])],
       },
     });
     return { exists: !!existing, lead: existing || undefined };
   }
 
-  async updateWorkflow(id: string, stage: string, notes: string | undefined, updatedById: string | undefined, organizationId: string) {
+  async updateWorkflow(
+    id: string,
+    stage: string,
+    notes: string | undefined,
+    updatedById: string | undefined,
+    organizationId: string,
+  ) {
     const lead = await this.client.findFirst({ where: { id, isDeleted: false, organizationId } });
     if (!lead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
@@ -402,7 +505,11 @@ export class LeadService extends BaseQueryService {
     return updated;
   }
 
-  async importLeads(buffer: Buffer, createdById: string, organizationId: string): Promise<ImportResult> {
+  async importLeads(
+    buffer: Buffer,
+    createdById: string,
+    organizationId: string,
+  ): Promise<ImportResult> {
     if (!organizationId) {
       throw new BadRequestException('Organization context is required to import leads');
     }
@@ -414,8 +521,14 @@ export class LeadService extends BaseQueryService {
       });
 
       const existingValues = new Map<string, Set<string>>();
-      existingValues.set('mobile', new Set(existingLeads.map(l => l.mobile?.toLowerCase()).filter(Boolean)));
-      existingValues.set('email', new Set(existingLeads.map(l => l.email?.toLowerCase()).filter(Boolean)));
+      existingValues.set(
+        'mobile',
+        new Set(existingLeads.map((l) => l.mobile?.toLowerCase()).filter(Boolean)),
+      );
+      existingValues.set(
+        'email',
+        new Set(existingLeads.map((l) => l.email?.toLowerCase()).filter(Boolean)),
+      );
       return existingValues;
     };
 
@@ -432,7 +545,12 @@ export class LeadService extends BaseQueryService {
       buffer,
       config,
       async (dto) => {
-        const { assignedToName, createdById: _cbid, organizationId: _oid, ...leadData } = dto;
+        const {
+          assignedToName: _assignedToName,
+          createdById: _cbid,
+          organizationId: _oid,
+          ...leadData
+        } = dto;
 
         const finalData = {
           ...leadData,
@@ -455,14 +573,24 @@ export class LeadService extends BaseQueryService {
       userId: createdById,
       organizationId,
       resource: 'lead',
-      metadata: { imported: importResult.imported, skipped: importResult.skipped, invalid: importResult.invalid, total: importResult.total },
+      metadata: {
+        imported: importResult.imported,
+        skipped: importResult.skipped,
+        invalid: importResult.invalid,
+        total: importResult.total,
+      },
     });
     await this.workflowEngine.processEvent({
       organizationId,
       entityType: 'lead',
       entityId: organizationId,
       eventType: 'imported',
-      data: { imported: importResult.imported, skipped: importResult.skipped, invalid: importResult.invalid, total: importResult.total },
+      data: {
+        imported: importResult.imported,
+        skipped: importResult.skipped,
+        invalid: importResult.invalid,
+        total: importResult.total,
+      },
       createdById,
     });
     return importResult;

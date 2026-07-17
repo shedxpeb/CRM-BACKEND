@@ -18,6 +18,12 @@ import { MailController } from './mail.controller';
     MailService,
     MailHealthService,
   ],
-  exports: [MailService, MailQueueService, BrandingService, MailTransportService, MailHealthService],
+  exports: [
+    MailService,
+    MailQueueService,
+    BrandingService,
+    MailTransportService,
+    MailHealthService,
+  ],
 })
 export class MailModule {}

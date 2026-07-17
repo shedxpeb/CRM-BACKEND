@@ -20,7 +20,10 @@ export class CustomerController {
   @RequirePermissions('customer:list')
   @ApiOperation({ summary: 'List customers with pagination, search, and filters' })
   @ApiResponse({ status: 200, description: 'Customer list fetched.' })
-  async findAll(@Query() query: GetCustomersDto, @CurrentUser('organizationId') organizationId: string) {
+  async findAll(
+    @Query() query: GetCustomersDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.customerService.findAll(query, organizationId);
     return { message: 'Customer list fetched.', data };
   }
@@ -36,7 +39,11 @@ export class CustomerController {
   @Get('check-duplicate')
   @RequirePermissions('customer:read')
   @ApiOperation({ summary: 'Check for duplicate customer' })
-  async checkDuplicate(@Query('mobile') mobile: string, @Query('email') email: string, @CurrentUser('organizationId') organizationId: string) {
+  async checkDuplicate(
+    @Query('mobile') mobile: string,
+    @Query('email') email: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.customerService.checkDuplicate(mobile, email, organizationId);
     return { message: 'Duplicate check completed.', data };
   }
@@ -45,16 +52,27 @@ export class CustomerController {
   @Get('export')
   @RequirePermissions('customer:list')
   @ApiOperation({ summary: 'Export customers' })
-  async export(@Query() query: GetCustomersDto, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.customerService.findAll({ ...query, pageSize: 500 }, organizationId);
+  async export(
+    @Query() query: GetCustomersDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.customerService.findAllForExport(query, organizationId);
     return { message: 'Export data fetched.', data };
   }
 
   @Get('combobox')
   @RequirePermissions('customer:list')
   @ApiOperation({ summary: 'Customer combobox for dropdowns' })
-  async combobox(@Query() query: Record<string, unknown>, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.customerService.getCombobox(query, organizationId, ['id', 'customerName', 'companyName', 'mobile']);
+  async combobox(
+    @Query() query: Record<string, unknown>,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.customerService.getCombobox(query, organizationId, [
+      'id',
+      'customerName',
+      'companyName',
+      'mobile',
+    ]);
     return { message: 'Customers fetched.', data };
   }
 
@@ -77,7 +95,10 @@ export class CustomerController {
   @Get(':id/activities')
   @RequirePermissions('customer:read')
   @ApiOperation({ summary: 'Customer activity timeline' })
-  async getActivities(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.customerService.getActivities(id, organizationId);
     return { message: 'Activities fetched.', data };
   }
@@ -106,6 +127,36 @@ export class CustomerController {
     return { message: 'Lead converted to customer.', data };
   }
 
+  /** Static bulk routes MUST be registered before parameterized :id routes */
+  @Patch('bulk/status')
+  @RequirePermissions('customer:update')
+  @ApiOperation({ summary: 'Bulk update customer status' })
+  async bulkStatusUpdate(
+    @Body() dto: BulkStatusDto,
+    @CurrentUser('id') updatedById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.customerService.bulkStatusUpdate(
+      dto.ids,
+      dto.status,
+      updatedById,
+      organizationId,
+    );
+    return { message: 'Customers updated.', data };
+  }
+
+  @Delete('bulk')
+  @RequirePermissions('customer:delete')
+  @ApiOperation({ summary: 'Bulk delete customers' })
+  async bulkDelete(
+    @Body() dto: BulkDeleteDto,
+    @CurrentUser('id') deletedById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.customerService.bulkDelete(dto.ids, deletedById, organizationId);
+    return { message: 'Customers deleted.', data };
+  }
+
   @Patch(':id')
   @RequirePermissions('customer:update')
   @ApiOperation({ summary: 'Update customer' })
@@ -129,29 +180,5 @@ export class CustomerController {
   ) {
     const data = await this.customerService.softDelete(id, deletedById, organizationId);
     return { message: 'Customer deleted.', data };
-  }
-
-  @Patch('bulk/status')
-  @RequirePermissions('customer:update')
-  @ApiOperation({ summary: 'Bulk update customer status' })
-  async bulkStatusUpdate(
-    @Body() dto: BulkStatusDto,
-    @CurrentUser('id') updatedById: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
-    const data = await this.customerService.bulkStatusUpdate(dto.ids, dto.status, updatedById, organizationId);
-    return { message: 'Customers updated.', data };
-  }
-
-  @Delete('bulk')
-  @RequirePermissions('customer:delete')
-  @ApiOperation({ summary: 'Bulk delete customers' })
-  async bulkDelete(
-    @Body() dto: BulkDeleteDto,
-    @CurrentUser('id') deletedById: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
-    const data = await this.customerService.bulkDelete(dto.ids, deletedById, organizationId);
-    return { message: 'Customers deleted.', data };
   }
 }

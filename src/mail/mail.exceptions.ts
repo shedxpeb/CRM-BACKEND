@@ -4,7 +4,10 @@ import type { SmtpFailureType } from './mail.types';
 export class MailDeliveryUnavailableException extends ServiceUnavailableException {
   readonly failureType: SmtpFailureType;
 
-  constructor(failureType: SmtpFailureType, clientMessage = 'Email delivery is temporarily unavailable') {
+  constructor(
+    failureType: SmtpFailureType,
+    clientMessage = 'Email delivery is temporarily unavailable',
+  ) {
     super(clientMessage);
     this.failureType = failureType;
   }
