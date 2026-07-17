@@ -30,7 +30,7 @@ import { SessionService } from './services/session.service';
 import { AuditService } from './services/audit.service';
 import { LoginProtectionService } from './services/login-protection.service';
 import { OtpService, OtpPurposeKey } from './services/otp.service';
-import { bootstrapOrganizationSystem } from '../../prisma/system-bootstrap';
+import { bootstrapOrganizationSystem } from '../common/system-bootstrap';
 
 @Injectable()
 export class AuthService {

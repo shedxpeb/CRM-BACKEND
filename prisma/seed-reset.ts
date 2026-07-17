@@ -10,7 +10,7 @@
  * Env: SEED_RESET_KEEP_SESSIONS=true to retain login sessions
  */
 import { PrismaClient } from '@prisma/client';
-import { bootstrapOrganizationSystem } from './system-bootstrap';
+import { bootstrapOrganizationSystem } from '../src/common/system-bootstrap';
 
 const prisma = new PrismaClient();
 

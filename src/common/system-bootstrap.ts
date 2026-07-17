@@ -9,9 +9,12 @@ import {
   LEAD_PIPELINE,
   PROJECT_PIPELINE,
   SYSTEM_ROLE_DEFS,
-} from '../src/common/system-seed.constants';
+} from './system-seed.constants';
 
-type Tx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends' | '$use'>;
+type Tx = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends' | '$use'
+>;
 
 export async function upsertSystemRoles(
   db: Tx,
