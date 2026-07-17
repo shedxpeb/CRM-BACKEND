@@ -56,8 +56,13 @@ export function entityLabel(entityType: string): string {
   return ENTITY_LABELS[entityType] || titleCase(entityType.replace(/[-_]/g, ' '));
 }
 
-export function formatDisplayCode(entityType: string, businessNumber?: number | string | null, fallbackCode?: string | null): string | null {
-  if (fallbackCode && typeof fallbackCode === 'string' && fallbackCode.trim()) return fallbackCode.trim();
+export function formatDisplayCode(
+  entityType: string,
+  businessNumber?: number | string | null,
+  fallbackCode?: string | null,
+): string | null {
+  if (fallbackCode && typeof fallbackCode === 'string' && fallbackCode.trim())
+    return fallbackCode.trim();
   if (businessNumber === null || businessNumber === undefined || businessNumber === '') return null;
   const num = String(businessNumber).replace(/\D/g, '') || String(businessNumber);
   const padded = num.padStart(6, '0');
@@ -92,7 +97,14 @@ export function humanizeEventTitle(entityType: string, rawAction: string): strin
 
   const mapped = EVENT_TITLE_MAP[cleaned] || EVENT_TITLE_MAP[rawAction];
   if (mapped) {
-    if (mapped === 'Created' || mapped === 'Deleted' || mapped === 'Information Updated' || mapped === 'Archived' || mapped === 'Activated' || mapped === 'Closed') {
+    if (
+      mapped === 'Created' ||
+      mapped === 'Deleted' ||
+      mapped === 'Information Updated' ||
+      mapped === 'Archived' ||
+      mapped === 'Activated' ||
+      mapped === 'Closed'
+    ) {
       return `${entityLabel(entityType)} ${mapped}`;
     }
     if (mapped === 'Status Changed') return `${entityLabel(entityType)} Status Changed`;
@@ -186,7 +198,9 @@ export function labelForField(key: string): string {
   return FIELD_LABELS[key] || titleCase(key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' '));
 }
 
-export function sanitizeDetails(raw: Record<string, unknown> | null | undefined): { label: string; value: string }[] {
+export function sanitizeDetails(
+  raw: Record<string, unknown> | null | undefined,
+): { label: string; value: string }[] {
   if (!raw || typeof raw !== 'object') return [];
   const rows: { label: string; value: string }[] = [];
 
@@ -201,8 +215,10 @@ export function sanitizeDetails(raw: Record<string, unknown> | null | undefined)
     }
     if (key === 'summary' && value && typeof value === 'object' && !Array.isArray(value)) {
       const s = value as Record<string, unknown>;
-      if (s.standardFields != null) rows.push({ label: 'Standard Fields', value: String(s.standardFields) });
-      if (s.customFields != null) rows.push({ label: 'Custom Fields', value: String(s.customFields) });
+      if (s.standardFields != null)
+        rows.push({ label: 'Standard Fields', value: String(s.standardFields) });
+      if (s.customFields != null)
+        rows.push({ label: 'Custom Fields', value: String(s.customFields) });
       if (s.documents != null) rows.push({ label: 'Documents', value: String(s.documents) });
       if (s.attachments != null) rows.push({ label: 'Attachments', value: String(s.attachments) });
       if (s.activities != null) rows.push({ label: 'Activities', value: String(s.activities) });
@@ -224,7 +240,11 @@ export function formatBusinessValue(value: unknown): string {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (typeof value === 'number') {
     if (value > 100) {
-      return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }).format(value);
     }
     return value.toLocaleString('en-IN');
   }
@@ -234,13 +254,22 @@ export function formatBusinessValue(value: unknown): string {
 }
 
 export function looksLikeUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
-    || /^[0-9a-f]{24}$/i.test(value);
+  return (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ||
+    /^[0-9a-f]{24}$/i.test(value)
+  );
 }
 
 export type TimelineCard = {
   id: string;
-  type: 'status_change' | 'created' | 'updated' | 'activity' | 'comment' | 'attachment' | 'approval';
+  type:
+    | 'status_change'
+    | 'created'
+    | 'updated'
+    | 'activity'
+    | 'comment'
+    | 'attachment'
+    | 'approval';
   title: string;
   description: string;
   timestamp: string;

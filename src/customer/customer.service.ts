@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
@@ -17,7 +22,15 @@ export class CustomerService extends BaseQueryService {
     super(prisma, {
       model: 'customer',
       searchFields: ['customerName', 'companyName', 'mobile', 'email', 'gstNumber'],
-      filterFields: ['status', 'city', 'state', 'industry', 'assignedEmployeeId', 'source', 'businessType'],
+      filterFields: [
+        'status',
+        'city',
+        'state',
+        'industry',
+        'assignedEmployeeId',
+        'source',
+        'businessType',
+      ],
       sortColumns: ['createdAt', 'companyName', 'customerName', 'status', 'customerId'],
       orgScoped: true,
     });
@@ -55,11 +68,16 @@ export class CustomerService extends BaseQueryService {
         if (lead && !lead.isConverted) {
           customer = await this.prisma.$transaction(async (tx) => {
             const created = await tx.customer.create({
-              data: { ...data as any, email: data.email || '', organizationId, createdById },
+              data: { ...(data as any), email: data.email || '', organizationId, createdById },
             });
             await tx.lead.update({
               where: { id: lead.id },
-              data: { status: 'Converted' as any, isConverted: true, customerId: created.id, convertedDate: new Date() },
+              data: {
+                status: 'Converted' as any,
+                isConverted: true,
+                customerId: created.id,
+                convertedDate: new Date(),
+              },
             });
             return created;
           });
@@ -68,7 +86,7 @@ export class CustomerService extends BaseQueryService {
 
       if (!customer) {
         customer = await this.client.create({
-          data: { ...data as any, email: data.email || '', organizationId, createdById },
+          data: { ...(data as any), email: data.email || '', organizationId, createdById },
         });
       }
 
@@ -113,7 +131,10 @@ export class CustomerService extends BaseQueryService {
     }
 
     try {
-      const customer = await this.client.update({ where: { id }, data: { ...data as any, updatedBy: updatedById } });
+      const customer = await this.client.update({
+        where: { id },
+        data: { ...(data as any), updatedBy: updatedById },
+      });
       await this.auditService.log({
         action: 'customer.updated',
         userId: updatedById,
@@ -144,7 +165,10 @@ export class CustomerService extends BaseQueryService {
       this.client.count({ where }),
       this.client.count({ where: { ...where, status: 'Active' } }),
       this.client.count({
-        where: { ...where, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } },
+        where: {
+          ...where,
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        },
       }),
     ]);
 
@@ -168,7 +192,12 @@ export class CustomerService extends BaseQueryService {
         isDeleted: false,
       },
     });
-    return { isDuplicate: !!existing, existingCustomer: existing, exists: !!existing, customer: existing || undefined };
+    return {
+      isDuplicate: !!existing,
+      existingCustomer: existing,
+      exists: !!existing,
+      customer: existing || undefined,
+    };
   }
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
@@ -189,7 +218,11 @@ export class CustomerService extends BaseQueryService {
     return result;
   }
 
-  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkDelete(
+    ids: string[],
+    deletedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkDelete(ids, deletedById, organizationId);
     await this.auditService.log({
       action: 'customer.bulk-deleted',
@@ -213,7 +246,12 @@ export class CustomerService extends BaseQueryService {
     return result;
   }
 
-  async bulkStatusUpdate(ids: string[], status: string, updatedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkStatusUpdate(
+    ids: string[],
+    status: string,
+    updatedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkStatusUpdate(ids, status, organizationId);
     await this.auditService.log({
       action: 'customer.bulk-status-updated',
@@ -270,12 +308,16 @@ export class CustomerService extends BaseQueryService {
       ...(data.transferOptions || {}),
     };
 
-    const pick = <T,>(
+    const pick = <T>(
       fromData: T | undefined | null,
       fromLead: T | undefined | null,
       enabled: boolean,
     ): T | undefined => {
-      if (fromData !== undefined && fromData !== null && !(typeof fromData === 'string' && fromData === '')) {
+      if (
+        fromData !== undefined &&
+        fromData !== null &&
+        !(typeof fromData === 'string' && fromData === '')
+      ) {
         return fromData;
       }
       if (!enabled) return undefined;
@@ -284,17 +326,21 @@ export class CustomerService extends BaseQueryService {
     };
 
     const leadCustom =
-      lead.customFields && typeof lead.customFields === 'object' && !Array.isArray(lead.customFields)
+      lead.customFields &&
+      typeof lead.customFields === 'object' &&
+      !Array.isArray(lead.customFields)
         ? (lead.customFields as Record<string, any>)
         : {};
     const mergedCustomFields = !transfer.customFields
       ? undefined
-      : (data.customFields !== undefined ? data.customFields : leadCustom);
+      : data.customFields !== undefined
+        ? data.customFields
+        : leadCustom;
 
     // Prefer explicit payload attachments; clone tracking Attachment rows separately
     const attachments = transfer.attachments
       ? [...new Set([...(data.attachments || []), ...(lead.attachments || [])])]
-      : (data.attachments || []);
+      : data.attachments || [];
 
     const result = await this.prisma.$transaction(async (tx) => {
       const customer = await tx.customer.create({
@@ -302,25 +348,38 @@ export class CustomerService extends BaseQueryService {
           customerName: data.customerName,
           companyName: data.companyName,
           mobile: data.mobile,
-          alternateMobile: pick(data.alternateMobile, lead.alternateMobile || undefined, transfer.contact),
+          alternateMobile: pick(
+            data.alternateMobile,
+            lead.alternateMobile || undefined,
+            transfer.contact,
+          ),
           email: pick(data.email, lead.email || undefined, transfer.contact) || '',
           gstNumber: pick(data.gstNumber, lead.gstNumber || undefined, transfer.company),
           panNumber: pick(data.panNumber, lead.panNumber || undefined, transfer.company),
-          industry: (pick(data.industry, lead.industry as any, transfer.company) as any) || undefined,
+          industry:
+            (pick(data.industry, lead.industry as any, transfer.company) as any) || undefined,
           businessType: pick(data.businessType, lead.businessType || undefined, transfer.company),
           website: pick(data.website, lead.website || undefined, transfer.company),
           address:
             pick(
               data.address,
-              [lead.addressLine1, lead.addressLine2, lead.area].filter(Boolean).join(', ') || lead.siteAddress || undefined,
+              [lead.addressLine1, lead.addressLine2, lead.area].filter(Boolean).join(', ') ||
+                lead.siteAddress ||
+                undefined,
               transfer.address,
-            ) || data.address || '—',
+            ) ||
+            data.address ||
+            '—',
           city: pick(data.city, lead.city || undefined, transfer.address) || data.city || '—',
           state: pick(data.state, lead.state || undefined, transfer.address) || data.state || '—',
           pincode: pick(data.pincode, lead.pincode || undefined, transfer.address),
           country: pick(data.country, lead.country || 'India', transfer.address) || 'India',
           source: data.source || lead.source,
-          assignedEmployeeId: pick(data.assignedEmployeeId, lead.assignedToId || undefined, transfer.standard),
+          assignedEmployeeId: pick(
+            data.assignedEmployeeId,
+            lead.assignedToId || undefined,
+            transfer.standard,
+          ),
           assignedEmployee: transfer.standard ? lead.assignedTo : undefined,
           notes: pick(data.notes, lead.remarks || undefined, transfer.notes),
           leadId: lead.id,
@@ -397,8 +456,17 @@ export class CustomerService extends BaseQueryService {
 
     const customFieldCount = mergedCustomFields ? Object.keys(mergedCustomFields).length : 0;
     const standardFieldCount = [
-      data.customerName, data.companyName, data.mobile, data.email, data.address,
-      data.city, data.state, data.gstNumber, data.panNumber, data.industry, data.website,
+      data.customerName,
+      data.companyName,
+      data.mobile,
+      data.email,
+      data.address,
+      data.city,
+      data.state,
+      data.gstNumber,
+      data.panNumber,
+      data.industry,
+      data.website,
     ].filter((v) => v !== undefined && v !== null && v !== '').length;
 
     const summary = {

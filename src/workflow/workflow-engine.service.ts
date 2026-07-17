@@ -90,14 +90,24 @@ export class WorkflowEngineService {
       },
     });
 
-    return { eventRecorded: true, statusChanged: true, from: currentStatus, to: rule.toStatus, history };
+    return {
+      eventRecorded: true,
+      statusChanged: true,
+      from: currentStatus,
+      to: rule.toStatus,
+      history,
+    };
   }
 
   /**
    * Enterprise activity timeline — one business card per action.
    * No database IDs, raw event names, or JSON dumped to clients.
    */
-  async getEventTimeline(entityType: string, entityId: string, organizationId: string): Promise<TimelineCard[]> {
+  async getEventTimeline(
+    entityType: string,
+    entityId: string,
+    organizationId: string,
+  ): Promise<TimelineCard[]> {
     const [events, statusChanges, audits, entityContext] = await Promise.all([
       this.prisma.businessEvent.findMany({
         where: { entityType, entityId, organizationId },
@@ -125,7 +135,14 @@ export class WorkflowEngineService {
     const users = userIds.size
       ? await this.prisma.user.findMany({
           where: { id: { in: [...userIds] } },
-          select: { id: true, name: true, email: true, role: true, department: true, designation: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            department: true,
+            designation: true,
+          },
         })
       : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
@@ -211,14 +228,21 @@ export class WorkflowEngineService {
           item.toStatus && other.toStatus && item.toStatus === other.toStatus;
         const bothStatusLike =
           (item.source === 'status' || /status/i.test(item.action)) &&
-          (other.source === 'status' || /status/i.test(other.action) || other.source === 'event' || other.source === 'audit');
+          (other.source === 'status' ||
+            /status/i.test(other.action) ||
+            other.source === 'event' ||
+            other.source === 'audit');
         const bothCreateLike = /created$/i.test(item.action) && /created$/i.test(other.action);
         const bothUpdateLike = /updated$/i.test(item.action) && /updated$/i.test(other.action);
 
         if (
           sameUser &&
           closeInTime &&
-          (sameStatusTransition || bothStatusLike || bothCreateLike || bothUpdateLike || item.action === other.action)
+          (sameStatusTransition ||
+            bothStatusLike ||
+            bothCreateLike ||
+            bothUpdateLike ||
+            item.action === other.action)
         ) {
           cluster.push(other);
           consumed.add(other.key);
@@ -246,10 +270,7 @@ export class WorkflowEngineService {
 
     const cards: TimelineCard[] = merged.map((item) => {
       const user = item.userId ? userMap.get(item.userId) : null;
-      const performedBy =
-        user?.name ||
-        (user?.email ? user.email.split('@')[0] : null) ||
-        null;
+      const performedBy = user?.name || (user?.email ? user.email.split('@')[0] : null) || null;
       const safePerformedBy = performedBy && !looksLikeUuid(performedBy) ? performedBy : 'System';
 
       const title = humanizeEventTitle(entityType, item.action);

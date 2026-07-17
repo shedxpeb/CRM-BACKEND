@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import {
   EVENT_RULES,
   LEAD_PIPELINE,

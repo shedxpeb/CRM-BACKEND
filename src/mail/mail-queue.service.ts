@@ -72,13 +72,17 @@ export class MailQueueService implements OnModuleDestroy {
       this.sender(job)
         .catch((err) => {
           job.attempts += 1;
-          this.logger.error(`Mail job ${job.id} failed (attempt ${job.attempts}): ${err?.message || err}`);
+          this.logger.error(
+            `Mail job ${job.id} failed (attempt ${job.attempts}): ${err?.message || err}`,
+          );
           if (job.attempts < this.maxAttempts) {
             const backoffMs = Math.min(60_000, 1000 * Math.pow(2, job.attempts));
             job.nextAttemptAt = Date.now() + backoffMs;
             this.queue.push(job);
           } else {
-            this.logger.error(`Mail job ${job.id} dropped after ${job.attempts} attempts (to=${job.to})`);
+            this.logger.error(
+              `Mail job ${job.id} dropped after ${job.attempts} attempts (to=${job.to})`,
+            );
           }
         })
         .finally(() => {

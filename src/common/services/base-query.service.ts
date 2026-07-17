@@ -105,7 +105,7 @@ export class BaseQueryService {
       throw new BadRequestException(`Invalid sortBy column: ${sortBy}`);
     }
 
-    const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 500);
+    const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 1000);
 
     const [rows, total] = await Promise.all([
       this.client.findMany({
@@ -132,6 +132,37 @@ export class BaseQueryService {
     );
 
     return { rows, pagination };
+  }
+
+  /** Paginated export helper — collects up to maxRows without silent single-page truncation. */
+  async findAllForExport(
+    query: Record<string, any>,
+    organizationId?: string,
+    maxRows = 10000,
+  ): Promise<PaginationResult<any>> {
+    const pageSize = 500;
+    let page = 1;
+    const rows: any[] = [];
+
+    while (rows.length < maxRows) {
+      const batch = await this.findAll({ ...query, page, pageSize }, organizationId);
+      rows.push(...batch.rows);
+      if (!batch.pagination.hasNext || batch.rows.length === 0) break;
+      page += 1;
+      if (page > 40) break;
+    }
+
+    return {
+      rows,
+      pagination: {
+        page: 1,
+        pageSize: rows.length,
+        total: rows.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
   }
 
   async findById(id: string, extraInclude?: any, organizationId?: string): Promise<any> {
@@ -170,7 +201,11 @@ export class BaseQueryService {
     });
   }
 
-  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkDelete(
+    ids: string[],
+    deletedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const where: any = { id: { in: ids }, isDeleted: false };
     if (this.config.orgScoped) {
       where.organizationId = this.requireOrganizationId(organizationId);
@@ -290,8 +325,15 @@ export class BaseQueryService {
 
   private isEnumFilter(key: string): boolean {
     const enumFilters = [
-      'status', 'priority', 'source', 'role', 'stage',
-      'projectType', 'structureType', 'industry', 'businessType',
+      'status',
+      'priority',
+      'source',
+      'role',
+      'stage',
+      'projectType',
+      'structureType',
+      'industry',
+      'businessType',
     ];
     return enumFilters.includes(key);
   }

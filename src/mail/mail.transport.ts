@@ -89,7 +89,8 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     const ipv4GuardPassed =
       this.deliveryChannel !== 'smtp'
         ? true
-        : !config.ipv4Only || (config.isIpv4Connect && !!config.connectHost && !config.connectHost.includes(':'));
+        : !config.ipv4Only ||
+          (config.isIpv4Connect && !!config.connectHost && !config.connectHost.includes(':'));
 
     return {
       state: this.state,
@@ -133,7 +134,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   async sendMail(options: SendMailOptions): Promise<SentMessageInfo> {
     if (this.deliveryChannel === 'resend') {
       if (!this.resend) {
-        throw Object.assign(new Error('Resend client is not configured'), { code: 'SMTP_NOT_CONFIGURED' });
+        throw Object.assign(new Error('Resend client is not configured'), {
+          code: 'SMTP_NOT_CONFIGURED',
+        });
       }
       const to = String(options.to || '');
       const from = String(options.from || '');
@@ -151,7 +154,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!this.transporter) {
-      throw Object.assign(new Error('SMTP transporter is not configured'), { code: 'SMTP_NOT_CONFIGURED' });
+      throw Object.assign(new Error('SMTP transporter is not configured'), {
+        code: 'SMTP_NOT_CONFIGURED',
+      });
     }
     try {
       return await this.transporter.sendMail(options);
@@ -334,7 +339,9 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     let failureType = classified.failureType;
     if (
       this.deliveryChannel === 'smtp' &&
-      (failureType === 'SMTP_TIMEOUT' || failureType === 'SMTP_IPV4_ERROR' || failureType === 'SMTP_IPV6_ERROR')
+      (failureType === 'SMTP_TIMEOUT' ||
+        failureType === 'SMTP_IPV4_ERROR' ||
+        failureType === 'SMTP_IPV6_ERROR')
     ) {
       // IPv4 resolved but TCP still times out → platform egress block (common on Render free).
       if (this.providers.getLastResolvedAddress() && failureType === 'SMTP_TIMEOUT') {
@@ -386,7 +393,8 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
     if (this.recoveryTimer) return;
     if (this.deliveryChannel === 'resend') return;
     if (!isSmtpFullyConfigured(this.getConfigSnapshot())) return;
-    if (!isTransientSmtpFailure(this.failureType) && this.failureType !== 'SMTP_EGRESS_BLOCKED') return;
+    if (!isTransientSmtpFailure(this.failureType) && this.failureType !== 'SMTP_EGRESS_BLOCKED')
+      return;
 
     const delay =
       MAIL_RECOVERY_BACKOFF_MS[Math.min(this.recoveryAttempt, MAIL_RECOVERY_BACKOFF_MS.length - 1)];
@@ -417,7 +425,10 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       const ok = await this.verifyTransport('recovery');
       if (!ok) {
         const switched = await this.tryResendFallback('recovery');
-        if (!switched && (isTransientSmtpFailure(this.failureType) || this.failureType === 'SMTP_EGRESS_BLOCKED')) {
+        if (
+          !switched &&
+          (isTransientSmtpFailure(this.failureType) || this.failureType === 'SMTP_EGRESS_BLOCKED')
+        ) {
           this.scheduleRecovery();
         }
       }
@@ -432,7 +443,10 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
   }
 
   private closeTransporter() {
-    if (this.transporter && typeof (this.transporter as { close?: () => void }).close === 'function') {
+    if (
+      this.transporter &&
+      typeof (this.transporter as { close?: () => void }).close === 'function'
+    ) {
       try {
         (this.transporter as { close: () => void }).close();
       } catch {
@@ -461,7 +475,12 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       lower.includes(':::');
 
     let failureType: SmtpFailureType = 'SMTP_UNKNOWN';
-    if (code === 'EAUTH' || lower.includes('invalid login') || lower.includes('authentication') || response.includes('auth')) {
+    if (
+      code === 'EAUTH' ||
+      lower.includes('invalid login') ||
+      lower.includes('authentication') ||
+      response.includes('auth')
+    ) {
       failureType = 'SMTP_AUTH_FAILED';
     } else if (
       code === 'ENETUNREACH' ||
@@ -491,7 +510,12 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       failureType = 'SMTP_TLS_ERROR';
     } else if (code === 'ESOCKET') {
       failureType = looksIpv6 ? 'SMTP_IPV6_ERROR' : 'SMTP_TIMEOUT';
-    } else if (responseCode === 421 || responseCode === 450 || lower.includes('rate') || lower.includes('too many')) {
+    } else if (
+      responseCode === 421 ||
+      responseCode === 450 ||
+      lower.includes('rate') ||
+      lower.includes('too many')
+    ) {
       failureType = 'SMTP_RATE_LIMIT';
     } else if (responseCode !== null && responseCode >= 400) {
       failureType = 'SMTP_PROVIDER_REJECTED';
@@ -510,7 +534,12 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       address,
       port: typeof value.port === 'number' ? value.port : null,
       hostname: typeof value.hostname === 'string' ? value.hostname : null,
-      stack: typeof value.stack === 'string' ? value.stack : error instanceof Error ? error.stack || null : null,
+      stack:
+        typeof value.stack === 'string'
+          ? value.stack
+          : error instanceof Error
+            ? error.stack || null
+            : null,
       cause: value.cause && depth < 3 ? this.classifySmtpFailure(value.cause, depth + 1) : null,
     };
   }

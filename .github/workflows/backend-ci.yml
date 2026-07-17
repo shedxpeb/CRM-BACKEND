@@ -60,11 +60,9 @@ jobs:
 
       - name: Lint
         run: npm run lint:check
-        continue-on-error: true
 
       - name: Unit tests
         run: npm test -- --passWithNoTests
-        continue-on-error: true
 
       - name: Upload build artifact
         if: success()

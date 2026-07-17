@@ -1,8 +1,4 @@
-import {
-  MAIL_HEALTH_STATES,
-  MAIL_PROVIDERS,
-  SMTP_FAILURE_TYPES,
-} from './mail.constants';
+import { MAIL_HEALTH_STATES, MAIL_PROVIDERS, SMTP_FAILURE_TYPES } from './mail.constants';
 
 export type MailHealthState = (typeof MAIL_HEALTH_STATES)[number];
 export type SmtpFailureType = (typeof SMTP_FAILURE_TYPES)[number];

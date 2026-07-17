@@ -1,4 +1,13 @@
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength, Matches, ValidateIf } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 import { CustomerStatus } from './get-customers.dto';
 
 export class CreateCustomerDto {

@@ -25,7 +25,10 @@ export class SystemCapabilitiesService {
 
       for (const controller of moduleRef.controllers.values()) {
         if (!controller.metatype) continue;
-        const path = Reflect.getMetadata(PATH_METADATA, controller.metatype) as string | string[] | undefined;
+        const path = Reflect.getMetadata(PATH_METADATA, controller.metatype) as
+          | string
+          | string[]
+          | undefined;
         const paths = Array.isArray(path) ? path : [path];
         for (const value of paths) {
           const normalized = value?.replace(/^\/+|\/+$/g, '');

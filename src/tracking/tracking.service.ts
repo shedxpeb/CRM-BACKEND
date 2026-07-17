@@ -1,20 +1,99 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 
-const DEFAULT_PIPELINES: Record<string, Array<{ status: string; label: string; order: number; isInitial?: boolean; isFinal?: boolean; color?: string; allowedTransitions?: string[] }>> = {
+const DEFAULT_PIPELINES: Record<
+  string,
+  Array<{
+    status: string;
+    label: string;
+    order: number;
+    isInitial?: boolean;
+    isFinal?: boolean;
+    color?: string;
+    allowedTransitions?: string[];
+  }>
+> = {
   lead: [
-    { status: 'New', label: 'New', order: 1, isInitial: true, color: '#6366f1', allowedTransitions: ['Contacted', 'Rejected'] },
-    { status: 'Contacted', label: 'Contacted', order: 2, color: '#3b82f6', allowedTransitions: ['DesignPending', 'Rejected'] },
-    { status: 'DesignPending', label: 'Design Pending', order: 3, color: '#0ea5e9', allowedTransitions: ['BOQPending', 'Rejected'] },
-    { status: 'BOQPending', label: 'BOQ Pending', order: 4, color: '#14b8a6', allowedTransitions: ['EstimateSent', 'Rejected'] },
-    { status: 'EstimateSent', label: 'Estimate Sent', order: 5, color: '#22c55e', allowedTransitions: ['ProposalSent', 'Negotiation', 'Rejected'] },
-    { status: 'ProposalSent', label: 'Proposal Sent', order: 6, color: '#84cc16', allowedTransitions: ['Negotiation', 'Approved', 'Rejected'] },
-    { status: 'Negotiation', label: 'Negotiation', order: 7, color: '#eab308', allowedTransitions: ['Approved', 'Rejected', 'ProposalSent'] },
-    { status: 'Approved', label: 'Approved', order: 8, color: '#16a34a', allowedTransitions: ['Converted'] },
-    { status: 'Rejected', label: 'Rejected', order: 9, isFinal: true, color: '#ef4444', allowedTransitions: ['New', 'Contacted'] },
-    { status: 'Converted', label: 'Converted', order: 10, isFinal: true, color: '#059669', allowedTransitions: [] },
+    {
+      status: 'New',
+      label: 'New',
+      order: 1,
+      isInitial: true,
+      color: '#6366f1',
+      allowedTransitions: ['Contacted', 'Rejected'],
+    },
+    {
+      status: 'Contacted',
+      label: 'Contacted',
+      order: 2,
+      color: '#3b82f6',
+      allowedTransitions: ['DesignPending', 'Rejected'],
+    },
+    {
+      status: 'DesignPending',
+      label: 'Design Pending',
+      order: 3,
+      color: '#0ea5e9',
+      allowedTransitions: ['BOQPending', 'Rejected'],
+    },
+    {
+      status: 'BOQPending',
+      label: 'BOQ Pending',
+      order: 4,
+      color: '#14b8a6',
+      allowedTransitions: ['EstimateSent', 'Rejected'],
+    },
+    {
+      status: 'EstimateSent',
+      label: 'Estimate Sent',
+      order: 5,
+      color: '#22c55e',
+      allowedTransitions: ['ProposalSent', 'Negotiation', 'Rejected'],
+    },
+    {
+      status: 'ProposalSent',
+      label: 'Proposal Sent',
+      order: 6,
+      color: '#84cc16',
+      allowedTransitions: ['Negotiation', 'Approved', 'Rejected'],
+    },
+    {
+      status: 'Negotiation',
+      label: 'Negotiation',
+      order: 7,
+      color: '#eab308',
+      allowedTransitions: ['Approved', 'Rejected', 'ProposalSent'],
+    },
+    {
+      status: 'Approved',
+      label: 'Approved',
+      order: 8,
+      color: '#16a34a',
+      allowedTransitions: ['Converted'],
+    },
+    {
+      status: 'Rejected',
+      label: 'Rejected',
+      order: 9,
+      isFinal: true,
+      color: '#ef4444',
+      allowedTransitions: ['New', 'Contacted'],
+    },
+    {
+      status: 'Converted',
+      label: 'Converted',
+      order: 10,
+      isFinal: true,
+      color: '#059669',
+      allowedTransitions: [],
+    },
   ],
   customer: [
     { status: 'Prospect', label: 'Prospect', order: 1, isInitial: true, color: '#6366f1' },
@@ -65,13 +144,22 @@ export class TrackingService {
 
     const stageDetails = currentStep
       ? await this.loadStageDetails(entityType, entityId, currentStep.status, organizationId)
-      : await this.loadStageDetails(entityType, entityId, currentStatus || 'Unknown', organizationId);
+      : await this.loadStageDetails(
+          entityType,
+          entityId,
+          currentStatus || 'Unknown',
+          organizationId,
+        );
 
-    const mappedPipeline = pipeline.map((s, idx) => this.mapStage(s, currentStatus, currentIndex, idx));
+    const mappedPipeline = pipeline.map((s, idx) =>
+      this.mapStage(s, currentStatus, currentIndex, idx),
+    );
 
     return {
       currentStatus,
-      currentStage: currentStep ? this.mapStage(currentStep, currentStatus, currentIndex, currentIndex) : null,
+      currentStage: currentStep
+        ? this.mapStage(currentStep, currentStatus, currentIndex, currentIndex)
+        : null,
       allowedTransitions: this.resolveTransitions(currentStep, pipeline),
       pipeline: mappedPipeline,
       progress,
@@ -85,7 +173,12 @@ export class TrackingService {
 
   // ─── DYNAMIC STAGE DETAILS ─────────────────────────────
 
-  private async loadStageDetails(entityType: string, entityId: string, stage: string, organizationId: string): Promise<any> {
+  private async loadStageDetails(
+    entityType: string,
+    entityId: string,
+    stage: string,
+    organizationId: string,
+  ): Promise<any> {
     const sanitizeEntity = (entity: Record<string, any> | null) => {
       if (!entity) return { stage, title: stage, fields: {} };
       const fields: Record<string, any> = {};
@@ -94,7 +187,15 @@ export class TrackingService {
           key === 'id' ||
           key.endsWith('Id') ||
           key.endsWith('Ids') ||
-          ['organizationId', 'customFields', 'password', 'token', 'isDeleted', 'deletedAt', 'attachments'].includes(key)
+          [
+            'organizationId',
+            'customFields',
+            'password',
+            'token',
+            'isDeleted',
+            'deletedAt',
+            'attachments',
+          ].includes(key)
         ) {
           continue;
         }
@@ -108,15 +209,21 @@ export class TrackingService {
 
     switch (entityType) {
       case 'lead': {
-        const lead = await this.prisma.lead.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const lead = await this.prisma.lead.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         return sanitizeEntity(lead as any);
       }
       case 'customer': {
-        const customer = await this.prisma.customer.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const customer = await this.prisma.customer.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         return sanitizeEntity(customer as any);
       }
       case 'project': {
-        const project = await this.prisma.project.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const project = await this.prisma.project.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         return sanitizeEntity(project as any);
       }
       default:
@@ -150,7 +257,10 @@ export class TrackingService {
     const currentIndex = this.findStageIndex(pipeline, fromStatus);
     const currentStep = currentIndex >= 0 ? pipeline[currentIndex] : null;
     const allowed = this.resolveTransitions(currentStep, pipeline);
-    if (allowed.length > 0 && !allowed.some((a) => normalizeStatus(a) === normalizeStatus(canonicalStatus))) {
+    if (
+      allowed.length > 0 &&
+      !allowed.some((a) => normalizeStatus(a) === normalizeStatus(canonicalStatus))
+    ) {
       throw new BadRequestException(
         `Cannot move from "${fromStatus || 'unset'}" to "${canonicalStatus}". Allowed: ${allowed.join(', ')}`,
       );
@@ -238,7 +348,11 @@ export class TrackingService {
     return this.getEntityStatus(entityType, entityId, organizationId);
   }
 
-  private async getEntityStatus(entityType: string, entityId: string, organizationId: string): Promise<string | null> {
+  private async getEntityStatus(
+    entityType: string,
+    entityId: string,
+    organizationId: string,
+  ): Promise<string | null> {
     switch (entityType) {
       case 'lead': {
         const lead = await this.prisma.lead.findFirst({
@@ -274,25 +388,36 @@ export class TrackingService {
   ) {
     switch (entityType) {
       case 'lead': {
-        const lead = await this.prisma.lead.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const lead = await this.prisma.lead.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         if (!lead) throw new NotFoundException('Lead not found');
         await this.prisma.lead.update({
           where: { id: entityId },
           data: {
             status: this.toEntityStatus('lead', status) as any,
-            ...(normalizeStatus(status) === 'converted' ? { isConverted: true, convertedDate: new Date() } : {}),
+            ...(normalizeStatus(status) === 'converted'
+              ? { isConverted: true, convertedDate: new Date() }
+              : {}),
           },
         });
         return;
       }
       case 'customer': {
-        const customer = await this.prisma.customer.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const customer = await this.prisma.customer.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         if (!customer) throw new NotFoundException('Customer not found');
-        await this.prisma.customer.update({ where: { id: entityId }, data: { status: status as any } });
+        await this.prisma.customer.update({
+          where: { id: entityId },
+          data: { status: status as any },
+        });
         return;
       }
       case 'project': {
-        const project = await this.prisma.project.findFirst({ where: { id: entityId, organizationId, isDeleted: false } });
+        const project = await this.prisma.project.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
         if (!project) throw new NotFoundException('Project not found');
         await this.prisma.project.update({ where: { id: entityId }, data: { status } });
         return;
@@ -332,9 +457,7 @@ export class TrackingService {
     return comments.map((c) => {
       const user = userMap.get(c.authorId);
       const authorName =
-        user?.name ||
-        (user?.email ? user.email.split('@')[0] : null) ||
-        'Team Member';
+        user?.name || (user?.email ? user.email.split('@')[0] : null) || 'Team Member';
       return {
         id: c.id,
         content: c.content,
@@ -349,25 +472,41 @@ export class TrackingService {
     });
   }
 
-  async addComment(entityType: string, entityId: string, content: string, organizationId: string, authorId: string, parentId?: string) {
+  async addComment(
+    entityType: string,
+    entityId: string,
+    content: string,
+    organizationId: string,
+    authorId: string,
+    parentId?: string,
+  ) {
     if (parentId) {
-      const parent = await this.prisma.comment.findFirst({ where: { id: parentId, organizationId } });
+      const parent = await this.prisma.comment.findFirst({
+        where: { id: parentId, organizationId },
+      });
       if (!parent) throw new NotFoundException('Parent comment not found');
     }
     const comment = await this.prisma.comment.create({
       data: { organizationId, entityType, entityId, content, authorId, parentId },
     });
     await this.workflowEngine.processEvent({
-      organizationId, entityType, entityId, eventType: 'comment.added',
-      data: { commentId: comment.id }, createdById: authorId,
+      organizationId,
+      entityType,
+      entityId,
+      eventType: 'comment.added',
+      data: { commentId: comment.id },
+      createdById: authorId,
     });
     return comment;
   }
 
   async deleteComment(commentId: string, organizationId: string, userId: string) {
-    const comment = await this.prisma.comment.findFirst({ where: { id: commentId, organizationId } });
+    const comment = await this.prisma.comment.findFirst({
+      where: { id: commentId, organizationId },
+    });
     if (!comment) throw new NotFoundException('Comment not found');
-    if (comment.authorId !== userId) throw new BadRequestException('Only the author can delete this comment');
+    if (comment.authorId !== userId)
+      throw new BadRequestException('Only the author can delete this comment');
     return this.prisma.comment.update({
       where: { id: commentId },
       data: { isDeleted: true },
@@ -383,12 +522,28 @@ export class TrackingService {
     });
   }
 
-  async addAttachment(entityType: string, entityId: string, data: { fileName: string; originalName: string; mimeType: string; size: number; url: string; category?: string }, organizationId: string, uploadedById?: string) {
+  async addAttachment(
+    entityType: string,
+    entityId: string,
+    data: {
+      fileName: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+      url: string;
+      category?: string;
+    },
+    organizationId: string,
+    uploadedById?: string,
+  ) {
     const attachment = await this.prisma.attachment.create({
       data: { ...data, organizationId, entityType, entityId, uploadedById },
     });
     await this.workflowEngine.processEvent({
-      organizationId, entityType, entityId, eventType: 'attachment.added',
+      organizationId,
+      entityType,
+      entityId,
+      eventType: 'attachment.added',
       data: { attachmentId: attachment.id, fileName: data.fileName },
       createdById: uploadedById,
     });
@@ -396,7 +551,9 @@ export class TrackingService {
   }
 
   async deleteAttachment(attachmentId: string, organizationId: string) {
-    const attachment = await this.prisma.attachment.findFirst({ where: { id: attachmentId, organizationId } });
+    const attachment = await this.prisma.attachment.findFirst({
+      where: { id: attachmentId, organizationId },
+    });
     if (!attachment) throw new NotFoundException('Attachment not found');
     return this.prisma.attachment.update({
       where: { id: attachmentId },
@@ -413,12 +570,23 @@ export class TrackingService {
     });
   }
 
-  async requestApproval(entityType: string, entityId: string, approverId: string, organizationId: string, requestedById: string, level = 1, metadata?: any) {
+  async requestApproval(
+    entityType: string,
+    entityId: string,
+    approverId: string,
+    organizationId: string,
+    requestedById: string,
+    level = 1,
+    metadata?: any,
+  ) {
     const approval = await this.prisma.approvalRequest.create({
       data: { organizationId, entityType, entityId, approverId, requestedById, level, metadata },
     });
     await this.workflowEngine.processEvent({
-      organizationId, entityType, entityId, eventType: 'approval.requested',
+      organizationId,
+      entityType,
+      entityId,
+      eventType: 'approval.requested',
       data: { approvalId: approval.id, approverId, level },
       createdById: requestedById,
     });
@@ -432,7 +600,9 @@ export class TrackingService {
     actorUserId: string,
     comment?: string,
   ) {
-    const approval = await this.prisma.approvalRequest.findFirst({ where: { id: approvalId, organizationId } });
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: { id: approvalId, organizationId },
+    });
     if (!approval) throw new NotFoundException('Approval request not found');
     if (approval.status !== 'Pending') throw new BadRequestException('Approval already responded');
     if (approval.approverId !== actorUserId) {
@@ -445,7 +615,9 @@ export class TrackingService {
     });
 
     await this.workflowEngine.processEvent({
-      organizationId, entityType: approval.entityType, entityId: approval.entityId,
+      organizationId,
+      entityType: approval.entityType,
+      entityId: approval.entityId,
       eventType: `approval.${status.toLowerCase()}`,
       data: { approvalId, comment },
     });
@@ -465,7 +637,15 @@ export class TrackingService {
     });
   }
 
-  async createNotification(data: { userId: string; organizationId: string; title: string; message: string; type?: string; entityType?: string; entityId?: string }) {
+  async createNotification(data: {
+    userId: string;
+    organizationId: string;
+    title: string;
+    message: string;
+    type?: string;
+    entityType?: string;
+    entityId?: string;
+  }) {
     return this.prisma.notification.create({ data });
   }
 

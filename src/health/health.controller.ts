@@ -56,7 +56,8 @@ export class HealthController {
         : mail.failureType === 'SMTP_NOT_CONFIGURED'
           ? 'unconfigured'
           : 'degraded';
-    const requireSmtp = this.config.get<string>('SMTP_REQUIRED') === 'true' || process.env.SMTP_REQUIRED === 'true';
+    const requireSmtp =
+      this.config.get<string>('SMTP_REQUIRED') === 'true' || process.env.SMTP_REQUIRED === 'true';
 
     const ready = database === 'up' && (!requireSmtp || smtp === 'up');
     const body = {

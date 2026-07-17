@@ -46,7 +46,7 @@ export class GetCustomersDto {
 
   @IsOptional()
   @IsString()
-  assignedEmployee?: string;
+  assignedEmployeeId?: string;
 
   @IsOptional()
   @IsString()

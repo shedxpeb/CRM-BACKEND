@@ -39,8 +39,14 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   });
 
-  const frontendUrl = configService.get<string>('frontendUrl', 'http://localhost:3000');
-  const allowedOrigins = frontendUrl.split(',').map((u) => u.trim()).filter(Boolean);
+  const frontendUrl = configService.get<string>('frontendUrl');
+  if (!frontendUrl?.trim()) {
+    throw new Error('FRONTEND_URL is required for CORS configuration');
+  }
+  const allowedOrigins = frontendUrl
+    .split(',')
+    .map((u) => u.trim())
+    .filter(Boolean);
   await app.register(cors, {
     origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,

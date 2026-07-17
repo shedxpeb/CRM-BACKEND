@@ -94,7 +94,9 @@ export class MailService implements OnModuleInit {
 
     const built = buildMailTemplate(templateId, merged);
     if (!built.text?.trim() || !built.html?.trim()) {
-      this.logger.error(`Template ${templateId} missing text or html — refusing to queue incomplete message`);
+      this.logger.error(
+        `Template ${templateId} missing text or html — refusing to queue incomplete message`,
+      );
       throw new MailTemplateUnavailableException();
     }
 
@@ -133,7 +135,8 @@ export class MailService implements OnModuleInit {
     organizationId?: string,
   ): Promise<void> {
     const expiryMinutes = this.config.get<number>('otp.expiryMinutes') || 10;
-    const templateId: MailTemplateId = purpose === 'registration' ? 'register_otp' : 'forgot_password_otp';
+    const templateId: MailTemplateId =
+      purpose === 'registration' ? 'register_otp' : 'forgot_password_otp';
     await this.sendTemplate(
       email,
       templateId,
@@ -144,15 +147,36 @@ export class MailService implements OnModuleInit {
 
   async sendWelcomeEmail(email: string, name: string, organizationId?: string): Promise<void> {
     const frontend = this.config.get<string>('frontendUrl') || '';
-    await this.sendTemplate(email, 'welcome', { userName: name, loginLink: frontend, email }, organizationId);
+    await this.sendTemplate(
+      email,
+      'welcome',
+      { userName: name, loginLink: frontend, email },
+      organizationId,
+    );
   }
 
-  async sendPasswordResetConfirmation(email: string, name?: string, organizationId?: string): Promise<void> {
-    await this.sendTemplate(email, 'reset_password_success', { userName: name || 'there', email }, organizationId);
+  async sendPasswordResetConfirmation(
+    email: string,
+    name?: string,
+    organizationId?: string,
+  ): Promise<void> {
+    await this.sendTemplate(
+      email,
+      'reset_password_success',
+      { userName: name || 'there', email },
+      organizationId,
+    );
   }
 
   async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    const plain = text?.trim() || (html ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : '');
+    const plain =
+      text?.trim() ||
+      (html
+        ? html
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        : '');
     if (!plain) {
       this.logger.error('Refusing to send email without plain-text body');
       return;
@@ -185,20 +209,23 @@ export class MailService implements OnModuleInit {
       return;
     }
 
-    const fromName = this.config.get<string>('smtp.fromName') || this.config.get<string>('branding.companyName') || 'Account';
+    const fromName =
+      this.config.get<string>('smtp.fromName') ||
+      this.config.get<string>('branding.companyName') ||
+      'Account';
     const fromEmail =
       this.config.get<string>('mail.resendFromEmail') ||
       this.config.get<string>('smtp.fromEmail') ||
       this.config.get<string>('smtp.user') ||
       '';
-    const supportEmail =
-      this.config.get<string>('branding.supportEmail') ||
-      fromEmail;
+    const supportEmail = this.config.get<string>('branding.supportEmail') || fromEmail;
     const appName = this.config.get<string>('branding.companyName') || 'App';
     const channel = this.transport.getDeliveryChannel();
 
     if (!fromEmail) {
-      this.logger.error('FROM email missing (SMTP_FROM_EMAIL / RESEND_FROM_EMAIL) — cannot deliver');
+      this.logger.error(
+        'FROM email missing (SMTP_FROM_EMAIL / RESEND_FROM_EMAIL) — cannot deliver',
+      );
       throw new ServiceUnavailableException('Email delivery is unavailable. Try again later.');
     }
 
@@ -258,7 +285,9 @@ export class MailService implements OnModuleInit {
             elapsedMs: Date.now() - startedAt,
           })}`,
         );
-        throw new ServiceUnavailableException('Mail provider did not accept the email for delivery');
+        throw new ServiceUnavailableException(
+          'Mail provider did not accept the email for delivery',
+        );
       }
 
       this.logger.log(

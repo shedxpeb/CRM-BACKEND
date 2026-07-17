@@ -84,6 +84,7 @@ export default () => ({
     queueConcurrency: parseInt(process.env.MAIL_QUEUE_CONCURRENCY || '2', 10),
     queueMaxAttempts: parseInt(process.env.MAIL_QUEUE_MAX_ATTEMPTS || '5', 10),
     resendApiKey: process.env.RESEND_API_KEY || '',
-    resendFromEmail: process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
+    resendFromEmail:
+      process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
   },
 });

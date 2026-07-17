@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import {
   assertIpv4ConnectHost,
   isIpv4Literal,
@@ -33,11 +34,15 @@ describe('resolveSmtpEndpoint (IPv4 preference)', () => {
   });
 
   it('rejects IPv6 literals when family=4', async () => {
-    await expect(resolveSmtpEndpoint('2607:f8b0:400e:c1e::6d', 4)).rejects.toBeInstanceOf(SmtpDnsError);
+    await expect(resolveSmtpEndpoint('2607:f8b0:400e:c1e::6d', 4)).rejects.toBeInstanceOf(
+      SmtpDnsError,
+    );
   });
 
   it('assertIpv4ConnectHost rejects IPv6', () => {
-    expect(() => assertIpv4ConnectHost('2607:f8b0:400e:c1e::6d', 'smtp.gmail.com')).toThrow(SmtpDnsError);
+    expect(() => assertIpv4ConnectHost('2607:f8b0:400e:c1e::6d', 'smtp.gmail.com')).toThrow(
+      SmtpDnsError,
+    );
   });
 
   it('fails hard on unknown host when family=4 (no hostname fallback)', async () => {

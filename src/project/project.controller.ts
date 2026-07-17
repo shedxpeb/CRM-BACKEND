@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
 import { GetProjectsDto } from './dto/get-projects.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -19,7 +19,10 @@ export class ProjectController {
 
   @Get()
   @RequirePermissions('project:list')
-  async findAll(@Query() query: GetProjectsDto, @CurrentUser('organizationId') organizationId: string) {
+  async findAll(
+    @Query() query: GetProjectsDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.projectService.findAll(query, organizationId);
     return { message: 'Project list fetched successfully.', data };
   }
@@ -33,8 +36,11 @@ export class ProjectController {
 
   @Get('export')
   @RequirePermissions('project:list')
-  async export(@Query() query: GetProjectsDto, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.projectService.findAll({ ...query, pageSize: 500 }, organizationId);
+  async export(
+    @Query() query: GetProjectsDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.projectService.findAllForExport(query, organizationId);
     return { message: 'Export data fetched successfully.', data };
   }
 
@@ -45,7 +51,12 @@ export class ProjectController {
     @CurrentUser('id') updatedById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.projectService.bulkUpdate(body.ids, body.data, updatedById, organizationId);
+    const data = await this.projectService.bulkUpdate(
+      body.ids,
+      body.data,
+      updatedById,
+      organizationId,
+    );
     return { message: 'Projects updated successfully.', data };
   }
 
@@ -74,13 +85,20 @@ export class ProjectController {
   @Get(':id')
   @RequirePermissions('project:read')
   async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.projectService.findById(id, { milestones: true, teamMembers: true }, organizationId);
+    const data = await this.projectService.findById(
+      id,
+      { milestones: true, teamMembers: true },
+      organizationId,
+    );
     return { message: 'Project fetched successfully.', data };
   }
 
   @Get(':id/activities')
   @RequirePermissions('project:read')
-  async getActivities(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.projectService.getActivities(id, organizationId);
     return { message: 'Activities fetched successfully.', data };
   }

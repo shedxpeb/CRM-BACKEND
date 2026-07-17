@@ -16,7 +16,10 @@ export class UsersController {
   @Get()
   @RequirePermissions('user:list')
   @ApiOperation({ summary: 'Get all users in organization' })
-  async findAll(@Query() query: GetUsersDto, @CurrentUser('organizationId') organizationId: string) {
+  async findAll(
+    @Query() query: GetUsersDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.usersService.findAll(organizationId, query);
     return { message: 'Users fetched successfully.', data };
   }

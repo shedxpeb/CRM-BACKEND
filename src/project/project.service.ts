@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
@@ -20,7 +25,17 @@ export class ProjectService extends BaseQueryService {
       model: 'project',
       searchFields: ['projectName', 'projectCode', 'customerName', 'location', 'city'],
       filterFields: ['status', 'stage', 'priority', 'healthStatus', 'city', 'projectManager'],
-      sortColumns: ['createdAt', 'projectName', 'projectCode', 'status', 'priority', 'stage', 'progress', 'city', 'customerName'],
+      sortColumns: [
+        'createdAt',
+        'projectName',
+        'projectCode',
+        'status',
+        'priority',
+        'stage',
+        'progress',
+        'city',
+        'customerName',
+      ],
       orgScoped: true,
     });
   }
@@ -30,10 +45,20 @@ export class ProjectService extends BaseQueryService {
       throw new ForbiddenException('Organization context is required');
     }
     const {
-      page = 1, pageSize = 25, search,
-      status, stage, priority, projectManager, customer, city, healthStatus,
-      dateFrom, dateTo,
-      sortBy = 'createdAt', sortOrder = 'desc',
+      page = 1,
+      pageSize = 25,
+      search,
+      status,
+      stage,
+      priority,
+      projectManager,
+      customer,
+      city,
+      healthStatus,
+      dateFrom,
+      dateTo,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
     } = query;
 
     const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 500);
@@ -72,18 +97,28 @@ export class ProjectService extends BaseQueryService {
       }
     }
 
-    const allowedSortColumns = ['createdAt', 'projectName', 'projectCode', 'status', 'priority', 'stage', 'progress', 'city', 'customerName'];
+    const allowedSortColumns = [
+      'createdAt',
+      'projectName',
+      'projectCode',
+      'status',
+      'priority',
+      'stage',
+      'progress',
+      'city',
+      'customerName',
+    ];
     if (!allowedSortColumns.includes(sortBy)) {
       throw new BadRequestException(`Invalid sortBy column: ${sortBy}`);
     }
 
+    // List responses stay lean — milestones/teamMembers belong on detail (findById) only
     const [rows, total] = await Promise.all([
       this.client.findMany({
         where,
         skip,
         take: safePageSize,
         orderBy: { [sortBy]: sortOrder },
-        include: { milestones: true, teamMembers: true },
       }),
       this.client.count({ where }),
     ]);
@@ -107,35 +142,66 @@ export class ProjectService extends BaseQueryService {
     const where: any = { isDeleted: false, organizationId };
 
     const [
-      totalProjects, activeProjects, completedProjects, healthyProjects,
-      atRiskProjects, criticalProjects, totalRevenue, totalMaterialCost,
-      delayedProjects, upcomingDeadlines, projectsInDesign, projectsInProcurement,
-      projectsInFabrication, projectsInInstallation, pendingApprovals,
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      healthyProjects,
+      atRiskProjects,
+      criticalProjects,
+      totalRevenue,
+      totalMaterialCost,
+      delayedProjects,
+      upcomingDeadlines,
+      projectsInDesign,
+      projectsInProcurement,
+      projectsInFabrication,
+      projectsInInstallation,
+      pendingApprovals,
     ] = await Promise.all([
       this.client.count({ where }),
-      this.client.count({ where: { ...where, status: { notIn: ['Completion', 'Cancelled', 'After Sales'] } } }),
+      this.client.count({
+        where: { ...where, status: { notIn: ['Completion', 'Cancelled', 'After Sales'] } },
+      }),
       this.client.count({ where: { ...where, status: 'Completion' } }),
       this.client.count({ where: { ...where, healthStatus: 'Healthy' } }),
       this.client.count({ where: { ...where, healthStatus: 'At Risk' } }),
       this.client.count({ where: { ...where, healthStatus: 'Critical' } }),
       this.client.aggregate({ where, _sum: { value: true } }),
       this.client.aggregate({ where, _sum: { materialCost: true } }),
-      this.client.count({ where: { ...where, endDate: { lt: new Date() }, status: { not: 'Completion' } } }),
-      this.client.count({ where: { ...where, endDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) } } }),
+      this.client.count({
+        where: { ...where, endDate: { lt: new Date() }, status: { not: 'Completion' } },
+      }),
+      this.client.count({
+        where: {
+          ...where,
+          endDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+        },
+      }),
       this.client.count({ where: { ...where, stage: 'Design' } }),
       this.client.count({ where: { ...where, stage: 'Procurement' } }),
       this.client.count({ where: { ...where, stage: 'Fabrication' } }),
       this.client.count({ where: { ...where, stage: 'Installation' } }),
-      this.client.count({ where: { ...where, status: { in: ['Lead', 'Estimate', 'Proposal', 'Quotation'] } } }),
+      this.client.count({
+        where: { ...where, status: { in: ['Lead', 'Estimate', 'Proposal', 'Quotation'] } },
+      }),
     ]);
 
     return {
-      totalProjects, activeProjects, completedProjects, delayedProjects,
-      upcomingDeadlines, projectsInDesign, projectsInProcurement,
-      projectsInFabrication, projectsInInstallation, pendingApprovals,
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      delayedProjects,
+      upcomingDeadlines,
+      projectsInDesign,
+      projectsInProcurement,
+      projectsInFabrication,
+      projectsInInstallation,
+      pendingApprovals,
       projectRevenue: totalRevenue._sum.value || 0,
       materialCost: totalMaterialCost._sum.materialCost || 0,
-      healthyProjects, atRiskProjects, criticalProjects,
+      healthyProjects,
+      atRiskProjects,
+      criticalProjects,
     };
   }
 
@@ -149,7 +215,14 @@ export class ProjectService extends BaseQueryService {
       include: extraInclude || { milestones: true, teamMembers: true },
     });
     if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
-    return project;
+    // Preserve FE contract (`team`) while Prisma relation is `teamMembers`
+    const { teamMembers, ...rest } = project as any;
+    return {
+      ...rest,
+      teamMembers,
+      team: Array.isArray(teamMembers) ? teamMembers : [],
+      milestones: Array.isArray(project.milestones) ? project.milestones : [],
+    };
   }
 
   async create(data: CreateProjectDto, createdById: string, organizationId?: string) {
@@ -159,29 +232,60 @@ export class ProjectService extends BaseQueryService {
 
     const { milestones, team, customFields, ...restData } = data as any;
 
+    let customerName = data.customerName;
+    if (!customerName && data.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: data.customerId, organizationId, isDeleted: false },
+        select: { customerName: true, companyName: true },
+      });
+      if (!customer) {
+        throw new BadRequestException('Customer not found for this organization');
+      }
+      customerName = customer.customerName || customer.companyName || 'Unknown Customer';
+    }
+    if (!customerName) {
+      throw new BadRequestException('customerName is required');
+    }
+
+    let projectManager = data.projectManager;
+    if (!projectManager && data.projectManagerId) {
+      const manager = await this.prisma.user.findFirst({
+        where: { id: data.projectManagerId },
+        select: { name: true, email: true },
+      });
+      projectManager = manager?.name || manager?.email || undefined;
+    }
+
     const project = await this.client.create({
       data: {
         ...restData,
+        customerName,
+        projectManager,
         organizationId,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         createdById,
         milestones: milestones?.length
-          ? { create: milestones.map((m: any) => ({
-              name: m.name,
-              plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
-              actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-            }))}
+          ? {
+              create: milestones.map((m: any) => ({
+                name: m.name,
+                plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
+                actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
+              })),
+            }
           : undefined,
         teamMembers: team?.length
-          ? { create: team.map((t: any) => ({
-              employeeId: t.employeeId,
-              name: t.name,
-              role: t.role,
-              workload: t.workload,
-            }))}
+          ? {
+              create: team.map((t: any) => ({
+                employeeId: t.employeeId,
+                name: t.name,
+                role: t.role,
+                workload: t.workload,
+              })),
+            }
           : undefined,
-        customFields: customFields && Object.keys(customFields).length > 0 ? customFields : undefined,
+        customFields:
+          customFields && Object.keys(customFields).length > 0 ? customFields : undefined,
       },
       include: { milestones: true, teamMembers: true },
     });
@@ -192,7 +296,7 @@ export class ProjectService extends BaseQueryService {
       userId: createdById,
       resource: 'project',
       resourceId: project.id,
-      metadata: { projectName: data.projectName, customerName: data.customerName },
+      metadata: { projectName: data.projectName, customerName },
     });
 
     await this.workflowEngine.processEvent({
@@ -200,7 +304,7 @@ export class ProjectService extends BaseQueryService {
       entityType: 'project',
       entityId: project.id,
       eventType: 'created',
-      data: { projectName: data.projectName, customerName: data.customerName },
+      data: { projectName: data.projectName, customerName },
       createdById,
     });
 
@@ -232,10 +336,12 @@ export class ProjectService extends BaseQueryService {
       if (milestones.length > 0) {
         await this.prisma.projectMilestone.createMany({
           data: milestones.map((m: any) => ({
-            projectId: id, name: m.name,
+            projectId: id,
+            name: m.name,
             plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
             actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-            status: m.status || 'Pending', delay: m.delay,
+            status: m.status || 'Pending',
+            delay: m.delay,
           })),
         });
       }
@@ -246,8 +352,11 @@ export class ProjectService extends BaseQueryService {
       if (team.length > 0) {
         await this.prisma.projectTeamMember.createMany({
           data: team.map((t: any) => ({
-            projectId: id, employeeId: t.employeeId,
-            name: t.name, role: t.role, workload: t.workload,
+            projectId: id,
+            employeeId: t.employeeId,
+            name: t.name,
+            role: t.role,
+            workload: t.workload,
           })),
         });
       }
@@ -273,8 +382,18 @@ export class ProjectService extends BaseQueryService {
     return project;
   }
 
-  async bulkUpdate(ids: string[], data: UpdateProjectDto, updatedById: string, organizationId?: string) {
-    const { milestones, team, customFields, ...restData } = data as any;
+  async bulkUpdate(
+    ids: string[],
+    data: UpdateProjectDto,
+    updatedById: string,
+    organizationId?: string,
+  ) {
+    const {
+      milestones: _milestones,
+      team: _team,
+      customFields: _customFields,
+      ...restData
+    } = data as any;
     const where: any = { id: { in: ids }, isDeleted: false };
     if (organizationId) where.organizationId = organizationId;
 
@@ -330,7 +449,11 @@ export class ProjectService extends BaseQueryService {
     return result;
   }
 
-  async bulkDelete(ids: string[], deletedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkDelete(
+    ids: string[],
+    deletedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkDelete(ids, deletedById, organizationId);
     await this.auditService.log({
       action: 'project.bulk-deleted',
@@ -354,7 +477,12 @@ export class ProjectService extends BaseQueryService {
     return result;
   }
 
-  async bulkStatusUpdate(ids: string[], status: string, updatedById?: string, organizationId?: string): Promise<{ count: number }> {
+  async bulkStatusUpdate(
+    ids: string[],
+    status: string,
+    updatedById?: string,
+    organizationId?: string,
+  ): Promise<{ count: number }> {
     const result = await super.bulkStatusUpdate(ids, status, organizationId);
     await this.auditService.log({
       action: 'project.bulk-status-updated',
@@ -390,10 +518,14 @@ export class ProjectService extends BaseQueryService {
 
     const createdTask = await this.prisma.projectTask.create({
       data: {
-        projectId, title: data.title, description: data.description,
-        assignedTo: data.assignedTo, assignedToName: data.assignedToName,
+        projectId,
+        title: data.title,
+        description: data.description,
+        assignedTo: data.assignedTo,
+        assignedToName: data.assignedToName,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        priority: data.priority, dependencies: data.dependencies || [],
+        priority: data.priority,
+        dependencies: data.dependencies || [],
       },
     });
 
@@ -415,14 +547,21 @@ export class ProjectService extends BaseQueryService {
     return createdTask;
   }
 
-  async updateTask(projectId: string, taskId: string, data: UpdateTaskDto, updatedById?: string, organizationId?: string) {
+  async updateTask(
+    projectId: string,
+    taskId: string,
+    data: UpdateTaskDto,
+    updatedById?: string,
+    organizationId?: string,
+  ) {
     const where: any = { id: projectId, isDeleted: false };
     if (organizationId) where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
     const task = await this.prisma.projectTask.findFirst({ where: { id: taskId, projectId } });
-    if (!task) throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
+    if (!task)
+      throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
 
     const updated = await this.prisma.projectTask.update({
       where: { id: taskId },
@@ -449,14 +588,20 @@ export class ProjectService extends BaseQueryService {
     return updated;
   }
 
-  async deleteTask(projectId: string, taskId: string, deletedById?: string, organizationId?: string) {
+  async deleteTask(
+    projectId: string,
+    taskId: string,
+    deletedById?: string,
+    organizationId?: string,
+  ) {
     const where: any = { id: projectId, isDeleted: false };
     if (organizationId) where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
     const task = await this.prisma.projectTask.findFirst({ where: { id: taskId, projectId } });
-    if (!task) throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
+    if (!task)
+      throw new NotFoundException(`Task with ID ${taskId} not found in project ${projectId}`);
     await this.prisma.projectTask.delete({ where: { id: taskId } });
 
     await this.auditService.log({

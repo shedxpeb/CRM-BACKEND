@@ -1,6 +1,30 @@
-import { IsString, IsEmail, IsOptional, IsEnum, IsBoolean, IsDateString, IsNumber, MinLength, MaxLength, Matches, IsArray, Min } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  IsDateString,
+  IsNumber,
+  MinLength,
+  MaxLength,
+  Matches,
+  IsArray,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { LeadStatus, LeadPriority, LeadSource, ProjectType, StructureType, RoofType, WallType, MaterialPreference, Industry, BusinessType } from './get-leads.dto';
+import {
+  LeadStatus,
+  LeadPriority,
+  LeadSource,
+  ProjectType,
+  StructureType,
+  RoofType,
+  WallType,
+  MaterialPreference,
+  Industry,
+  BusinessType,
+} from './get-leads.dto';
 
 export class CreateLeadDto {
   // Customer Details

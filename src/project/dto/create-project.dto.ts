@@ -1,4 +1,16 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsBoolean, MinLength, MaxLength, Min, IsDateString, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  MinLength,
+  MaxLength,
+  Min,
+  IsDateString,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProjectPriority } from './get-projects.dto';
 

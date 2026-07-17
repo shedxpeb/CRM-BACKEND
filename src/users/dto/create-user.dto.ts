@@ -1,4 +1,13 @@
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength, Matches, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  Matches,
+  IsBoolean,
+} from 'class-validator';
 
 export enum UserRoleEnum {
   OWNER = 'OWNER',

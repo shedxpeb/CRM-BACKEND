@@ -13,19 +13,46 @@ const ROLE_NAME_ALIASES: Record<string, string[]> = {
 
 const DEFAULT_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [
-    'lead:list', 'lead:read', 'lead:create', 'lead:update', 'lead:delete',
-    'customer:list', 'customer:read', 'customer:create', 'customer:update', 'customer:delete',
-    'project:list', 'project:read', 'project:create', 'project:update', 'project:delete',
-    'user:list', 'user:read', 'user:create', 'user:update',
-    'role:list', 'role:read',
-    'organization:read', 'organization:update',
-    'tracking:read', 'tracking:update',
+    'lead:list',
+    'lead:read',
+    'lead:create',
+    'lead:update',
+    'lead:delete',
+    'customer:list',
+    'customer:read',
+    'customer:create',
+    'customer:update',
+    'customer:delete',
+    'project:list',
+    'project:read',
+    'project:create',
+    'project:update',
+    'project:delete',
+    'user:list',
+    'user:read',
+    'user:create',
+    'user:update',
+    'role:list',
+    'role:read',
+    'organization:read',
+    'organization:update',
+    'tracking:read',
+    'tracking:update',
   ],
   EMPLOYEE: [
-    'lead:list', 'lead:read', 'lead:create', 'lead:update',
-    'customer:list', 'customer:read', 'customer:create', 'customer:update',
-    'project:list', 'project:read', 'project:update',
-    'tracking:read', 'tracking:update',
+    'lead:list',
+    'lead:read',
+    'lead:create',
+    'lead:update',
+    'customer:list',
+    'customer:read',
+    'customer:create',
+    'customer:update',
+    'project:list',
+    'project:read',
+    'project:update',
+    'tracking:read',
+    'tracking:update',
   ],
 };
 
@@ -70,9 +97,11 @@ export class PermissionsGuard implements CanActivate {
       if (isOrgAdminRoute && requiredPermissions.some((p) => p.startsWith('organization:'))) {
         // OWNER may read/update only their own org — enforced in controller/service for :id
         // List/create/delete all orgs remains SUPER_ADMIN-only via Roles decorator
-        if (requiredPermissions.includes('organization:list') ||
-            requiredPermissions.includes('organization:create') ||
-            requiredPermissions.includes('organization:delete')) {
+        if (
+          requiredPermissions.includes('organization:list') ||
+          requiredPermissions.includes('organization:create') ||
+          requiredPermissions.includes('organization:delete')
+        ) {
           throw new ForbiddenException('Insufficient permissions');
         }
       }
@@ -99,9 +128,7 @@ export class PermissionsGuard implements CanActivate {
 
     const userPermissions = roles.flatMap((r) => r.permissions);
     const effectivePermissions =
-      userPermissions.length > 0
-        ? userPermissions
-        : DEFAULT_PERMISSIONS[userRecord.role] || [];
+      userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     if (effectivePermissions.includes('*')) {
       return true;

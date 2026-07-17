@@ -35,7 +35,10 @@ export class LoginProtectionService {
       });
 
       if (recentFailures > 0 && recentFailures % LOCKOUT_THRESHOLD === 0) {
-        const lockIndex = Math.min(Math.floor(recentFailures / LOCKOUT_THRESHOLD) - 1, LOCKOUT_DURATIONS.length - 1);
+        const lockIndex = Math.min(
+          Math.floor(recentFailures / LOCKOUT_THRESHOLD) - 1,
+          LOCKOUT_DURATIONS.length - 1,
+        );
         const duration = LOCKOUT_DURATIONS[lockIndex];
         const lockedUntil = new Date(Date.now() + duration);
 

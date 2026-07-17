@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -45,10 +54,7 @@ export class OrganizationController {
   @RequireRoles('SUPER_ADMIN')
   @RequirePermissions('organization:create')
   @ApiOperation({ summary: 'Create organization' })
-  async create(
-    @Body() dto: CreateOrganizationDto,
-    @CurrentUser('id') createdById: string,
-  ) {
+  async create(@Body() dto: CreateOrganizationDto, @CurrentUser('id') createdById: string) {
     const data = await this.orgService.create(dto, createdById);
     return { message: 'Organization created successfully.', data };
   }

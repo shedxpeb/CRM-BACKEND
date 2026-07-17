@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsArray, MinLength, MaxLength, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  MinLength,
+  MaxLength,
+  IsDateString,
+} from 'class-validator';
 import { ProjectPriority } from './get-projects.dto';
 
 export class CreateTaskDto {

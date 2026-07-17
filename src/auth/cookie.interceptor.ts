@@ -11,7 +11,10 @@ export class CookieInterceptor implements NestInterceptor {
     const res = context.switchToHttp().getResponse<FastifyReply>();
     const name = this.config.get<string>('cookie.refreshName') || 'refreshToken';
     const path = this.config.get<string>('cookie.path') || '/auth';
-    const sameSite = (this.config.get<string>('cookie.sameSite') || 'lax') as 'lax' | 'strict' | 'none';
+    const sameSite = (this.config.get<string>('cookie.sameSite') || 'lax') as
+      | 'lax'
+      | 'strict'
+      | 'none';
     const secure = this.config.get<boolean>('cookie.secure') === true;
     const signed = this.config.get<boolean>('cookie.signed') === true;
     const rememberDays = this.config.get<number>('session.rememberMeDays') || 30;
@@ -29,13 +32,15 @@ export class CookieInterceptor implements NestInterceptor {
             signed,
             maxAge,
           });
-          const { refreshToken, rememberMe, ...rest } = data;
+          const { refreshToken: _refreshToken, rememberMe: _rememberMe, ...rest } = data;
           return rest;
         }
         if (data?.clearRefreshCookie) {
           res.clearCookie(name, { path });
-          const { clearRefreshCookie, ...rest } = data;
-          return Object.keys(rest).length ? rest : { message: data.message || 'Logged out successfully.' };
+          const { clearRefreshCookie: _clearRefreshCookie, ...rest } = data;
+          return Object.keys(rest).length
+            ? rest
+            : { message: data.message || 'Logged out successfully.' };
         }
         return data;
       }),

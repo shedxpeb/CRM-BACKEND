@@ -21,18 +21,21 @@ export class TokenService {
     permissionVersion?: number;
     passwordVersion?: number;
   }): string {
-    return this.jwtService.sign({
-      sub: params.userId,
-      email: params.email,
-      role: params.role,
-      organizationId: params.organizationId,
-      sessionId: params.sessionId,
-      permissionVersion: params.permissionVersion || 1,
-      tokenVersion: 1,
-      passwordVersion: params.passwordVersion || 1,
-    } as any, {
-      expiresIn: this.configService.get<string>('jwt.accessExpiresIn') || '30m',
-    } as any);
+    return this.jwtService.sign(
+      {
+        sub: params.userId,
+        email: params.email,
+        role: params.role,
+        organizationId: params.organizationId,
+        sessionId: params.sessionId,
+        permissionVersion: params.permissionVersion || 1,
+        tokenVersion: 1,
+        passwordVersion: params.passwordVersion || 1,
+      } as any,
+      {
+        expiresIn: this.configService.get<string>('jwt.accessExpiresIn') || '30m',
+      } as any,
+    );
   }
 
   generateRefreshToken(): { token: string; hash: string } {

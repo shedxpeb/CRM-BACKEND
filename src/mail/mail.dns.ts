@@ -86,11 +86,7 @@ export async function resolveSmtpEndpoint(
   }
 
   try {
-    const result = await withTimeout(
-      dns.lookup(host, { family, all: false }),
-      dnsTimeoutMs,
-      host,
-    );
+    const result = await withTimeout(dns.lookup(host, { family, all: false }), dnsTimeoutMs, host);
 
     if (family === 4) {
       if (result.family !== 4 || !isIpv4Literal(result.address) || isIpv6Literal(result.address)) {

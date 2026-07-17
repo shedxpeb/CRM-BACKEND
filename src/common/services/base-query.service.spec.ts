@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { ForbiddenException } from '@nestjs/common';
 import { BaseQueryService } from './base-query.service';
 import { PrismaService } from '../../prisma/prisma.service';
