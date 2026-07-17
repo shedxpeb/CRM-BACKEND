@@ -38,6 +38,7 @@
     "seed:1000": "ts-node prisma/seed.ts 1000",
     "seed:5000": "ts-node prisma/seed.ts 5000",
     "seed:clean": "ts-node prisma/seed-clean.ts",
+    "seed:prod-admin": "node scripts/seed-prod-admin.mjs",
     "db:setup": "node scripts/generate-schema-sql.mjs && node scripts/apply-schema.mjs",
     "db:dev": "npx prisma dev --detach -n default",
     "test:runtime": "node ../frontend/scripts/runtime-check.mjs"
