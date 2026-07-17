@@ -5,7 +5,7 @@
  * Usage: npm run seed:system
  */
 import { PrismaClient } from '@prisma/client';
-import { bootstrapOrganizationSystem } from './system-bootstrap';
+import { bootstrapOrganizationSystem } from '../src/common/system-bootstrap';
 
 const prisma = new PrismaClient();
 
