@@ -267,4 +267,14 @@ export class InventoryController {
     const data = await this.inventoryService.getMovementHistory(id, organizationId);
     return { message: 'Movement history fetched.', data };
   }
+
+  @Get(':id/activities')
+  @RequirePermissions('inventory:read')
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.inventoryService.getActivities(id, organizationId);
+    return { message: 'Activities fetched.', data };
+  }
 }

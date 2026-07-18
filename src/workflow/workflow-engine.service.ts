@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../auth/services/audit.service';
 import {
@@ -13,6 +13,8 @@ import {
 
 @Injectable()
 export class WorkflowEngineService {
+  private readonly logger = new Logger(WorkflowEngineService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
@@ -35,68 +37,84 @@ export class WorkflowEngineService {
 
     if (!organizationId) return { eventRecorded: false, statusChanged: false };
 
-    // 1. Record the raw event
-    await this.prisma.businessEvent.create({
-      data: { organizationId, entityType, entityId, eventType, data, createdById },
-    });
-
-    // 2. Auto-audit: every event is audited
-    await this.auditService.log({
-      action: `${entityType}.${eventType}`,
-      organizationId,
-      userId: createdById,
-      resource: entityType,
-      resourceId: entityId,
-      metadata: data,
-    });
-
-    // 3. Find matching event rule
-    const rule = await this.prisma.eventRule.findFirst({
-      where: {
-        organizationId,
-        entityType,
-        eventType,
-        isActive: true,
-      },
-    });
-
-    if (!rule) {
-      return { eventRecorded: true, statusChanged: false };
+    try {
+      // 1. Record the raw event
+      await this.prisma.businessEvent.create({
+        data: { organizationId, entityType, entityId, eventType, data, createdById },
+      });
+    } catch (error) {
+      this.logger?.error?.(`Failed to create business event: ${error.message}`);
+      // Continue despite event recording failure - don't fail the main operation
     }
 
-    // 4. Get current status
-    const latestHistory = await this.prisma.statusHistory.findFirst({
-      where: { organizationId, entityType, entityId },
-      orderBy: { changedAt: 'desc' },
-    });
-    const currentStatus = latestHistory?.toStatus || null;
-
-    // 5. Check if transition is allowed (fromStatus null = any)
-    if (rule.fromStatus && rule.fromStatus !== currentStatus) {
-      return { eventRecorded: true, statusChanged: false, reason: 'fromStatus mismatch' };
+    try {
+      // 2. Auto-audit: every event is audited
+      await this.auditService.log({
+        action: `${entityType}.${eventType}`,
+        organizationId,
+        userId: createdById,
+        resource: entityType,
+        resourceId: entityId,
+        metadata: data,
+      });
+    } catch (error) {
+      this.logger?.error?.(`Failed to log audit: ${error.message}`);
+      // Continue despite audit failure - don't fail the main operation
     }
 
-    // 6. Apply status transition
-    const history = await this.prisma.statusHistory.create({
-      data: {
-        organizationId,
-        entityType,
-        entityId,
-        fromStatus: currentStatus,
-        toStatus: rule.toStatus,
-        changedById: createdById,
-        reason: `Auto: ${eventType}`,
-        metadata: { eventType, ruleId: rule.id, ...(data || {}) },
-      },
-    });
+    try {
+      // 3. Find matching event rule
+      const rule = await this.prisma.eventRule.findFirst({
+        where: {
+          organizationId,
+          entityType,
+          eventType,
+          isActive: true,
+        },
+      });
 
-    return {
-      eventRecorded: true,
-      statusChanged: true,
-      from: currentStatus,
-      to: rule.toStatus,
-      history,
-    };
+      if (!rule) {
+        return { eventRecorded: true, statusChanged: false };
+      }
+
+      // 4. Get current status
+      const latestHistory = await this.prisma.statusHistory.findFirst({
+        where: { organizationId, entityType, entityId },
+        orderBy: { changedAt: 'desc' },
+      });
+      const currentStatus = latestHistory?.toStatus || null;
+
+      // 5. Check if transition is allowed (fromStatus null = any)
+      if (rule.fromStatus && rule.fromStatus !== currentStatus) {
+        return { eventRecorded: true, statusChanged: false, reason: 'fromStatus mismatch' };
+      }
+
+      // 6. Apply status transition
+      const history = await this.prisma.statusHistory.create({
+        data: {
+          organizationId,
+          entityType,
+          entityId,
+          fromStatus: currentStatus,
+          toStatus: rule.toStatus,
+          changedById: createdById,
+          reason: `Auto: ${eventType}`,
+          metadata: { eventType, ruleId: rule.id, ...(data || {}) },
+        },
+      });
+
+      return {
+        eventRecorded: true,
+        statusChanged: true,
+        from: currentStatus,
+        to: rule.toStatus,
+        history,
+      };
+    } catch (error) {
+      this.logger?.error?.(`Failed to process event rule: ${error.message}`);
+      // Return event recorded but status not changed - don't fail the main operation
+      return { eventRecorded: true, statusChanged: false, error: error.message };
+    }
   }
 
   /**
