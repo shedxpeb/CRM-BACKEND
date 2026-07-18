@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsBoolean, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateInventoryItemDto {

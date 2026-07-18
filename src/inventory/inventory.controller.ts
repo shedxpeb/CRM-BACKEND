@@ -4,7 +4,14 @@ import { InventoryService } from './inventory.service';
 import { GetInventoryDto } from './dto/get-inventory.dto';
 import { CreateInventoryItemDto } from './dto/create-inventory.dto';
 import { UpdateInventoryItemDto } from './dto/update-inventory.dto';
-import { BulkDeleteInventoryDto, BulkStatusInventoryDto, CreateWarehouseDto, CreateSupplierDto, CreateStockMovementDto, CreateCategoryDto } from './dto/bulk.dto';
+import {
+  BulkDeleteInventoryDto,
+  BulkStatusInventoryDto,
+  CreateWarehouseDto,
+  CreateSupplierDto,
+  CreateStockMovementDto,
+  CreateCategoryDto,
+} from './dto/bulk.dto';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -17,14 +24,20 @@ export class InventoryController {
   @Get()
   @RequirePermissions('inventory:list')
   @ApiOperation({ summary: 'Get all inventory items' })
-  async findAll(@Query() query: GetInventoryDto, @CurrentUser('organizationId') organizationId: string) {
+  async findAll(
+    @Query() query: GetInventoryDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.findAll(query, organizationId);
     return { message: 'Inventory fetched.', data };
   }
 
   @Get('export')
   @RequirePermissions('inventory:list')
-  async export(@Query() query: GetInventoryDto, @CurrentUser('organizationId') organizationId: string) {
+  async export(
+    @Query() query: GetInventoryDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.findAllForExport(query, organizationId);
     return { message: 'Export data fetched.', data };
   }
@@ -47,14 +60,25 @@ export class InventoryController {
 
   @Patch('bulk/status')
   @RequirePermissions('inventory:update')
-  async bulkStatusUpdate(@Body() body: BulkStatusInventoryDto, @CurrentUser('organizationId') organizationId: string) {
-    const data = await this.inventoryService.bulkStatusUpdate(body.ids, body.status, organizationId);
+  async bulkStatusUpdate(
+    @Body() body: BulkStatusInventoryDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.inventoryService.bulkStatusUpdate(
+      body.ids,
+      body.status,
+      organizationId,
+    );
     return { message: 'Items updated.', data };
   }
 
   @Delete('bulk')
   @RequirePermissions('inventory:delete')
-  async bulkDelete(@Body() body: BulkDeleteInventoryDto, @CurrentUser('id') deletedById: string, @CurrentUser('organizationId') organizationId: string) {
+  async bulkDelete(
+    @Body() body: BulkDeleteInventoryDto,
+    @CurrentUser('id') deletedById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.bulkDelete(body.ids, deletedById, organizationId);
     return { message: 'Items deleted.', data };
   }
@@ -70,21 +94,31 @@ export class InventoryController {
 
   @Post('warehouses')
   @RequirePermissions('inventory:create')
-  async createWarehouse(@Body() dto: CreateWarehouseDto, @CurrentUser('organizationId') organizationId: string) {
+  async createWarehouse(
+    @Body() dto: CreateWarehouseDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.createWarehouse(dto, organizationId);
     return { message: 'Warehouse created.', data };
   }
 
   @Patch('warehouses/:id')
   @RequirePermissions('inventory:update')
-  async updateWarehouse(@Param('id') id: string, @Body() dto: any, @CurrentUser('organizationId') organizationId: string) {
+  async updateWarehouse(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.updateWarehouse(id, dto, organizationId);
     return { message: 'Warehouse updated.', data };
   }
 
   @Delete('warehouses/:id')
   @RequirePermissions('inventory:delete')
-  async deleteWarehouse(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+  async deleteWarehouse(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.deleteWarehouse(id, organizationId);
     return { message: 'Warehouse deleted.', data };
   }
@@ -100,21 +134,31 @@ export class InventoryController {
 
   @Post('suppliers')
   @RequirePermissions('inventory:create')
-  async createSupplier(@Body() dto: CreateSupplierDto, @CurrentUser('organizationId') organizationId: string) {
+  async createSupplier(
+    @Body() dto: CreateSupplierDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.createSupplier(dto, organizationId);
     return { message: 'Supplier created.', data };
   }
 
   @Patch('suppliers/:id')
   @RequirePermissions('inventory:update')
-  async updateSupplier(@Param('id') id: string, @Body() dto: any, @CurrentUser('organizationId') organizationId: string) {
+  async updateSupplier(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.updateSupplier(id, dto, organizationId);
     return { message: 'Supplier updated.', data };
   }
 
   @Delete('suppliers/:id')
   @RequirePermissions('inventory:delete')
-  async deleteSupplier(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+  async deleteSupplier(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.deleteSupplier(id, organizationId);
     return { message: 'Supplier deleted.', data };
   }
@@ -130,7 +174,10 @@ export class InventoryController {
 
   @Post('categories')
   @RequirePermissions('inventory:create')
-  async createCategory(@Body() dto: CreateCategoryDto, @CurrentUser('organizationId') organizationId: string) {
+  async createCategory(
+    @Body() dto: CreateCategoryDto,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.createCategory(dto, organizationId);
     return { message: 'Category created.', data };
   }
@@ -148,7 +195,11 @@ export class InventoryController {
   @Post('movements')
   @RequirePermissions('inventory:update')
   @ApiOperation({ summary: 'Create stock movement' })
-  async createMovement(@Body() dto: CreateStockMovementDto, @CurrentUser('id') userId: string, @CurrentUser('organizationId') organizationId: string) {
+  async createMovement(
+    @Body() dto: CreateStockMovementDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.createMovement(dto, organizationId, userId);
     return { message: 'Movement created.', data };
   }
@@ -166,7 +217,11 @@ export class InventoryController {
   @Post()
   @RequirePermissions('inventory:create')
   @ApiOperation({ summary: 'Create inventory item' })
-  async create(@Body() dto: CreateInventoryItemDto, @CurrentUser('id') createdById: string, @CurrentUser('organizationId') organizationId: string) {
+  async create(
+    @Body() dto: CreateInventoryItemDto,
+    @CurrentUser('id') createdById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.create(dto, createdById, organizationId);
     return { message: 'Item created.', data };
   }
@@ -174,7 +229,12 @@ export class InventoryController {
   @Patch(':id')
   @RequirePermissions('inventory:update')
   @ApiOperation({ summary: 'Update inventory item' })
-  async update(@Param('id') id: string, @Body() dto: UpdateInventoryItemDto, @CurrentUser('id') updatedById: string, @CurrentUser('organizationId') organizationId: string) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateInventoryItemDto,
+    @CurrentUser('id') updatedById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.update(id, dto, updatedById, organizationId);
     return { message: 'Item updated.', data };
   }
@@ -182,7 +242,11 @@ export class InventoryController {
   @Delete(':id')
   @RequirePermissions('inventory:delete')
   @ApiOperation({ summary: 'Delete inventory item' })
-  async softDelete(@Param('id') id: string, @CurrentUser('id') deletedById: string, @CurrentUser('organizationId') organizationId: string) {
+  async softDelete(
+    @Param('id') id: string,
+    @CurrentUser('id') deletedById: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.softDelete(id, deletedById, organizationId);
     return { message: 'Item deleted.', data };
   }
@@ -196,7 +260,10 @@ export class InventoryController {
 
   @Get(':id/movements')
   @RequirePermissions('inventory:read')
-  async getMovementHistory(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
+  async getMovementHistory(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
     const data = await this.inventoryService.getMovementHistory(id, organizationId);
     return { message: 'Movement history fetched.', data };
   }

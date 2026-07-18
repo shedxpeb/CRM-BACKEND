@@ -1,4 +1,4 @@
-import { IsArray, IsString, IsEnum } from 'class-validator';
+import { IsArray, IsString } from 'class-validator';
 
 export class BulkDeleteItemMasterDto {
   @IsArray()

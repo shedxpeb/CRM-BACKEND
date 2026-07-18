@@ -24,8 +24,8 @@ export class SystemSeedService {
   ) {}
 
   private requireSeedSecret(provided?: string) {
-    const expected = this.config.get<string>('SEED_ADMIN_SECRET')?.trim()
-      || process.env.SEED_ADMIN_SECRET?.trim();
+    const expected =
+      this.config.get<string>('SEED_ADMIN_SECRET')?.trim() || process.env.SEED_ADMIN_SECRET?.trim();
     if (!expected) {
       // Hidden when not configured — looks like missing route
       throw new NotFoundException();
@@ -96,7 +96,8 @@ export class SystemSeedService {
       name: user.name,
       role: user.role,
       organizationId: user.organizationId,
-      message: 'Admin ready. Login with this email/password (no OTP). Remove SEED_ADMIN_SECRET from Render after use.',
+      message:
+        'Admin ready. Login with this email/password (no OTP). Remove SEED_ADMIN_SECRET from Render after use.',
     };
   }
 }

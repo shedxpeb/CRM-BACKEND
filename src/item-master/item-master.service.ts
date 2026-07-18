@@ -16,9 +16,25 @@ export class ItemMasterService extends BaseQueryService {
   ) {
     super(prisma, {
       model: 'itemMaster',
-      searchFields: ['itemName', 'itemCode', 'sku', 'brand', 'category', 'specification', 'hsnCode'],
+      searchFields: [
+        'itemName',
+        'itemCode',
+        'sku',
+        'brand',
+        'category',
+        'specification',
+        'hsnCode',
+      ],
       filterFields: ['status', 'category', 'brand', 'itemTypeClass', 'unit', 'taxType'],
-      sortColumns: ['createdAt', 'itemName', 'itemCode', 'category', 'brand', 'status', 'defaultRate'],
+      sortColumns: [
+        'createdAt',
+        'itemName',
+        'itemCode',
+        'category',
+        'brand',
+        'status',
+        'defaultRate',
+      ],
       defaultSort: 'createdAt',
       orgScoped: true,
     });
@@ -29,10 +45,17 @@ export class ItemMasterService extends BaseQueryService {
   }
 
   async findById(id: string, organizationId?: string) {
-    return super.findById(id, {
-      variants: true,
-      inventoryItems: { where: { isDeleted: false }, select: { id: true, itemName: true, currentStock: true, status: true } },
-    }, organizationId);
+    return super.findById(
+      id,
+      {
+        variants: true,
+        inventoryItems: {
+          where: { isDeleted: false },
+          select: { id: true, itemName: true, currentStock: true, status: true },
+        },
+      },
+      organizationId,
+    );
   }
 
   async create(dto: CreateItemMasterDto, createdById: string, organizationId: string) {
@@ -139,7 +162,9 @@ export class ItemMasterService extends BaseQueryService {
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.tags !== undefined && { tags: dto.tags }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.technicalDescription !== undefined && { technicalDescription: dto.technicalDescription }),
+        ...(dto.technicalDescription !== undefined && {
+          technicalDescription: dto.technicalDescription,
+        }),
         ...(dto.itemTypeClass !== undefined && { itemTypeClass: dto.itemTypeClass }),
         ...(dto.materialGrade !== undefined && { materialGrade: dto.materialGrade }),
         ...(dto.isStructural !== undefined && { isStructural: dto.isStructural }),
@@ -226,15 +251,17 @@ export class ItemMasterService extends BaseQueryService {
       _count: { id: true },
     });
     const totalVariants = await this.client.itemVariant.count({ where: { organizationId } });
-    const totalBundles = await this.client.itemBundle.count({ where: { organizationId, isDeleted: false } });
+    const totalBundles = await this.client.itemBundle.count({
+      where: { organizationId, isDeleted: false },
+    });
 
     return {
       totalItems,
       activeItems,
       inactiveItems,
       discontinuedItems,
-      itemsByCategory: Object.fromEntries(categoryAgg.map(c => [c.category, c._count.id])),
-      itemsByBrand: Object.fromEntries(brandAgg.map(b => [b.brand || '', b._count.id])),
+      itemsByCategory: Object.fromEntries(categoryAgg.map((c) => [c.category, c._count.id])),
+      itemsByBrand: Object.fromEntries(brandAgg.map((b) => [b.brand || '', b._count.id])),
       totalVariants,
       totalBundles,
       recentlyAdded: activeItems,
@@ -243,6 +270,16 @@ export class ItemMasterService extends BaseQueryService {
   }
 
   async getCombobox(query: any, organizationId?: string) {
-    return super.getCombobox(query, organizationId, ['id', 'itemName', 'itemCode', 'sku', 'unit', 'category', 'brand', 'defaultRate', 'status']);
+    return super.getCombobox(query, organizationId, [
+      'id',
+      'itemName',
+      'itemCode',
+      'sku',
+      'unit',
+      'category',
+      'brand',
+      'defaultRate',
+      'status',
+    ]);
   }
 }

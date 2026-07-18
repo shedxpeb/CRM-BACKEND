@@ -39,17 +39,24 @@ export class InventoryService extends BaseQueryService {
       where.status = { in: ['Low Stock', 'Critical', 'Out of Stock'] };
     }
 
-    const result = await super.findAll({ ...query, ...(query.lowStock ? { status: undefined } : {}) }, organizationId);
+    const result = await super.findAll(
+      { ...query, ...(query.lowStock ? { status: undefined } : {}) },
+      organizationId,
+    );
 
     return result;
   }
 
   async findById(id: string, organizationId?: string) {
-    return super.findById(id, {
-      warehouse: true,
-      supplier: true,
-      movements: { orderBy: { createdAt: 'desc' }, take: 50 },
-    }, organizationId);
+    return super.findById(
+      id,
+      {
+        warehouse: true,
+        supplier: true,
+        movements: { orderBy: { createdAt: 'desc' }, take: 50 },
+      },
+      organizationId,
+    );
   }
 
   async create(dto: CreateInventoryItemDto, createdById: string, organizationId: string) {
@@ -119,7 +126,12 @@ export class InventoryService extends BaseQueryService {
     return item;
   }
 
-  async update(id: string, dto: UpdateInventoryItemDto, updatedById: string, organizationId: string) {
+  async update(
+    id: string,
+    dto: UpdateInventoryItemDto,
+    updatedById: string,
+    organizationId: string,
+  ) {
     await this.findById(id, organizationId);
 
     const existing = await this.client.findFirst({ where: { id } });
@@ -195,18 +207,34 @@ export class InventoryService extends BaseQueryService {
 
   async getStats(organizationId?: string) {
     const where = { organizationId, isDeleted: false };
-    const items = await this.client.findMany({ where, select: { currentStock: true, totalValue: true, status: true, reservedStock: true, incomingStock: true, outgoingStock: true } });
+    const items = await this.client.findMany({
+      where,
+      select: {
+        currentStock: true,
+        totalValue: true,
+        status: true,
+        reservedStock: true,
+        incomingStock: true,
+        outgoingStock: true,
+      },
+    });
 
     const totalItems = items.length;
     const totalValue = items.reduce((sum, i) => sum + (i.totalValue || 0), 0);
-    const lowStockItems = items.filter(i => i.status === 'Low Stock' || i.status === 'Critical').length;
-    const outOfStockItems = items.filter(i => i.status === 'Out of Stock').length;
+    const lowStockItems = items.filter(
+      (i) => i.status === 'Low Stock' || i.status === 'Critical',
+    ).length;
+    const outOfStockItems = items.filter((i) => i.status === 'Out of Stock').length;
     const incomingStock = items.reduce((sum, i) => sum + (i.incomingStock || 0), 0);
     const outgoingStock = items.reduce((sum, i) => sum + (i.outgoingStock || 0), 0);
     const reservedStock = items.reduce((sum, i) => sum + (i.reservedStock || 0), 0);
 
-    const activeSuppliers = await this.prisma.supplier.count({ where: { organizationId, isDeleted: false, status: 'Active' } });
-    const materialShortages = items.filter(i => i.status === 'Critical' || i.status === 'Out of Stock').length;
+    const activeSuppliers = await this.prisma.supplier.count({
+      where: { organizationId, isDeleted: false, status: 'Active' },
+    });
+    const materialShortages = items.filter(
+      (i) => i.status === 'Critical' || i.status === 'Out of Stock',
+    ).length;
 
     return {
       totalItems,
@@ -254,7 +282,7 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
-  async updateWarehouse(id: string, dto: any, organizationId: string) {
+  async updateWarehouse(id: string, dto: any, _organizationId: string) {
     return this.prisma.warehouse.update({
       where: { id },
       data: {
@@ -270,7 +298,7 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
-  async deleteWarehouse(id: string, organizationId: string) {
+  async deleteWarehouse(id: string, _organizationId: string) {
     return this.prisma.warehouse.update({
       where: { id },
       data: { isDeleted: true },
@@ -306,7 +334,7 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
-  async updateSupplier(id: string, dto: any, organizationId: string) {
+  async updateSupplier(id: string, dto: any, _organizationId: string) {
     return this.prisma.supplier.update({
       where: { id },
       data: {
@@ -325,7 +353,7 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
-  async deleteSupplier(id: string, organizationId: string) {
+  async deleteSupplier(id: string, _organizationId: string) {
     return this.prisma.supplier.update({
       where: { id },
       data: { isDeleted: true },
@@ -405,11 +433,12 @@ export class InventoryService extends BaseQueryService {
       },
     });
 
-    const stockDelta = dto.type === 'Stock In' || dto.type === 'stockIn'
-      ? dto.quantity
-      : dto.type === 'Stock Out' || dto.type === 'stockOut'
-        ? -dto.quantity
-        : 0;
+    const stockDelta =
+      dto.type === 'Stock In' || dto.type === 'stockIn'
+        ? dto.quantity
+        : dto.type === 'Stock Out' || dto.type === 'stockOut'
+          ? -dto.quantity
+          : 0;
 
     if (stockDelta !== 0) {
       const item = await this.client.findFirst({ where: { id: dto.itemId } });
@@ -458,15 +487,21 @@ export class InventoryService extends BaseQueryService {
       },
     });
 
-    return items.map(item => ({
+    return items.map((item) => ({
       id: `alert_${item.id}`,
       itemId: item.id,
       itemName: item.itemName,
       itemCode: item.itemCode,
-      type: item.status === 'Out of Stock' ? 'Out of Stock' : item.status === 'Critical' ? 'Critical Stock' : 'Low Stock',
+      type:
+        item.status === 'Out of Stock'
+          ? 'Out of Stock'
+          : item.status === 'Critical'
+            ? 'Critical Stock'
+            : 'Low Stock',
       currentStock: item.currentStock,
       threshold: item.minimumStock,
-      severity: item.status === 'Out of Stock' || item.status === 'Critical' ? 'critical' : 'warning',
+      severity:
+        item.status === 'Out of Stock' || item.status === 'Critical' ? 'critical' : 'warning',
       createdAt: item.createdAt,
     }));
   }

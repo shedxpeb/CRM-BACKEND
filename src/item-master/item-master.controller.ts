@@ -43,10 +43,7 @@ export class ItemMasterController {
   @Get('combobox')
   @RequirePermissions('item-master:list')
   @ApiOperation({ summary: 'Get items for dropdown' })
-  async combobox(
-    @Query() query: any,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async combobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.itemMasterService.getCombobox(query, organizationId);
     return { message: 'Items fetched.', data };
   }
@@ -65,7 +62,11 @@ export class ItemMasterController {
     @Body() body: BulkStatusItemMasterDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.itemMasterService.bulkStatusUpdate(body.ids, body.status, organizationId);
+    const data = await this.itemMasterService.bulkStatusUpdate(
+      body.ids,
+      body.status,
+      organizationId,
+    );
     return { message: 'Items updated.', data };
   }
 
@@ -83,10 +84,7 @@ export class ItemMasterController {
   @Get(':id')
   @RequirePermissions('item-master:read')
   @ApiOperation({ summary: 'Get item by ID' })
-  async findById(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.itemMasterService.findById(id, organizationId);
     return { message: 'Item fetched.', data };
   }
@@ -131,10 +129,7 @@ export class ItemMasterController {
   @Post(':id/restore')
   @RequirePermissions('item-master:update')
   @ApiOperation({ summary: 'Restore deleted item' })
-  async restore(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async restore(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.itemMasterService.restore(id, organizationId);
     return { message: 'Item restored.', data };
   }
@@ -189,8 +184,8 @@ export class ItemMasterController {
     @Param('itemId') itemId: string,
     @Param('variantId') variantId: string,
     @Body() dto: any,
-    @CurrentUser('id') updatedById: string,
-    @CurrentUser('organizationId') organizationId: string,
+    @CurrentUser('id') _updatedById: string,
+    @CurrentUser('organizationId') _organizationId: string,
   ) {
     const data = await this.prisma.itemVariant.update({
       where: { id: variantId },
@@ -212,7 +207,7 @@ export class ItemMasterController {
   @ApiOperation({ summary: 'Delete variant' })
   async deleteVariant(
     @Param('variantId') variantId: string,
-    @CurrentUser('organizationId') organizationId: string,
+    @CurrentUser('organizationId') _organizationId: string,
   ) {
     await this.prisma.itemVariant.delete({ where: { id: variantId } });
     return { message: 'Variant deleted.', data: null };
@@ -249,15 +244,17 @@ export class ItemMasterController {
         bundleRate: dto.bundleRate,
         discountPercentage: dto.discountPercentage,
         status: dto.status || 'Active',
-        items: dto.items ? {
-          create: dto.items.map((item: any) => ({
-            organizationId,
-            itemMasterId: item.itemMasterId,
-            quantity: item.quantity || 1,
-            unit: item.unit,
-            rate: item.rate,
-          })),
-        } : undefined,
+        items: dto.items
+          ? {
+              create: dto.items.map((item: any) => ({
+                organizationId,
+                itemMasterId: item.itemMasterId,
+                quantity: item.quantity || 1,
+                unit: item.unit,
+                rate: item.rate,
+              })),
+            }
+          : undefined,
       },
       include: { items: true },
     });
@@ -269,7 +266,7 @@ export class ItemMasterController {
   @ApiOperation({ summary: 'Delete bundle' })
   async deleteBundle(
     @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
+    @CurrentUser('organizationId') _organizationId: string,
   ) {
     await this.prisma.itemBundle.update({
       where: { id },
@@ -277,6 +274,4 @@ export class ItemMasterController {
     });
     return { message: 'Bundle deleted.', data: null };
   }
-
-
 }
