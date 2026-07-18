@@ -35,6 +35,14 @@ model Organization {
   leads            Lead[]
   projects         Project[]
   users            User[]
+  itemMasters      ItemMaster[]
+  itemVariants     ItemVariant[]
+  itemBundles      ItemBundle[]
+  warehouses       Warehouse[]
+  suppliers        Supplier[]
+  inventoryItems   InventoryItem[]
+  stockMovements   StockMovement[]
+  inventoryCategories InventoryCategory[]
 
   @@index([status])
   @@index([email])
@@ -790,6 +798,275 @@ enum ProjectMilestoneStatus {
   InProgress
   Completed
   Delayed
+}
+
+model ItemMaster {
+  id                  String      @id @default(uuid())
+  organizationId      String
+  itemNumber          Int         @unique @default(autoincrement())
+  sku                 String
+  itemCode            String
+  itemName            String
+  category            String
+  subCategory         String?
+  categoryId          String?
+  subcategoryId       String?
+  itemTypeId          String?
+  brand               String?
+  grade               String?
+  specification       String?
+  hsnCode             String?
+  unit                String
+  weight              Float?
+  defaultRate         Float?
+  gstRate             Float?
+  taxType             String?
+  technicalDescription String?
+  datasheetUrl        String?
+  productImageUrl     String?
+  status              String      @default("Active")
+  tags                String[]
+  manufacturer        String?
+  countryOfOrigin     String?
+  description         String?
+  standardDimensions  Json?
+  currency            String?     @default("INR")
+  images              String[]
+  preferredSupplierId String?
+  preferredSupplier   String?
+  inventoryItemId     String?
+  notes               String?
+  internalNotes       String?
+  itemTypeClass       String?
+  materialGrade       String?
+  isStructural        Boolean     @default(false)
+  isCladding          Boolean     @default(false)
+  isAccessory         Boolean     @default(false)
+  isService           Boolean     @default(false)
+  thickness           Float?
+  length              Float?
+  width               Float?
+  customFields        Json?
+  createdById         String?
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  isDeleted           Boolean     @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  variants            ItemVariant[]
+  bundles             ItemBundleItem[]
+  inventoryItems      InventoryItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([itemCode])
+  @@index([isDeleted])
+}
+
+model ItemVariant {
+  id             String    @id @default(uuid())
+  organizationId String
+  itemMasterId   String
+  variantName    String
+  variantCode    String
+  specifications String?
+  standardWeight Float?
+  dimensions     Json?
+  defaultRate    Float?
+  status         String    @default("Active")
+  customFields   Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  itemMaster     ItemMaster @relation(fields: [itemMasterId], references: [id], onDelete: Cascade)
+
+  @@index([itemMasterId])
+  @@index([organizationId])
+}
+
+model ItemBundle {
+  id                  String    @id @default(uuid())
+  organizationId      String
+  bundleCode          String
+  bundleName          String
+  description         String?
+  bundleRate          Float?
+  discountPercentage  Float?
+  status              String    @default("Active")
+  customFields        Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  isDeleted           Boolean   @default(false)
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  items               ItemBundleItem[]
+
+  @@index([organizationId])
+  @@index([isDeleted])
+}
+
+model ItemBundleItem {
+  id             String     @id @default(uuid())
+  organizationId String
+  bundleId       String?
+  itemMasterId   String
+  quantity       Int        @default(1)
+  unit           String?
+  rate           Float?
+  itemMaster     ItemMaster @relation(fields: [itemMasterId], references: [id])
+  bundle         ItemBundle? @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([itemMasterId])
+}
+
+model Warehouse {
+  id               String    @id @default(uuid())
+  organizationId   String
+  warehouseCode    String
+  name             String
+  location         String
+  address          String?
+  manager          String?
+  contactNumber    String?
+  capacity         Float?
+  currentOccupancy Float?    @default(0)
+  status           String    @default("Active")
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isDeleted        Boolean   @default(false)
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  inventoryItems   InventoryItem[]
+
+  @@unique([organizationId, warehouseCode])
+  @@index([organizationId])
+  @@index([isDeleted])
+}
+
+model Supplier {
+  id               String    @id @default(uuid())
+  organizationId   String
+  name             String
+  gstNumber        String?
+  contactPerson    String
+  mobile           String
+  email            String?
+  address          String?
+  city             String?
+  state            String?
+  pincode          String?
+  gstRegistered    Boolean   @default(false)
+  suppliedMaterials String[]
+  leadTime         Int?
+  rating           Float?
+  notes            String?
+  status           String    @default("Active")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isDeleted        Boolean   @default(false)
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  inventoryItems   InventoryItem[]
+
+  @@index([organizationId])
+  @@index([isDeleted])
+}
+
+model InventoryCategory {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  parentId       String?
+  description    String?
+  itemCount      Int       @default(0)
+  sortOrder      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model InventoryItem {
+  id               String         @id @default(uuid())
+  organizationId   String
+  itemNumber       Int            @unique @default(autoincrement())
+  itemCode         String
+  itemMasterId     String?
+  itemName         String
+  unit             String
+  currentStock     Float          @default(0)
+  reservedStock    Float          @default(0)
+  issuedStock      Float          @default(0)
+  minimumStock     Float          @default(0)
+  reorderLevel     Float          @default(0)
+  safetyStock      Float          @default(0)
+  purchaseRate     Float?
+  totalValue       Float          @default(0)
+  warehouseId      String?
+  warehouseName    String?
+  binLocation      String?
+  reorderQuantity  Float?
+  incomingStock    Float          @default(0)
+  outgoingStock    Float          @default(0)
+  category         String?
+  brand            String?
+  itemTypeClass    String?
+  status           String         @default("In Stock")
+  lastUpdated      DateTime       @default(now())
+  customFields     Json?
+  tags             String[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  isDeleted        Boolean        @default(false)
+  deletedAt        DateTime?
+  deletedById      String?
+  organization     Organization   @relation(fields: [organizationId], references: [id])
+  itemMaster       ItemMaster?    @relation(fields: [itemMasterId], references: [id])
+  warehouse        Warehouse?     @relation(fields: [warehouseId], references: [id])
+  supplier         Supplier?      @relation(fields: [supplierId], references: [id])
+  supplierId       String?
+  movements        StockMovement[]
+
+  @@unique([organizationId, itemCode])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([itemCode])
+  @@index([itemMasterId])
+  @@index([warehouseId])
+  @@index([isDeleted])
+}
+
+model StockMovement {
+  id               String    @id @default(uuid())
+  organizationId   String
+  movementNumber   String
+  inventoryItemId  String
+  itemName         String
+  type             String
+  quantity         Float
+  warehouseId      String?
+  warehouseName    String?
+  fromWarehouseId  String?
+  toWarehouseId    String?
+  referenceNumber  String?
+  referenceType    String?
+  performedBy      String
+  remarks          String?
+  date             DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@index([organizationId])
+  @@index([inventoryItemId])
+  @@index([type])
+  @@index([date])
 }
 
 enum ProjectActivityType {

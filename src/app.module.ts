@@ -21,6 +21,8 @@ import { RolesModule } from './roles/roles.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { SystemModule } from './system/system.module';
+import { ItemMasterModule } from './item-master/item-master.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { SystemModule } from './system/system.module';
     TrackingModule,
     WorkflowModule,
     SystemModule,
+    ItemMasterModule,
+    InventoryModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
