@@ -120,23 +120,33 @@ export class ItemMasterService extends BaseQueryService {
       },
     });
 
-    await this.auditService.log({
-      action: 'item-master.created',
-      resource: 'ItemMaster',
-      resourceId: item.id,
-      organizationId,
-      userId: createdById,
-      metadata: { itemName: item.itemName, itemCode: item.itemCode },
-    });
+    // Post-processing: audit log (optional - don't fail if this errors)
+    try {
+      await this.auditService.log({
+        action: 'item-master.created',
+        resource: 'ItemMaster',
+        resourceId: item.id,
+        organizationId,
+        userId: createdById,
+        metadata: { itemName: item.itemName, itemCode: item.itemCode },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to log audit for item creation: ${error.message}`);
+    }
 
-    await this.workflowEngine.processEvent({
-      organizationId,
-      entityType: 'item',
-      entityId: item.id,
-      eventType: 'created',
-      data: { itemName: item.itemName, itemCode: item.itemCode },
-      createdById,
-    });
+    // Post-processing: workflow event (optional - don't fail if this errors)
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'item',
+        entityId: item.id,
+        eventType: 'created',
+        data: { itemName: item.itemName, itemCode: item.itemCode },
+        createdById,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to process workflow event for item creation: ${error.message}`);
+    }
 
     return item;
   }
@@ -181,23 +191,33 @@ export class ItemMasterService extends BaseQueryService {
       },
     });
 
-    await this.auditService.log({
-      action: 'item-master.updated',
-      resource: 'ItemMaster',
-      resourceId: id,
-      organizationId,
-      userId: updatedById,
-      metadata: { itemName: item.itemName },
-    });
+    // Post-processing: audit log (optional - don't fail if this errors)
+    try {
+      await this.auditService.log({
+        action: 'item-master.updated',
+        resource: 'ItemMaster',
+        resourceId: id,
+        organizationId,
+        userId: updatedById,
+        metadata: { itemName: item.itemName },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to log audit for item update: ${error.message}`);
+    }
 
-    await this.workflowEngine.processEvent({
-      organizationId,
-      entityType: 'item',
-      entityId: id,
-      eventType: 'updated',
-      data: { itemName: item.itemName },
-      createdById: updatedById,
-    });
+    // Post-processing: workflow event (optional - don't fail if this errors)
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'item',
+        entityId: id,
+        eventType: 'updated',
+        data: { itemName: item.itemName },
+        createdById: updatedById,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to process workflow event for item update: ${error.message}`);
+    }
 
     return item;
   }
@@ -210,23 +230,33 @@ export class ItemMasterService extends BaseQueryService {
       data: { isDeleted: true, deletedAt: new Date(), deletedById },
     });
 
-    await this.auditService.log({
-      action: 'item-master.deleted',
-      resource: 'ItemMaster',
-      resourceId: id,
-      organizationId,
-      userId: deletedById,
-      metadata: { itemName: item.itemName },
-    });
+    // Post-processing: audit log (optional - don't fail if this errors)
+    try {
+      await this.auditService.log({
+        action: 'item-master.deleted',
+        resource: 'ItemMaster',
+        resourceId: id,
+        organizationId,
+        userId: deletedById,
+        metadata: { itemName: item.itemName },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to log audit for item deletion: ${error.message}`);
+    }
 
-    await this.workflowEngine.processEvent({
-      organizationId,
-      entityType: 'item',
-      entityId: id,
-      eventType: 'deleted',
-      data: { itemName: item.itemName },
-      createdById: deletedById,
-    });
+    // Post-processing: workflow event (optional - don't fail if this errors)
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'item',
+        entityId: id,
+        eventType: 'deleted',
+        data: { itemName: item.itemName },
+        createdById: deletedById,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to process workflow event for item deletion: ${error.message}`);
+    }
 
     return item;
   }

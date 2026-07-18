@@ -43,6 +43,8 @@ model Organization {
   inventoryItems   InventoryItem[]
   stockMovements   StockMovement[]
   inventoryCategories InventoryCategory[]
+  vendors          Vendor[]
+  purchaseOrders   PurchaseOrder[]
 
   @@index([status])
   @@index([email])
@@ -1096,4 +1098,157 @@ enum ProjectActivityType {
   payment_received
   project_completed
   handover_completed
+}
+
+model Vendor {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  vendorNumber        Int      @unique @default(autoincrement())
+  companyName         String
+  gstNumber           String?
+  panNumber           String?
+  contactPerson       String
+  email               String?
+  phone               String
+  address             String?
+  city                String?
+  state               String?
+  pincode             String?
+  country             String?  @default("India")
+  bankDetails         Json?
+  paymentTerms        String?
+  creditLimit         Float?
+  creditDays          Int?
+  outstanding         Float    @default(0)
+  status              String   @default("Active")
+  notes               String?
+  attachments         String[]
+  customFields        Json?
+  createdById         String?
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  isDeleted           Boolean  @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  purchaseOrders      PurchaseOrder[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([organizationId, status])
+}
+
+model PurchaseOrder {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  poNumber            String   @unique
+  poNumberInt         Int      @unique @default(autoincrement())
+  vendorId            String
+  vendorName          String
+  projectId           String?
+  projectName         String?
+  warehouseId         String?
+  warehouseName       String?
+  paymentTerms        String?
+  expectedDeliveryDate DateTime?
+  status              String   @default("Draft")
+  subtotal            Float    @default(0)
+  discount            Float    @default(0)
+  discountType        String?  @default("Amount")
+  tax                 Float    @default(0)
+  freight             Float    @default(0)
+  roundOff            Float    @default(0)
+  grandTotal          Float    @default(0)
+  notes               String?
+  terms               String?
+  internalNotes       String?
+  approvedById        String?
+  approvedBy          String?
+  approvedAt          DateTime?
+  pdfGenerated        Boolean  @default(false)
+  pdfUrl              String?
+  sentToVendor        Boolean  @default(false)
+  sentAt              DateTime?
+  customFields        Json?
+  createdById         String?
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  isDeleted           Boolean  @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+  organization        Organization @relation(fields: [organizationId], references: [id])
+  vendor              Vendor @relation(fields: [vendorId], references: [id])
+  items               PurchaseOrderItem[]
+  timeline            PurchaseOrderTimeline[]
+
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([projectId])
+  @@index([status])
+  @@index([poNumber])
+  @@index([createdAt])
+  @@index([isDeleted])
+  @@index([organizationId, status])
+}
+
+model PurchaseOrderItem {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  purchaseOrderId     String
+  itemMasterId        String?
+  itemCode            String
+  itemName            String
+  description         String?
+  quantity            Float
+  unit                String
+  rate                Float
+  gstRate             Float?
+  gstAmount           Float    @default(0)
+  discount            Float    @default(0)
+  discountType        String?  @default("Amount")
+  total               Float
+  hsnCode             String?
+  receivedQuantity    Float    @default(0)
+  pendingQuantity     Float?
+  customFields        Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@index([itemMasterId])
+  @@index([organizationId])
+}
+
+model PurchaseOrderTimeline {
+  id                  String   @id @default(uuid())
+  organizationId      String
+  purchaseOrderId     String
+  action              String
+  performedById       String?
+  performedBy         String?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+enum PurchaseOrderStatus {
+  Draft
+  PendingApproval
+  Approved
+  Rejected
+  Sent
+  PartiallyReceived
+  FullyReceived
+  Cancelled
+  Closed
 }

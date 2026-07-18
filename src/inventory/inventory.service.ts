@@ -476,6 +476,46 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
+  async getActivities(itemId: string, organizationId: string) {
+    // Get stock movements as activities
+    const movements = await this.prisma.stockMovement.findMany({
+      where: { inventoryItemId: itemId, organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // Transform movements to activity format
+    const activities = movements.map((movement) => ({
+      id: `activity_${movement.id}`,
+      itemId,
+      type: this.mapMovementTypeToActivityType(movement.type),
+      description: `${movement.type}: ${movement.quantity} units`,
+      performedBy: movement.performedBy || 'System',
+      performedAt: movement.createdAt,
+      metadata: {
+        movementNumber: movement.movementNumber,
+        quantity: movement.quantity,
+        warehouse: movement.warehouseName,
+        referenceNumber: movement.referenceNumber,
+      },
+    }));
+
+    return activities;
+  }
+
+  private mapMovementTypeToActivityType(movementType: string): string {
+    const typeMap: Record<string, string> = {
+      'Stock In': 'stock_in',
+      'Stock Out': 'stock_out',
+      'Transfer': 'transfer',
+      'Adjustment': 'adjustment',
+      'Reservation': 'reservation',
+      'Release': 'release',
+      'Consumption': 'consumption',
+    };
+    return typeMap[movementType] || 'adjustment';
+  }
+
   // ─── ALERTS ──────────────────────────────────────────
 
   async getAlerts(organizationId: string) {

@@ -23,6 +23,8 @@ import { WorkflowModule } from './workflow/workflow.module';
 import { SystemModule } from './system/system.module';
 import { ItemMasterModule } from './item-master/item-master.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { VendorModule } from './vendor/vendor.module';
+import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { InventoryModule } from './inventory/inventory.module';
     SystemModule,
     ItemMasterModule,
     InventoryModule,
+    VendorModule,
+    PurchaseOrderModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
