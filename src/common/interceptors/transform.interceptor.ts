@@ -1,4 +1,4 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, StreamableFile } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import type { FastifyRequest } from 'fastify';
@@ -38,6 +38,10 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
 
     return next.handle().pipe(
       map((responseData: any) => {
+        if (responseData instanceof StreamableFile) {
+          return responseData as any;
+        }
+
         if (responseData && typeof responseData === 'object') {
           const { message, data, meta, success, clearRefreshCookie, ...rest } = responseData;
           const payload =

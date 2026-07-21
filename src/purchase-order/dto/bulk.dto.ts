@@ -1,5 +1,6 @@
-import { IsArray, IsString, IsNotEmpty } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { PurchaseOrderStatus } from '@prisma/client';
 
 export class BulkDeletePurchaseOrderDto {
   @ApiProperty()
@@ -14,8 +15,8 @@ export class BulkStatusPurchaseOrderDto {
   @IsString({ each: true })
   ids: string[];
 
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ enum: PurchaseOrderStatus })
+  @IsEnum(PurchaseOrderStatus)
   @IsNotEmpty()
-  status: string;
+  status: PurchaseOrderStatus;
 }

@@ -1,4 +1,16 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsObject, IsDateString, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsObject,
+  IsDateString,
+  ValidateNested,
+  Min,
+  Max,
+  IsIn,
+  ArrayMinSize,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -21,8 +33,9 @@ export class CreatePurchaseOrderItemDto {
   @IsString()
   description?: string;
 
-  @ApiProperty()
+  @ApiProperty({ minimum: 0.01 })
   @IsNumber()
+  @Min(0.01)
   @Type(() => Number)
   quantity: number;
 
@@ -30,26 +43,30 @@ export class CreatePurchaseOrderItemDto {
   @IsString()
   unit: string;
 
-  @ApiProperty()
+  @ApiProperty({ minimum: 0 })
   @IsNumber()
+  @Min(0)
   @Type(() => Number)
   rate: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ minimum: 0, maximum: 100 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(100)
   @Type(() => Number)
   gstRate?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ minimum: 0 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
   @Type(() => Number)
   discount?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: ['Amount', 'Percentage'] })
   @IsOptional()
-  @IsString()
+  @IsIn(['Amount', 'Percentage'])
   discountType?: string;
 
   @ApiPropertyOptional()
@@ -83,27 +100,55 @@ export class CreatePurchaseOrderDto {
   @IsDateString()
   expectedDeliveryDate?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: ['Draft', 'PendingApproval'] })
   @IsOptional()
-  @IsString()
+  @IsIn(['Draft', 'PendingApproval'])
   status?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
   @IsNumber()
+  @Min(0)
   @Type(() => Number)
   discount?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: ['Amount', 'Percentage'] })
   @IsOptional()
-  @IsString()
+  @IsIn(['Amount', 'Percentage'])
   discountType?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ minimum: 0 })
   @IsOptional()
   @IsNumber()
+  @Min(0)
   @Type(() => Number)
   freight?: number;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  packingCharges?: number;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  shippingCharges?: number;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  otherCharges?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -120,8 +165,9 @@ export class CreatePurchaseOrderDto {
   @IsString()
   internalNotes?: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: [CreatePurchaseOrderItemDto] })
   @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreatePurchaseOrderItemDto)
   items: CreatePurchaseOrderItemDto[];
