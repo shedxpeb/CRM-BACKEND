@@ -1,245 +1,106 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../auth/services/audit.service';
+import { WorkflowEngineService } from '../workflow/workflow-engine.service';
+import { BaseQueryService } from '../common/services/base-query.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { GetPurchaseOrdersDto } from './dto/get-purchase-orders.dto';
+import { calculatePoFinancials, canTransitionStatus } from './purchase-order-calculator';
 
 @Injectable()
-export class PurchaseOrderService {
-  constructor(private readonly prisma: PrismaService) {}
+export class PurchaseOrderService extends BaseQueryService {
+  private readonly poLogger = new Logger(PurchaseOrderService.name);
+
+  constructor(
+    protected readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+    private readonly workflowEngine: WorkflowEngineService,
+  ) {
+    super(prisma, {
+      model: 'purchaseOrder',
+      searchFields: ['poNumber', 'vendorName', 'projectName'],
+      filterFields: ['status', 'vendorId', 'projectId'],
+      sortColumns: ['createdAt', 'updatedAt', 'poNumber', 'grandTotal', 'status'],
+      defaultSort: 'createdAt',
+      orgScoped: true,
+    });
+  }
 
   async generatePONumber(organizationId: string): Promise<string> {
     const lastPO = await this.prisma.purchaseOrder.findFirst({
       where: { organizationId },
       orderBy: { poNumberInt: 'desc' },
     });
-
     const nextNumber = lastPO ? lastPO.poNumberInt + 1 : 1;
     return `PO${String(nextNumber).padStart(6, '0')}`;
   }
 
   async findAll(query: GetPurchaseOrdersDto, organizationId: string) {
-    const { page = 1, limit = 10, search, status, vendorId, projectId, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc', includeDeleted = false } = query;
-    const skip = (page - 1) * limit;
-
-    const where: any = {
-      organizationId,
-      isDeleted: includeDeleted ? undefined : false,
-    };
-
-    if (search) {
-      where.OR = [
-        { poNumber: { contains: search, mode: 'insensitive' } },
-        { vendorName: { contains: search, mode: 'insensitive' } },
-        { projectName: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (vendorId) {
-      where.vendorId = vendorId;
-    }
-
-    if (projectId) {
-      where.projectId = projectId;
-    }
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate);
-      }
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.purchaseOrder.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          items: true,
-          vendor: {
-            select: {
-              id: true,
-              companyName: true,
-              contactPerson: true,
-              email: true,
-              phone: true,
-            },
-          },
+    return super.findAll(query, organizationId, undefined, {
+      items: true,
+      vendor: {
+        select: {
+          id: true,
+          companyName: true,
+          contactPerson: true,
+          email: true,
+          phone: true,
         },
-      }),
-      this.prisma.purchaseOrder.count({ where }),
-    ]);
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
       },
-    };
+    });
   }
 
   async findAllForExport(query: GetPurchaseOrdersDto, organizationId: string) {
-    const { search, status, vendorId, projectId, startDate, endDate, includeDeleted = false } = query;
-
-    const where: any = {
-      organizationId,
-      isDeleted: includeDeleted ? undefined : false,
-    };
-
-    if (search) {
-      where.OR = [
-        { poNumber: { contains: search, mode: 'insensitive' } },
-        { vendorName: { contains: search, mode: 'insensitive' } },
-        { projectName: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (vendorId) {
-      where.vendorId = vendorId;
-    }
-
-    if (projectId) {
-      where.projectId = projectId;
-    }
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate);
-      }
-    }
-
-    return this.prisma.purchaseOrder.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        items: true,
-      },
-    });
-  }
-
-  async getStats(organizationId: string) {
-    const [total, draft, approved, pendingApproval, sent] = await Promise.all([
-      this.prisma.purchaseOrder.count({ where: { organizationId, isDeleted: false } }),
-      this.prisma.purchaseOrder.count({ where: { organizationId, isDeleted: false, status: 'Draft' } }),
-      this.prisma.purchaseOrder.count({ where: { organizationId, isDeleted: false, status: 'Approved' } }),
-      this.prisma.purchaseOrder.count({ where: { organizationId, isDeleted: false, status: 'PendingApproval' } }),
-      this.prisma.purchaseOrder.count({ where: { organizationId, isDeleted: false, status: 'Sent' } }),
-    ]);
-
-    const totalPurchaseResult = await this.prisma.purchaseOrder.aggregate({
-      where: { organizationId, isDeleted: false, status: { in: ['Approved', 'Sent', 'PartiallyReceived', 'FullyReceived'] } },
-      _sum: { grandTotal: true },
-    });
-
-    return {
-      total,
-      draft,
-      approved,
-      pendingApproval,
-      sent,
-      totalPurchase: totalPurchaseResult._sum.grandTotal || 0,
-    };
+    const result = await super.findAllForExport(query, organizationId);
+    return { rows: result.rows, pagination: result.pagination };
   }
 
   async findById(id: string, organizationId: string) {
-    const po = await this.prisma.purchaseOrder.findFirst({
-      where: { id, organizationId, isDeleted: false },
-      include: {
-        items: true,
-        vendor: true,
-        timeline: {
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    });
-
-    if (!po) {
-      throw new NotFoundException('Purchase Order not found');
-    }
-
-    return po;
+    return super.findById(id, {
+      items: true,
+      vendor: true,
+      timeline: { orderBy: { createdAt: 'desc' } },
+    }, organizationId);
   }
 
   async create(dto: CreatePurchaseOrderDto, createdById: string, createdBy: string, organizationId: string) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { id: dto.vendorId, organizationId, isDeleted: false },
     });
-
-    if (!vendor) {
-      throw new NotFoundException('Vendor not found');
-    }
+    if (!vendor) throw new NotFoundException('Vendor not found');
 
     if (dto.projectId) {
       const project = await this.prisma.project.findFirst({
         where: { id: dto.projectId, organizationId, isDeleted: false },
       });
-
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
+      if (!project) throw new NotFoundException('Project not found');
     }
 
     if (dto.warehouseId) {
       const warehouse = await this.prisma.warehouse.findFirst({
         where: { id: dto.warehouseId, organizationId, isDeleted: false },
       });
-
-      if (!warehouse) {
-        throw new NotFoundException('Warehouse not found');
-      }
+      if (!warehouse) throw new NotFoundException('Warehouse not found');
     }
 
     const poNumber = await this.generatePONumber(organizationId);
-
-    let subtotal = 0;
-    let totalTax = 0;
-
-    const itemsWithCalculations = dto.items.map((item) => {
-      const itemTotal = item.quantity * item.rate;
-      const discountAmount = item.discountType === 'Percentage' 
-        ? (itemTotal * (item.discount || 0)) / 100 
-        : (item.discount || 0);
-      const afterDiscount = itemTotal - discountAmount;
-      const gstAmount = item.gstRate ? (afterDiscount * item.gstRate) / 100 : 0;
-      const finalTotal = afterDiscount + gstAmount;
-
-      subtotal += afterDiscount;
-      totalTax += gstAmount;
-
-      return {
-        ...item,
-        gstAmount,
-        total: finalTotal,
-        pendingQuantity: item.quantity,
-      };
+    const financials = calculatePoFinancials({
+      items: dto.items,
+      discount: dto.discount,
+      discountType: dto.discountType,
+      freight: dto.freight,
+      packingCharges: dto.packingCharges,
+      shippingCharges: dto.shippingCharges,
+      otherCharges: dto.otherCharges,
     });
 
-    const discountAmount = dto.discountType === 'Percentage' 
-      ? (subtotal * (dto.discount || 0)) / 100 
-      : (dto.discount || 0);
-    const afterDiscount = subtotal - discountAmount;
-    const grandTotal = afterDiscount + totalTax + (dto.freight || 0);
-    const roundOff = Math.round(grandTotal) - grandTotal;
+    const projectName = dto.projectId
+      ? (await this.prisma.project.findUnique({ where: { id: dto.projectId } }))?.projectName
+      : null;
+    const warehouseName = dto.warehouseId
+      ? (await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } }))?.name
+      : null;
 
     const purchaseOrder = await this.prisma.purchaseOrder.create({
       data: {
@@ -248,19 +109,23 @@ export class PurchaseOrderService {
         vendorId: dto.vendorId,
         vendorName: vendor.companyName,
         projectId: dto.projectId,
-        projectName: dto.projectId ? (await this.prisma.project.findUnique({ where: { id: dto.projectId } }))?.projectName : null,
+        projectName,
         warehouseId: dto.warehouseId,
-        warehouseName: dto.warehouseId ? (await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } }))?.name : null,
+        warehouseName,
         paymentTerms: dto.paymentTerms,
         expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : null,
-        status: dto.status || 'Draft',
-        subtotal: afterDiscount,
+        status: (dto.status as any) || 'Draft',
+        currency: dto.currency || 'INR',
+        subtotal: financials.subtotal,
         discount: dto.discount || 0,
         discountType: dto.discountType,
-        tax: totalTax,
+        tax: financials.totalTax,
         freight: dto.freight || 0,
-        roundOff,
-        grandTotal: grandTotal + roundOff,
+        packingCharges: dto.packingCharges || 0,
+        shippingCharges: dto.shippingCharges || 0,
+        otherCharges: dto.otherCharges || 0,
+        roundOff: financials.roundOff,
+        grandTotal: financials.grandTotal,
         notes: dto.notes,
         terms: dto.terms,
         internalNotes: dto.internalNotes,
@@ -269,7 +134,7 @@ export class PurchaseOrderService {
         createdBy,
         organizationId,
         items: {
-          create: itemsWithCalculations.map((item) => ({
+          create: dto.items.map((item, idx) => ({
             organizationId,
             itemMasterId: item.itemMasterId,
             itemCode: item.itemCode,
@@ -279,12 +144,12 @@ export class PurchaseOrderService {
             unit: item.unit,
             rate: item.rate,
             gstRate: item.gstRate,
-            gstAmount: item.gstAmount,
-            discount: item.discount,
+            gstAmount: financials.itemDetails[idx].gstAmount,
+            discount: item.discount || 0,
             discountType: item.discountType,
-            total: item.total,
+            total: financials.itemDetails[idx].total,
             hsnCode: item.hsnCode,
-            pendingQuantity: item.pendingQuantity,
+            pendingQuantity: financials.itemDetails[idx].pendingQuantity,
           })),
         },
         timeline: {
@@ -296,11 +161,34 @@ export class PurchaseOrderService {
           },
         },
       },
-      include: {
-        items: true,
-        timeline: true,
-      },
+      include: { items: true, timeline: true },
     });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.created',
+        resource: 'PurchaseOrder',
+        resourceId: purchaseOrder.id,
+        organizationId,
+        userId: createdById,
+        metadata: { poNumber: purchaseOrder.poNumber, grandTotal: purchaseOrder.grandTotal },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: purchaseOrder.id,
+        eventType: 'created',
+        data: { poNumber: purchaseOrder.poNumber, grandTotal: purchaseOrder.grandTotal },
+        createdById,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
 
     return purchaseOrder;
   }
@@ -309,136 +197,182 @@ export class PurchaseOrderService {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
+    if (!po) throw new NotFoundException('Purchase Order not found');
 
-    if (!po) {
-      throw new NotFoundException('Purchase Order not found');
-    }
-
-    if (po.status === 'Approved' || po.status === 'Sent') {
-      throw new BadRequestException('Cannot update approved or sent purchase orders');
+    if (po.status === 'Approved' || po.status === 'Sent' || po.status === 'FullyReceived' || po.status === 'Closed') {
+      throw new BadRequestException('Cannot update approved, sent, received, or closed purchase orders');
     }
 
     if (dto.vendorId && dto.vendorId !== po.vendorId) {
       const vendor = await this.prisma.vendor.findFirst({
         where: { id: dto.vendorId, organizationId, isDeleted: false },
       });
+      if (!vendor) throw new NotFoundException('Vendor not found');
+    }
 
-      if (!vendor) {
-        throw new NotFoundException('Vendor not found');
+    if (dto.status && dto.status !== po.status) {
+      if (!canTransitionStatus(po.status, dto.status)) {
+        throw new BadRequestException(
+          `Cannot transition from "${po.status}" to "${dto.status}". Allowed: ${(canTransitionStatus as any)[po.status]?.join(', ') || 'none'}`,
+        );
       }
     }
 
-    let subtotal = 0;
-    let totalTax = 0;
+    const updateData: any = {
+      ...(dto.vendorId !== undefined && { vendorId: dto.vendorId }),
+      ...(dto.projectId !== undefined && { projectId: dto.projectId }),
+      ...(dto.warehouseId !== undefined && { warehouseId: dto.warehouseId }),
+      ...(dto.paymentTerms !== undefined && { paymentTerms: dto.paymentTerms }),
+      ...(dto.expectedDeliveryDate !== undefined && {
+        expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : null,
+      }),
+      ...(dto.status !== undefined && { status: dto.status }),
+      ...(dto.currency !== undefined && { currency: dto.currency }),
+      ...(dto.discount !== undefined && { discount: dto.discount }),
+      ...(dto.discountType !== undefined && { discountType: dto.discountType }),
+      ...(dto.freight !== undefined && { freight: dto.freight }),
+      ...(dto.packingCharges !== undefined && { packingCharges: dto.packingCharges }),
+      ...(dto.shippingCharges !== undefined && { shippingCharges: dto.shippingCharges }),
+      ...(dto.otherCharges !== undefined && { otherCharges: dto.otherCharges }),
+      ...(dto.notes !== undefined && { notes: dto.notes }),
+      ...(dto.terms !== undefined && { terms: dto.terms }),
+      ...(dto.internalNotes !== undefined && { internalNotes: dto.internalNotes }),
+      updatedBy,
+    };
 
-    if (dto.items) {
-      const itemsWithCalculations = dto.items.map((item) => {
-        const itemTotal = item.quantity * item.rate;
-        const discountAmount = item.discountType === 'Percentage' 
-          ? (itemTotal * (item.discount || 0)) / 100 
-          : (item.discount || 0);
-        const afterDiscount = itemTotal - discountAmount;
-        const gstAmount = item.gstRate ? (afterDiscount * item.gstRate) / 100 : 0;
-        const finalTotal = afterDiscount + gstAmount;
+    if (dto.vendorId && dto.vendorId !== po.vendorId) {
+      const vendor = await this.prisma.vendor.findUnique({ where: { id: dto.vendorId } });
+      updateData.vendorName = vendor?.companyName || po.vendorName;
+    }
+    if (dto.projectId !== undefined) {
+      updateData.projectName = dto.projectId
+        ? (await this.prisma.project.findUnique({ where: { id: dto.projectId } }))?.projectName
+        : null;
+    }
+    if (dto.warehouseId !== undefined) {
+      updateData.warehouseName = dto.warehouseId
+        ? (await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } }))?.name
+        : null;
+    }
 
-        subtotal += afterDiscount;
-        totalTax += gstAmount;
-
-        return {
-          ...item,
-          gstAmount,
-          total: finalTotal,
-          pendingQuantity: item.quantity,
-        };
+    if (dto.items && dto.items.length > 0) {
+      const financials = calculatePoFinancials({
+        items: dto.items,
+        discount: dto.discount ?? po.discount,
+        discountType: dto.discountType ?? po.discountType,
+        freight: dto.freight ?? po.freight,
+        packingCharges: dto.packingCharges ?? po.packingCharges,
+        shippingCharges: dto.shippingCharges ?? po.shippingCharges,
+        otherCharges: dto.otherCharges ?? po.otherCharges,
       });
 
-      const discountAmount = dto.discountType === 'Percentage' 
-        ? (subtotal * (dto.discount || 0)) / 100 
-        : (dto.discount || 0);
-      const afterDiscount = subtotal - discountAmount;
-      const grandTotal = afterDiscount + totalTax + (dto.freight || 0);
-      const roundOff = Math.round(grandTotal) - grandTotal;
+      updateData.subtotal = financials.subtotal;
+      updateData.tax = financials.totalTax;
+      updateData.roundOff = financials.roundOff;
+      updateData.grandTotal = financials.grandTotal;
+      updateData.revision = { increment: 1 };
 
-      await this.prisma.purchaseOrderItem.deleteMany({
-        where: { purchaseOrderId: id },
-      });
+      const itemsToCreate = dto.items;
 
-      const updatedPO = await this.prisma.purchaseOrder.update({
-        where: { id },
-        data: {
-          vendorId: dto.vendorId,
-          vendorName: dto.vendorId ? (await this.prisma.vendor.findUnique({ where: { id: dto.vendorId } }))?.companyName : po.vendorName,
-          projectId: dto.projectId,
-          projectName: dto.projectId ? (await this.prisma.project.findUnique({ where: { id: dto.projectId } }))?.projectName : po.projectName,
-          warehouseId: dto.warehouseId,
-          warehouseName: dto.warehouseId ? (await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } }))?.name : po.warehouseName,
-          paymentTerms: dto.paymentTerms,
-          expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : po.expectedDeliveryDate,
-          status: dto.status,
-          subtotal: afterDiscount,
-          discount: dto.discount || 0,
-          discountType: dto.discountType,
-          tax: totalTax,
-          freight: dto.freight || 0,
-          roundOff,
-          grandTotal: grandTotal + roundOff,
-          notes: dto.notes,
-          terms: dto.terms,
-          internalNotes: dto.internalNotes,
-          updatedBy,
-          items: {
-            create: itemsWithCalculations.map((item) => ({
-              organizationId,
-              itemMasterId: item.itemMasterId,
-              itemCode: item.itemCode,
-              itemName: item.itemName,
-              description: item.description,
-              quantity: item.quantity,
-              unit: item.unit,
-              rate: item.rate,
-              gstRate: item.gstRate,
-              gstAmount: item.gstAmount,
-              discount: item.discount,
-              discountType: item.discountType,
-              total: item.total,
-              hsnCode: item.hsnCode,
-              pendingQuantity: item.pendingQuantity,
-            })),
-          },
-          timeline: {
-            create: {
-              organizationId,
-              action: 'Updated',
-              performedById: updatedById,
-              performedBy: updatedBy,
+      const updatedPO = await this.prisma.$transaction(async (tx) => {
+        await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
+
+        return tx.purchaseOrder.update({
+          where: { id },
+          data: {
+            ...updateData,
+            items: {
+              create: itemsToCreate.map((item, idx) => ({
+                organizationId,
+                itemMasterId: item.itemMasterId,
+                itemCode: item.itemCode,
+                itemName: item.itemName,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit,
+                rate: item.rate,
+                gstRate: item.gstRate,
+                gstAmount: financials.itemDetails[idx].gstAmount,
+                discount: item.discount || 0,
+                discountType: item.discountType,
+                total: financials.itemDetails[idx].total,
+                hsnCode: item.hsnCode,
+                pendingQuantity: financials.itemDetails[idx].pendingQuantity,
+              })),
+            },
+            timeline: {
+              create: {
+                organizationId,
+                action: 'Updated',
+                performedById: updatedById,
+                performedBy: updatedBy,
+                metadata: { revision: (po.revision || 0) + 1 },
+              },
             },
           },
-        },
-        include: {
-          items: true,
-          timeline: true,
-        },
+          include: { items: true, timeline: true },
+        });
       });
 
+      try {
+        await this.auditService.log({
+          action: 'purchase-order.updated',
+          resource: 'PurchaseOrder',
+          resourceId: id,
+          organizationId,
+          userId: updatedById,
+          metadata: { poNumber: po.poNumber, revision: updatedPO.revision },
+        });
+      } catch (e) {
+        this.poLogger.error(`Audit log failed: ${e.message}`);
+      }
+
+      try {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'purchase-order',
+          entityId: id,
+          eventType: 'updated',
+          data: { poNumber: po.poNumber, revision: updatedPO.revision },
+          createdById: updatedById,
+        });
+      } catch (e) {
+        this.poLogger.error(`Workflow event failed: ${e.message}`);
+      }
+
       return updatedPO;
+    }
+
+    if (dto.discount !== undefined || dto.discountType !== undefined || dto.freight !== undefined ||
+        dto.packingCharges !== undefined || dto.shippingCharges !== undefined || dto.otherCharges !== undefined) {
+      const existingItems = await this.prisma.purchaseOrderItem.findMany({
+        where: { purchaseOrderId: id },
+      });
+      const financials = calculatePoFinancials({
+        items: existingItems.map((i) => ({
+          quantity: i.quantity,
+          rate: i.rate,
+          discount: i.discount,
+          discountType: i.discountType || 'Amount',
+          gstRate: i.gstRate || undefined,
+        })),
+        discount: dto.discount ?? po.discount,
+        discountType: dto.discountType ?? po.discountType,
+        freight: dto.freight ?? po.freight,
+        packingCharges: dto.packingCharges ?? po.packingCharges,
+        shippingCharges: dto.shippingCharges ?? po.shippingCharges,
+        otherCharges: dto.otherCharges ?? po.otherCharges,
+      });
+      updateData.subtotal = financials.subtotal;
+      updateData.tax = financials.totalTax;
+      updateData.roundOff = financials.roundOff;
+      updateData.grandTotal = financials.grandTotal;
     }
 
     const updatedPO = await this.prisma.purchaseOrder.update({
       where: { id },
       data: {
-        vendorId: dto.vendorId,
-        projectId: dto.projectId,
-        warehouseId: dto.warehouseId,
-        paymentTerms: dto.paymentTerms,
-        expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : undefined,
-        status: dto.status,
-        discount: dto.discount,
-        discountType: dto.discountType,
-        freight: dto.freight,
-        notes: dto.notes,
-        terms: dto.terms,
-        internalNotes: dto.internalNotes,
-        updatedBy,
+        ...updateData,
         timeline: {
           create: {
             organizationId,
@@ -448,11 +382,34 @@ export class PurchaseOrderService {
           },
         },
       },
-      include: {
-        items: true,
-        timeline: true,
-      },
+      include: { items: true, timeline: true },
     });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.updated',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId: updatedById,
+        metadata: { poNumber: po.poNumber },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'updated',
+        data: { poNumber: po.poNumber },
+        createdById: updatedById,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
 
     return updatedPO;
   }
@@ -461,13 +418,10 @@ export class PurchaseOrderService {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
+    if (!po) throw new NotFoundException('Purchase Order not found');
 
-    if (!po) {
-      throw new NotFoundException('Purchase Order not found');
-    }
-
-    if (po.status !== 'Draft' && po.status !== 'PendingApproval') {
-      throw new BadRequestException('Only draft or pending approval purchase orders can be approved');
+    if (!canTransitionStatus(po.status, 'Approved')) {
+      throw new BadRequestException(`Cannot approve a purchase order with status "${po.status}". Must be Draft or PendingApproval.`);
     }
 
     const updatedPO = await this.prisma.purchaseOrder.update({
@@ -486,11 +440,240 @@ export class PurchaseOrderService {
           },
         },
       },
-      include: {
-        items: true,
-        timeline: true,
-      },
+      include: { items: true, timeline: true },
     });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.approved',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId: approvedById,
+        metadata: { poNumber: po.poNumber },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'approved',
+        data: { poNumber: po.poNumber },
+        createdById: approvedById,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
+
+    return updatedPO;
+  }
+
+  async reject(id: string, rejectedById: string, rejectedBy: string, organizationId: string, reason?: string) {
+    const po = await this.prisma.purchaseOrder.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
+    if (!po) throw new NotFoundException('Purchase Order not found');
+
+    if (!canTransitionStatus(po.status, 'Rejected')) {
+      throw new BadRequestException(`Cannot reject a purchase order with status "${po.status}".`);
+    }
+
+    const updatedPO = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        status: 'Rejected',
+        rejectedById,
+        rejectedBy,
+        rejectedAt: new Date(),
+        rejectReason: reason || null,
+        timeline: {
+          create: {
+            organizationId,
+            action: 'Rejected',
+            performedById: rejectedById,
+            performedBy: rejectedBy,
+            metadata: reason ? { reason } : undefined,
+          },
+        },
+      },
+      include: { items: true, timeline: true },
+    });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.rejected',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId: rejectedById,
+        metadata: { poNumber: po.poNumber, reason },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'rejected',
+        data: { poNumber: po.poNumber, reason },
+        createdById: rejectedById,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
+
+    return updatedPO;
+  }
+
+  async markSent(id: string, userId: string, organizationId: string) {
+    const po = await this.prisma.purchaseOrder.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
+    if (!po) throw new NotFoundException('Purchase Order not found');
+
+    if (!canTransitionStatus(po.status, 'Sent')) {
+      throw new BadRequestException(`Cannot mark a purchase order with status "${po.status}" as sent.`);
+    }
+
+    const updatedPO = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        status: 'Sent',
+        sentToVendor: true,
+        sentAt: new Date(),
+        timeline: {
+          create: {
+            organizationId,
+            action: 'Sent',
+            performedById: userId,
+          },
+        },
+      },
+      include: { items: true, timeline: true },
+    });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.sent',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId,
+        metadata: { poNumber: po.poNumber },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'sent',
+        data: { poNumber: po.poNumber },
+        createdById: userId,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
+
+    return updatedPO;
+  }
+
+  async receiveItems(id: string, items: { itemId: string; receivedQuantity: number }[], userId: string, organizationId: string) {
+    const po = await this.prisma.purchaseOrder.findFirst({
+      where: { id, organizationId, isDeleted: false },
+      include: { items: true },
+    });
+    if (!po) throw new NotFoundException('Purchase Order not found');
+
+    if (po.status !== 'Sent' && po.status !== 'PartiallyReceived') {
+      throw new BadRequestException('Can only receive items for Sent or PartiallyReceived purchase orders.');
+    }
+
+    const updatedPO = await this.prisma.$transaction(async (tx) => {
+      for (const receiveItem of items) {
+        const poItem = po.items.find((i) => i.id === receiveItem.itemId);
+        if (!poItem) continue;
+
+        const newReceived = (poItem.receivedQuantity || 0) + receiveItem.receivedQuantity;
+        const newPending = Math.max(0, poItem.quantity - newReceived);
+
+        await tx.purchaseOrderItem.update({
+          where: { id: receiveItem.itemId },
+          data: {
+            receivedQuantity: newReceived,
+            pendingQuantity: newPending,
+            receivedDate: new Date(),
+          },
+        });
+      }
+
+      const refreshedItems = await tx.purchaseOrderItem.findMany({
+        where: { purchaseOrderId: id },
+      });
+
+      const allFullyReceived = refreshedItems.every((i) => (i.pendingQuantity || 0) <= 0);
+      const anyReceived = refreshedItems.some((i) => (i.receivedQuantity || 0) > 0);
+
+      let newStatus: string = po.status;
+      if (allFullyReceived) {
+        newStatus = 'FullyReceived';
+      } else if (anyReceived) {
+        newStatus = 'PartiallyReceived';
+      }
+
+      return tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          status: newStatus as any,
+          ...(allFullyReceived ? { actualDeliveryDate: new Date() } : {}),
+          timeline: {
+            create: {
+              organizationId,
+              action: 'Received',
+              performedById: userId,
+              metadata: { items: items.map((i) => ({ itemId: i.itemId, qty: i.receivedQuantity })) },
+            },
+          },
+        },
+        include: { items: true, timeline: true },
+      });
+    });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.items-received',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId,
+        metadata: { poNumber: po.poNumber, receivedCount: items.length },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'items-received',
+        data: { poNumber: po.poNumber, itemCount: items.length },
+        createdById: userId,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
 
     return updatedPO;
   }
@@ -499,67 +682,117 @@ export class PurchaseOrderService {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
+    if (!po) throw new NotFoundException('Purchase Order not found');
 
-    if (!po) {
-      throw new NotFoundException('Purchase Order not found');
-    }
-
-    if (po.status === 'Approved' || po.status === 'Sent') {
-      throw new BadRequestException('Cannot delete approved or sent purchase orders');
+    const blockedStatuses = ['Approved', 'Sent', 'PartiallyReceived', 'FullyReceived', 'Closed'];
+    if (blockedStatuses.includes(po.status)) {
+      throw new BadRequestException(`Cannot delete a purchase order with status "${po.status}".`);
     }
 
     await this.prisma.purchaseOrder.update({
       where: { id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      },
+      data: { isDeleted: true, deletedAt: new Date(), deletedById },
     });
+
+    try {
+      await this.auditService.log({
+        action: 'purchase-order.deleted',
+        resource: 'PurchaseOrder',
+        resourceId: id,
+        organizationId,
+        userId: deletedById,
+        metadata: { poNumber: po.poNumber },
+      });
+    } catch (e) {
+      this.poLogger.error(`Audit log failed: ${e.message}`);
+    }
+
+    try {
+      await this.workflowEngine.processEvent({
+        organizationId,
+        entityType: 'purchase-order',
+        entityId: id,
+        eventType: 'deleted',
+        data: { poNumber: po.poNumber },
+        createdById: deletedById,
+      });
+    } catch (e) {
+      this.poLogger.error(`Workflow event failed: ${e.message}`);
+    }
 
     return { id };
   }
 
+  async restore(id: string, organizationId: string) {
+    return super.restore(id, organizationId);
+  }
+
   async bulkStatusUpdate(ids: string[], status: string, organizationId: string) {
-    const result = await this.prisma.purchaseOrder.updateMany({
-      where: {
-        id: { in: ids },
-        organizationId,
-        isDeleted: false,
-      },
-      data: { status },
+    const pos = await this.prisma.purchaseOrder.findMany({
+      where: { id: { in: ids }, organizationId, isDeleted: false },
     });
 
-    return { count: result.count };
+    for (const po of pos) {
+      if (!canTransitionStatus(po.status, status)) {
+        throw new BadRequestException(
+          `Cannot transition PO "${po.poNumber}" from "${po.status}" to "${status}".`,
+        );
+      }
+    }
+
+    return super.bulkStatusUpdate(ids, status, organizationId);
   }
 
   async bulkDelete(ids: string[], deletedById: string, organizationId: string) {
-    const approvedPOs = await this.prisma.purchaseOrder.count({
+    return super.bulkDelete(ids, deletedById, organizationId);
+  }
+
+  async getStats(organizationId: string) {
+    const where = { organizationId, isDeleted: false };
+    const [total, draft, approved, pendingApproval, sent, rejected, partiallyReceived, fullyReceived, cancelled] =
+      await Promise.all([
+        this.prisma.purchaseOrder.count({ where }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Draft' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Approved' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'PendingApproval' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Sent' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Rejected' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'PartiallyReceived' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'FullyReceived' } }),
+        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Cancelled' } }),
+      ]);
+
+    const totalPurchaseResult = await this.prisma.purchaseOrder.aggregate({
       where: {
-        id: { in: ids },
-        organizationId,
-        isDeleted: false,
-        status: { in: ['Approved', 'Sent'] },
+        ...where,
+        status: { in: ['Approved', 'Sent', 'PartiallyReceived', 'FullyReceived'] },
       },
+      _sum: { grandTotal: true },
     });
 
-    if (approvedPOs > 0) {
-      throw new BadRequestException('Cannot delete approved or sent purchase orders');
-    }
+    return {
+      total,
+      draft,
+      approved,
+      pendingApproval,
+      sent,
+      rejected,
+      partiallyReceived,
+      fullyReceived,
+      cancelled,
+      totalPurchase: totalPurchaseResult._sum.grandTotal || 0,
+    };
+  }
 
-    const result = await this.prisma.purchaseOrder.updateMany({
-      where: {
-        id: { in: ids },
-        organizationId,
-        isDeleted: false,
-      },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
-      },
-    });
-
-    return { count: result.count };
+  async getCombobox(query: any, organizationId?: string) {
+    return super.getCombobox(query, organizationId, [
+      'id',
+      'poNumber',
+      'vendorName',
+      'projectName',
+      'status',
+      'grandTotal',
+      'createdAt',
+    ]);
   }
 }

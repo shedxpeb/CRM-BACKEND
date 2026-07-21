@@ -107,6 +107,17 @@ const DEFAULT_PIPELINES: Record<
     { status: 'Completed', label: 'Completed', order: 4, isFinal: true, color: '#059669' },
     { status: 'Cancelled', label: 'Cancelled', order: 5, isFinal: true, color: '#ef4444' },
   ],
+  'purchase-order': [
+    { status: 'Draft', label: 'Draft', order: 1, isInitial: true, color: '#6366f1' },
+    { status: 'PendingApproval', label: 'Pending Approval', order: 2, color: '#eab308' },
+    { status: 'Approved', label: 'Approved', order: 3, color: '#22c55e' },
+    { status: 'Sent', label: 'Sent', order: 4, color: '#3b82f6' },
+    { status: 'PartiallyReceived', label: 'Partially Received', order: 5, color: '#f97316' },
+    { status: 'FullyReceived', label: 'Fully Received', order: 6, color: '#10b981' },
+    { status: 'Closed', label: 'Closed', order: 7, isFinal: true, color: '#059669' },
+    { status: 'Rejected', label: 'Rejected', order: 8, isFinal: true, color: '#ef4444' },
+    { status: 'Cancelled', label: 'Cancelled', order: 9, isFinal: true, color: '#94a3b8' },
+  ],
 };
 
 function normalizeStatus(value: string | null | undefined): string {
@@ -225,6 +236,13 @@ export class TrackingService {
           where: { id: entityId, organizationId, isDeleted: false },
         });
         return sanitizeEntity(project as any);
+      }
+      case 'purchase-order': {
+        const po = await this.prisma.purchaseOrder.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+          include: { items: true },
+        });
+        return sanitizeEntity(po as any);
       }
       default:
         return { stage, title: stage, fields: {} };
@@ -420,6 +438,17 @@ export class TrackingService {
         });
         if (!project) throw new NotFoundException('Project not found');
         await this.prisma.project.update({ where: { id: entityId }, data: { status } });
+        return;
+      }
+      case 'purchase-order': {
+        const po = await this.prisma.purchaseOrder.findFirst({
+          where: { id: entityId, organizationId, isDeleted: false },
+        });
+        if (!po) throw new NotFoundException('Purchase Order not found');
+        await this.prisma.purchaseOrder.update({
+          where: { id: entityId },
+          data: { status: status as any },
+        });
         return;
       }
       default:

@@ -1,12 +1,14 @@
 import { IsOptional, IsString, IsInt, IsEnum, IsBoolean, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PurchaseOrderStatus } from '@prisma/client';
 
 export class GetPurchaseOrdersDto {
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Type(() => Number)
   page?: number = 1;
 
   @ApiPropertyOptional()
@@ -20,10 +22,10 @@ export class GetPurchaseOrdersDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: PurchaseOrderStatus })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(PurchaseOrderStatus)
+  status?: PurchaseOrderStatus;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -50,7 +52,7 @@ export class GetPurchaseOrdersDto {
   @IsString()
   sortBy?: string = 'createdAt';
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: ['asc', 'desc'] })
   @IsOptional()
   @IsEnum(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc' = 'desc';

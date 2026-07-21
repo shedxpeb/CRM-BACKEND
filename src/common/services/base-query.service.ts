@@ -45,6 +45,7 @@ export class BaseQueryService {
     query: Record<string, any>,
     organizationId?: string,
     extraWhere?: WhereClause,
+    extraInclude?: Record<string, any>,
   ): Promise<PaginationResult<any>> {
     const startTime = Date.now();
     const {
@@ -98,7 +99,8 @@ export class BaseQueryService {
     }
 
     if (extraWhere) {
-      Object.assign(where, extraWhere);
+      const { include, ...whereOnly } = extraWhere;
+      Object.assign(where, whereOnly);
     }
 
     if (sortBy && !this.config.sortColumns.includes(sortBy)) {
@@ -107,13 +109,18 @@ export class BaseQueryService {
 
     const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 1000);
 
+    const findManyOptions: any = {
+      where,
+      skip,
+      take: safePageSize,
+      orderBy: { [sortBy]: sortOrder },
+    };
+    if (extraInclude) {
+      findManyOptions.include = extraInclude;
+    }
+
     const [rows, total] = await Promise.all([
-      this.client.findMany({
-        where,
-        skip,
-        take: safePageSize,
-        orderBy: { [sortBy]: sortOrder },
-      }),
+      this.client.findMany(findManyOptions),
       this.client.count({ where }),
     ]);
 

@@ -25,6 +25,7 @@ import { ItemMasterModule } from './item-master/item-master.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { VendorModule } from './vendor/vendor.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
+import { PdfModule } from './pdf/pdf.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
     InventoryModule,
     VendorModule,
     PurchaseOrderModule,
+    PdfModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

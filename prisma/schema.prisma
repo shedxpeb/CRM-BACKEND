@@ -711,6 +711,7 @@ enum CustomerStatus {
   Prospect
   Converted
   Churned
+  Archived
 }
 
 enum Industry {
@@ -1154,12 +1155,18 @@ model PurchaseOrder {
   warehouseName       String?
   paymentTerms        String?
   expectedDeliveryDate DateTime?
-  status              String   @default("Draft")
+  status              PurchaseOrderStatus @default(Draft)
+  revision            Int      @default(0)
+  revisionNote        String?
+  currency            String   @default("INR")
   subtotal            Float    @default(0)
   discount            Float    @default(0)
   discountType        String?  @default("Amount")
   tax                 Float    @default(0)
   freight             Float    @default(0)
+  packingCharges      Float    @default(0)
+  shippingCharges     Float    @default(0)
+  otherCharges        Float    @default(0)
   roundOff            Float    @default(0)
   grandTotal          Float    @default(0)
   notes               String?
@@ -1168,10 +1175,14 @@ model PurchaseOrder {
   approvedById        String?
   approvedBy          String?
   approvedAt          DateTime?
-  pdfGenerated        Boolean  @default(false)
-  pdfUrl              String?
+  rejectedById        String?
+  rejectedBy          String?
+  rejectedAt          DateTime?
+  rejectReason        String?
   sentToVendor        Boolean  @default(false)
   sentAt              DateTime?
+  pdfGenerated        Boolean  @default(false)
+  pdfUrl              String?
   customFields        Json?
   createdById         String?
   createdBy           String?
@@ -1194,6 +1205,7 @@ model PurchaseOrder {
   @@index([createdAt])
   @@index([isDeleted])
   @@index([organizationId, status])
+  @@index([organizationId, isDeleted])
 }
 
 model PurchaseOrderItem {
@@ -1215,6 +1227,7 @@ model PurchaseOrderItem {
   hsnCode             String?
   receivedQuantity    Float    @default(0)
   pendingQuantity     Float?
+  receivedDate        DateTime?
   customFields        Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
