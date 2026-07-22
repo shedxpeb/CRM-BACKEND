@@ -8,6 +8,7 @@ import { BulkDeleteItemMasterDto, BulkStatusItemMasterDto } from './dto/bulk.dto
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { serializeDecimals } from '../common/services/base-query.service';
 
 @ApiTags('item-master')
 @ApiBearerAuth()
@@ -148,7 +149,7 @@ export class ItemMasterController {
       where: { itemMasterId: id, organizationId },
       orderBy: { createdAt: 'desc' },
     });
-    return { message: 'Variants fetched.', data };
+    return { message: 'Variants fetched.', data: serializeDecimals(data) };
   }
 
   @Post(':id/variants')
@@ -175,7 +176,7 @@ export class ItemMasterController {
         customFields: dto.customFields || undefined,
       },
     });
-    return { message: 'Variant created.', data };
+    return { message: 'Variant created.', data: serializeDecimals(data) };
   }
 
   @Patch(':itemId/variants/:variantId')
@@ -200,7 +201,7 @@ export class ItemMasterController {
         ...(dto.status !== undefined && { status: dto.status }),
       },
     });
-    return { message: 'Variant updated.', data };
+    return { message: 'Variant updated.', data: serializeDecimals(data) };
   }
 
   @Delete(':itemId/variants/:variantId')
@@ -225,7 +226,7 @@ export class ItemMasterController {
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
-    return { message: 'Bundles fetched.', data };
+    return { message: 'Bundles fetched.', data: serializeDecimals(data) };
   }
 
   @Post('bundles')
@@ -259,7 +260,7 @@ export class ItemMasterController {
       },
       include: { items: true },
     });
-    return { message: 'Bundle created.', data: bundle };
+    return { message: 'Bundle created.', data: serializeDecimals(bundle) };
   }
 
   @Delete('bundles/:id')

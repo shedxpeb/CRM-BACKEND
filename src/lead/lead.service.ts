@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService, WhereClause } from '../common/services/base-query.service';
+import { BaseQueryService, WhereClause, serializeDecimals } from '../common/services/base-query.service';
 import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
@@ -186,7 +186,7 @@ export class LeadService extends BaseQueryService {
       cards,
     }));
 
-    return { columns };
+    return { columns: serializeDecimals(columns) };
   }
 
   async getCalendar(
@@ -294,7 +294,7 @@ export class LeadService extends BaseQueryService {
         },
         createdById,
       });
-      return lead;
+      return serializeDecimals(lead);
     } catch (error: any) {
       if (error.code === 'P2002') {
         throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
@@ -305,7 +305,8 @@ export class LeadService extends BaseQueryService {
 
   async update(id: string, data: UpdateLeadDto, updatedById?: string, organizationId?: string) {
     const where: any = { id, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const existingLead = await this.client.findFirst({ where });
     if (!existingLead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
@@ -353,7 +354,7 @@ export class LeadService extends BaseQueryService {
         data: { changes: Object.keys(data) },
         createdById: updatedById,
       });
-      return lead;
+      return serializeDecimals(lead);
     } catch (error: any) {
       if (error.code === 'P2002') {
         throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
@@ -463,7 +464,7 @@ export class LeadService extends BaseQueryService {
         OR: [{ mobile }, ...(email ? [{ email }] : [])],
       },
     });
-    return { exists: !!existing, lead: existing || undefined };
+    return { exists: !!existing, lead: existing ? serializeDecimals(existing) : undefined };
   }
 
   async updateWorkflow(
@@ -502,7 +503,7 @@ export class LeadService extends BaseQueryService {
       createdById: updatedById,
     });
 
-    return updated;
+    return serializeDecimals(updated);
   }
 
   async importLeads(

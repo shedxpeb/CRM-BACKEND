@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { serializeDecimals } from '../common/services/base-query.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { GetVendorsDto } from './dto/get-vendors.dto';
@@ -42,7 +43,7 @@ export class VendorService {
     ]);
 
     return {
-      data,
+      data: serializeDecimals(data),
       meta: {
         total,
         page,
@@ -74,10 +75,10 @@ export class VendorService {
       where.status = status;
     }
 
-    return this.prisma.vendor.findMany({
+    return serializeDecimals(await this.prisma.vendor.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-    });
+    }));
   }
 
   async getCombobox(query: any, organizationId: string) {
@@ -146,7 +147,7 @@ export class VendorService {
       throw new NotFoundException('Vendor not found');
     }
 
-    return vendor;
+    return serializeDecimals(vendor);
   }
 
   async create(dto: CreateVendorDto, createdById: string, createdBy: string, organizationId: string) {
@@ -171,7 +172,7 @@ export class VendorService {
       },
     });
 
-    return vendor;
+    return serializeDecimals(vendor);
   }
 
   async update(id: string, dto: UpdateVendorDto, updatedById: string, updatedBy: string, organizationId: string) {
@@ -207,7 +208,7 @@ export class VendorService {
       },
     });
 
-    return updatedVendor;
+    return serializeDecimals(updatedVendor);
   }
 
   async delete(id: string, deletedById: string, organizationId: string) {

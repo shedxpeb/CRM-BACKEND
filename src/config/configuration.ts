@@ -1,12 +1,13 @@
-export default () => ({
-  nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '8000', 10),
-  database: {
-    url: process.env.DATABASE_URL,
-    directUrl: process.env.DIRECT_DATABASE_URL,
-  },
-  frontendUrl: process.env.FRONTEND_URL,
-  cookieSecret: process.env.COOKIE_SECRET,
+export default () => {
+  const config = {
+    nodeEnv: process.env.NODE_ENV || 'development',
+    port: parseInt(process.env.PORT || '8000', 10),
+    database: {
+      url: process.env.DATABASE_URL,
+      directUrl: process.env.DIRECT_DATABASE_URL,
+    },
+    frontendUrl: process.env.FRONTEND_URL,
+    cookieSecret: process.env.COOKIE_SECRET,
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
@@ -87,4 +88,15 @@ export default () => ({
     resendFromEmail:
       process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
   },
-});
+  };
+
+  if (config.nodeEnv === 'production') {
+    const weakSecrets = ['peb-crm-jwt-secret-dev-only', 'secret', 'change-me', 'jwt-secret'];
+    if (weakSecrets.includes(config.jwt.secret || '')) {
+      console.error('FATAL: JWT_SECRET is too weak for production. Set a strong, unique secret.');
+      process.exit(1);
+    }
+  }
+
+  return config;
+};

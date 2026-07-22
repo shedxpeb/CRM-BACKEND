@@ -106,7 +106,7 @@ export class PurchaseOrderController {
     @CurrentUser('name') createdBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.purchaseOrderService.create(dto, createdById, createdBy, organizationId);
+    const data = await this.purchaseOrderService.createWithRetry(dto, createdById, createdBy, organizationId);
     return { message: 'Purchase Order created successfully.', data };
   }
 

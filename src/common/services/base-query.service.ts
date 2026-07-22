@@ -18,6 +18,20 @@ export interface WhereClause {
   AND?: any[];
 }
 
+export function serializeDecimals(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'object' && typeof obj.toNumber === 'function') return obj.toNumber();
+  if (Array.isArray(obj)) return obj.map(serializeDecimals);
+  if (typeof obj === 'object') {
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = serializeDecimals(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+}
+
 export class BaseQueryService {
   protected readonly logger: Logger;
 
@@ -138,7 +152,7 @@ export class BaseQueryService {
       `GET /${this.config.model.toLowerCase()} - Rows: ${rows.length}, Total: ${total}, Time: ${executionTime}ms`,
     );
 
-    return { rows, pagination };
+    return { rows: serializeDecimals(rows), pagination };
   }
 
   /** Paginated export helper — collects up to maxRows without silent single-page truncation. */
@@ -184,7 +198,7 @@ export class BaseQueryService {
     if (!record) {
       throw new NotFoundException(`${this.config.model} with ID ${id} not found`);
     }
-    return record;
+    return serializeDecimals(record);
   }
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
@@ -318,7 +332,7 @@ export class BaseQueryService {
     ]);
 
     return {
-      rows,
+      rows: serializeDecimals(rows),
       pagination: {
         page,
         pageSize: safePageSize,

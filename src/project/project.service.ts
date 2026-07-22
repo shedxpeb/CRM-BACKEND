@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService } from '../common/services/base-query.service';
+import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { GetProjectsDto } from './dto/get-projects.dto';
@@ -132,7 +132,7 @@ export class ProjectService extends BaseQueryService {
       hasPrevious: page > 1,
     };
 
-    return { rows, pagination };
+    return { rows: serializeDecimals(rows), pagination };
   }
 
   async getStats(organizationId?: string) {
@@ -197,8 +197,8 @@ export class ProjectService extends BaseQueryService {
       projectsInFabrication,
       projectsInInstallation,
       pendingApprovals,
-      projectRevenue: totalRevenue._sum.value || 0,
-      materialCost: totalMaterialCost._sum.materialCost || 0,
+      projectRevenue: Number(totalRevenue._sum.value) || 0,
+      materialCost: Number(totalMaterialCost._sum.materialCost) || 0,
       healthyProjects,
       atRiskProjects,
       criticalProjects,
@@ -217,12 +217,12 @@ export class ProjectService extends BaseQueryService {
     if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
     // Preserve FE contract (`team`) while Prisma relation is `teamMembers`
     const { teamMembers, ...rest } = project as any;
-    return {
+    return serializeDecimals({
       ...rest,
       teamMembers,
       team: Array.isArray(teamMembers) ? teamMembers : [],
       milestones: Array.isArray(project.milestones) ? project.milestones : [],
-    };
+    });
   }
 
   async create(data: CreateProjectDto, createdById: string, organizationId?: string) {
@@ -308,59 +308,64 @@ export class ProjectService extends BaseQueryService {
       createdById,
     });
 
-    return project;
+    return serializeDecimals(project);
   }
 
   async update(id: string, data: UpdateProjectDto, updatedById?: string, organizationId?: string) {
     const where: any = { id, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const existing = await this.client.findFirst({ where });
     if (!existing) throw new NotFoundException(`Project with ID ${id} not found`);
 
     const { milestones, team, customFields, ...restData } = data as any;
 
-    const project = await this.client.update({
-      where: { id },
-      data: {
-        ...restData,
-        ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
-        ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
-        updatedBy: updatedById,
-        ...(customFields !== undefined ? { customFields } : {}),
-      },
-      include: { milestones: true, teamMembers: true },
+    const project = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.project.update({
+        where: { id },
+        data: {
+          ...restData,
+          ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
+          ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
+          updatedBy: updatedById,
+          ...(customFields !== undefined ? { customFields } : {}),
+        },
+        include: { milestones: true, teamMembers: true },
+      });
+
+      if (milestones) {
+        await tx.projectMilestone.deleteMany({ where: { projectId: id } });
+        if (milestones.length > 0) {
+          await tx.projectMilestone.createMany({
+            data: milestones.map((m: any) => ({
+              projectId: id,
+              name: m.name,
+              plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
+              actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
+              status: m.status || 'Pending',
+              delay: m.delay,
+            })),
+          });
+        }
+      }
+
+      if (team) {
+        await tx.projectTeamMember.deleteMany({ where: { projectId: id } });
+        if (team.length > 0) {
+          await tx.projectTeamMember.createMany({
+            data: team.map((t: any) => ({
+              projectId: id,
+              employeeId: t.employeeId,
+              name: t.name,
+              role: t.role,
+              workload: t.workload,
+            })),
+          });
+        }
+      }
+
+      return updated;
     });
-
-    if (milestones) {
-      await this.prisma.projectMilestone.deleteMany({ where: { projectId: id } });
-      if (milestones.length > 0) {
-        await this.prisma.projectMilestone.createMany({
-          data: milestones.map((m: any) => ({
-            projectId: id,
-            name: m.name,
-            plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
-            actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-            status: m.status || 'Pending',
-            delay: m.delay,
-          })),
-        });
-      }
-    }
-
-    if (team) {
-      await this.prisma.projectTeamMember.deleteMany({ where: { projectId: id } });
-      if (team.length > 0) {
-        await this.prisma.projectTeamMember.createMany({
-          data: team.map((t: any) => ({
-            projectId: id,
-            employeeId: t.employeeId,
-            name: t.name,
-            role: t.role,
-            workload: t.workload,
-          })),
-        });
-      }
-    }
 
     await this.auditService.log({
       action: 'project.updated',
@@ -379,7 +384,7 @@ export class ProjectService extends BaseQueryService {
       createdById: updatedById,
     });
 
-    return project;
+    return serializeDecimals(project);
   }
 
   async bulkUpdate(
@@ -395,7 +400,8 @@ export class ProjectService extends BaseQueryService {
       ...restData
     } = data as any;
     const where: any = { id: { in: ids }, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
 
     const result = await this.client.updateMany({
       where,
@@ -512,7 +518,8 @@ export class ProjectService extends BaseQueryService {
 
   async createTask(projectId: string, data: CreateTaskDto, organizationId?: string) {
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
@@ -555,7 +562,8 @@ export class ProjectService extends BaseQueryService {
     organizationId?: string,
   ) {
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
@@ -595,7 +603,8 @@ export class ProjectService extends BaseQueryService {
     organizationId?: string,
   ) {
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 

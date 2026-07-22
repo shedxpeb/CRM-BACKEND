@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService } from '../common/services/base-query.service';
+import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -158,8 +158,8 @@ export class CustomerService extends BaseQueryService {
   }
 
   async getStats(organizationId?: string) {
-    const where: any = { isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    const where: any = { isDeleted: false, organizationId };
 
     const [total, active, newThisMonth] = await Promise.all([
       this.client.count({ where }),
@@ -536,6 +536,6 @@ export class CustomerService extends BaseQueryService {
       });
     }
 
-    return { customer: result.customer, lead: result.lead, summary };
+    return { customer: result.customer, lead: serializeDecimals(result.lead), summary };
   }
 }

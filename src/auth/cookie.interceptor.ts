@@ -36,7 +36,7 @@ export class CookieInterceptor implements NestInterceptor {
           return rest;
         }
         if (data?.clearRefreshCookie) {
-          res.clearCookie(name, { path });
+          res.clearCookie(name, { path, httpOnly: true, secure, sameSite });
           const { clearRefreshCookie: _clearRefreshCookie, ...rest } = data;
           return Object.keys(rest).length
             ? rest

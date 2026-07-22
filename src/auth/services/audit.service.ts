@@ -26,14 +26,13 @@ export class AuditService {
   }
 
   async getLogs(params: {
-    organizationId?: string;
+    organizationId: string;
     userId?: string;
     action?: string;
     limit?: number;
     offset?: number;
   }) {
-    const where: any = {};
-    if (params.organizationId) where.organizationId = params.organizationId;
+    const where: any = { organizationId: params.organizationId };
     if (params.userId) where.userId = params.userId;
     if (params.action) where.action = params.action;
 

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
-import { BaseQueryService } from '../common/services/base-query.service';
+import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
 import { GetPurchaseOrdersDto } from './dto/get-purchase-orders.dto';
@@ -28,12 +28,42 @@ export class PurchaseOrderService extends BaseQueryService {
   }
 
   async generatePONumber(organizationId: string): Promise<string> {
-    const lastPO = await this.prisma.purchaseOrder.findFirst({
-      where: { organizationId },
-      orderBy: { poNumberInt: 'desc' },
-    });
-    const nextNumber = lastPO ? lastPO.poNumberInt + 1 : 1;
-    return `PO${String(nextNumber).padStart(6, '0')}`;
+    const sequence = await this.prisma.$queryRaw<{ lastvalue: number }[]>`
+      UPDATE "NumberSequence"
+      SET "lastValue" = "lastValue" + 1, "updatedAt" = NOW()
+      WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
+      RETURNING "lastValue"
+    `;
+
+    if (sequence.length === 0) {
+      await this.prisma.$executeRaw`
+        INSERT INTO "NumberSequence" ("id", "organizationId", "entityName", "prefix", "lastValue", "createdAt", "updatedAt")
+        VALUES (gen_random_uuid(), ${organizationId}, 'PO', 'PO', 1, NOW(), NOW())
+        ON CONFLICT ("organizationId", "entityName") DO UPDATE SET "lastValue" = "NumberSequence"."lastValue" + 1, "updatedAt" = NOW()
+      `;
+      const retry = await this.prisma.$queryRaw<{ lastvalue: number }[]>`
+        SELECT "lastValue" as lastvalue FROM "NumberSequence"
+        WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
+      `;
+      return `PO${String(retry[0].lastvalue).padStart(6, '0')}`;
+    }
+
+    return `PO${String(sequence[0].lastvalue).padStart(6, '0')}`;
+  }
+
+  async createWithRetry(dto: CreatePurchaseOrderDto, createdById: string, createdBy: string, organizationId: string, retries = 3) {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        return await this.create(dto, createdById, createdBy, organizationId);
+      } catch (error: any) {
+        if (error.code === 'P2002' && attempt < retries - 1) {
+          this.poLogger.warn(`PO number collision on attempt ${attempt + 1}, retrying...`);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new BadRequestException('Failed to generate unique PO number after multiple attempts');
   }
 
   async findAll(query: GetPurchaseOrdersDto, organizationId: string) {
@@ -190,7 +220,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return purchaseOrder;
+    return serializeDecimals(purchaseOrder);
   }
 
   async update(id: string, dto: UpdatePurchaseOrderDto, updatedById: string, updatedBy: string, organizationId: string) {
@@ -258,12 +288,12 @@ export class PurchaseOrderService extends BaseQueryService {
     if (dto.items && dto.items.length > 0) {
       const financials = calculatePoFinancials({
         items: dto.items,
-        discount: dto.discount ?? po.discount,
+        discount: dto.discount ?? Number(po.discount),
         discountType: dto.discountType ?? po.discountType,
-        freight: dto.freight ?? po.freight,
-        packingCharges: dto.packingCharges ?? po.packingCharges,
-        shippingCharges: dto.shippingCharges ?? po.shippingCharges,
-        otherCharges: dto.otherCharges ?? po.otherCharges,
+        freight: dto.freight ?? Number(po.freight),
+        packingCharges: dto.packingCharges ?? Number(po.packingCharges),
+        shippingCharges: dto.shippingCharges ?? Number(po.shippingCharges),
+        otherCharges: dto.otherCharges ?? Number(po.otherCharges),
       });
 
       updateData.subtotal = financials.subtotal;
@@ -340,7 +370,7 @@ export class PurchaseOrderService extends BaseQueryService {
         this.poLogger.error(`Workflow event failed: ${e.message}`);
       }
 
-      return updatedPO;
+      return serializeDecimals(updatedPO);
     }
 
     if (dto.discount !== undefined || dto.discountType !== undefined || dto.freight !== undefined ||
@@ -350,18 +380,18 @@ export class PurchaseOrderService extends BaseQueryService {
       });
       const financials = calculatePoFinancials({
         items: existingItems.map((i) => ({
-          quantity: i.quantity,
-          rate: i.rate,
-          discount: i.discount,
+          quantity: Number(i.quantity),
+          rate: Number(i.rate),
+          discount: Number(i.discount),
           discountType: i.discountType || 'Amount',
-          gstRate: i.gstRate || undefined,
+          gstRate: i.gstRate ? Number(i.gstRate) : undefined,
         })),
-        discount: dto.discount ?? po.discount,
+        discount: dto.discount ?? Number(po.discount),
         discountType: dto.discountType ?? po.discountType,
-        freight: dto.freight ?? po.freight,
-        packingCharges: dto.packingCharges ?? po.packingCharges,
-        shippingCharges: dto.shippingCharges ?? po.shippingCharges,
-        otherCharges: dto.otherCharges ?? po.otherCharges,
+        freight: dto.freight ?? Number(po.freight),
+        packingCharges: dto.packingCharges ?? Number(po.packingCharges),
+        shippingCharges: dto.shippingCharges ?? Number(po.shippingCharges),
+        otherCharges: dto.otherCharges ?? Number(po.otherCharges),
       });
       updateData.subtotal = financials.subtotal;
       updateData.tax = financials.totalTax;
@@ -411,7 +441,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return updatedPO;
+    return serializeDecimals(updatedPO);
   }
 
   async approve(id: string, approvedById: string, approvedBy: string, organizationId: string) {
@@ -469,7 +499,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return updatedPO;
+    return serializeDecimals(updatedPO);
   }
 
   async reject(id: string, rejectedById: string, rejectedBy: string, organizationId: string, reason?: string) {
@@ -529,7 +559,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return updatedPO;
+    return serializeDecimals(updatedPO);
   }
 
   async markSent(id: string, userId: string, organizationId: string) {
@@ -585,7 +615,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return updatedPO;
+    return serializeDecimals(updatedPO);
   }
 
   async receiveItems(id: string, items: { itemId: string; receivedQuantity: number }[], userId: string, organizationId: string) {
@@ -604,8 +634,8 @@ export class PurchaseOrderService extends BaseQueryService {
         const poItem = po.items.find((i) => i.id === receiveItem.itemId);
         if (!poItem) continue;
 
-        const newReceived = (poItem.receivedQuantity || 0) + receiveItem.receivedQuantity;
-        const newPending = Math.max(0, poItem.quantity - newReceived);
+        const newReceived = Number(poItem.receivedQuantity || 0) + receiveItem.receivedQuantity;
+        const newPending = Math.max(0, Number(poItem.quantity) - newReceived);
 
         await tx.purchaseOrderItem.update({
           where: { id: receiveItem.itemId },
@@ -621,8 +651,8 @@ export class PurchaseOrderService extends BaseQueryService {
         where: { purchaseOrderId: id },
       });
 
-      const allFullyReceived = refreshedItems.every((i) => (i.pendingQuantity || 0) <= 0);
-      const anyReceived = refreshedItems.some((i) => (i.receivedQuantity || 0) > 0);
+      const allFullyReceived = refreshedItems.every((i) => Number(i.pendingQuantity || 0) <= 0);
+      const anyReceived = refreshedItems.some((i) => Number(i.receivedQuantity || 0) > 0);
 
       let newStatus: string = po.status;
       if (allFullyReceived) {
@@ -675,7 +705,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return updatedPO;
+    return serializeDecimals(updatedPO);
   }
 
   async delete(id: string, deletedById: string, organizationId: string) {
@@ -780,7 +810,7 @@ export class PurchaseOrderService extends BaseQueryService {
       partiallyReceived,
       fullyReceived,
       cancelled,
-      totalPurchase: totalPurchaseResult._sum.grandTotal || 0,
+      totalPurchase: Number(totalPurchaseResult._sum.grandTotal) || 0,
     };
   }
 
