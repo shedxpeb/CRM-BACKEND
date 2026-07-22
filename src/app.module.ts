@@ -26,6 +26,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { VendorModule } from './vendor/vendor.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PdfModule } from './pdf/pdf.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PdfModule } from './pdf/pdf.module';
     VendorModule,
     PurchaseOrderModule,
     PdfModule,
+    TaskModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
