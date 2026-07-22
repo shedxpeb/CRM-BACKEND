@@ -1,7 +1,7 @@
 import { PdfEngine } from '../engine/pdf-engine';
 import { renderHeader, HeaderData } from '../sections/header.section';
 import { renderAddresses, AddressData } from '../sections/address.section';
-import { renderItemsTable, ItemsTableData, TableItem } from '../sections/items-table.section';
+import { renderItemsTable, ItemsTableData } from '../sections/items-table.section';
 import { renderSummary, SummaryData } from '../sections/summary.section';
 import { renderTerms, TermsData } from '../sections/terms.section';
 import { renderFooter, FooterData } from '../sections/footer.section';
@@ -107,7 +107,9 @@ function buildAddressLines(addr: {
   return lines;
 }
 
-export async function generatePurchaseOrderPdf(data: PurchaseOrderPdfData): Promise<import('stream').Readable> {
+export async function generatePurchaseOrderPdf(
+  data: PurchaseOrderPdfData,
+): Promise<import('stream').Readable> {
   const engine = new PdfEngine({
     title: `Purchase Order ${data.poNumber}`,
     author: 'PEB CRM',

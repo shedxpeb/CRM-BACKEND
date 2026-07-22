@@ -43,12 +43,12 @@ export function renderSummary(engine: PdfEngine, data: SummaryData) {
   ];
 
   if (data.discount && data.discount > 0) {
-    const discLabel = data.discountType === 'Percentage'
-      ? `Discount (${data.discount}%)`
-      : 'Discount';
-    const discValue = data.discountType === 'Percentage'
-      ? formatCurrency((data.subtotal * data.discount) / 100, data.currency)
-      : formatCurrency(data.discount, data.currency);
+    const discLabel =
+      data.discountType === 'Percentage' ? `Discount (${data.discount}%)` : 'Discount';
+    const discValue =
+      data.discountType === 'Percentage'
+        ? formatCurrency((data.subtotal * data.discount) / 100, data.currency)
+        : formatCurrency(data.discount, data.currency);
     rows.push({ label: discLabel, value: '-' + discValue });
   }
 
@@ -61,11 +61,17 @@ export function renderSummary(engine: PdfEngine, data: SummaryData) {
   }
 
   if (data.packingCharges && data.packingCharges > 0) {
-    rows.push({ label: 'Packing Charges', value: formatCurrency(data.packingCharges, data.currency) });
+    rows.push({
+      label: 'Packing Charges',
+      value: formatCurrency(data.packingCharges, data.currency),
+    });
   }
 
   if (data.shippingCharges && data.shippingCharges > 0) {
-    rows.push({ label: 'Shipping Charges', value: formatCurrency(data.shippingCharges, data.currency) });
+    rows.push({
+      label: 'Shipping Charges',
+      value: formatCurrency(data.shippingCharges, data.currency),
+    });
   }
 
   if (data.otherCharges && data.otherCharges > 0) {
@@ -81,9 +87,9 @@ export function renderSummary(engine: PdfEngine, data: SummaryData) {
   y = engine.getY();
 
   doc.save();
-  doc.rect(x - 8, y - 4, tableWidth + 16, totalHeight + 12)
-    .fill(BRAND.summaryBg);
-  doc.rect(x - 8, y - 4, tableWidth + 16, totalHeight + 12)
+  doc.rect(x - 8, y - 4, tableWidth + 16, totalHeight + 12).fill(BRAND.summaryBg);
+  doc
+    .rect(x - 8, y - 4, tableWidth + 16, totalHeight + 12)
     .lineWidth(0.5)
     .strokeColor(BRAND.summaryBorder)
     .stroke();
@@ -94,9 +100,16 @@ export function renderSummary(engine: PdfEngine, data: SummaryData) {
   for (const row of rows) {
     doc.font(FONTS.regular).fontSize(8).fillColor(BRAND.black);
     doc.text(row.label, x, rowY, { width: labelWidth, lineBreak: false });
-    doc.text(row.value, x + labelWidth, rowY, { width: valueWidth, align: 'right', lineBreak: false });
+    doc.text(row.value, x + labelWidth, rowY, {
+      width: valueWidth,
+      align: 'right',
+      lineBreak: false,
+    });
 
-    engine.drawLine(x, rowY + 12, x + tableWidth, rowY + 12, { color: BRAND.tableBorder, width: 0.3 });
+    engine.drawLine(x, rowY + 12, x + tableWidth, rowY + 12, {
+      color: BRAND.tableBorder,
+      width: 0.3,
+    });
     rowY += 14;
   }
 
@@ -104,7 +117,11 @@ export function renderSummary(engine: PdfEngine, data: SummaryData) {
   doc.font(FONTS.bold).fontSize(9).fillColor(BRAND.primary);
   doc.text('GRAND TOTAL', x, rowY, { width: labelWidth, lineBreak: false });
   doc.font(FONTS.bold).fontSize(10).fillColor(BRAND.primary);
-  doc.text(formatCurrency(data.grandTotal, data.currency), x + labelWidth, rowY, { width: valueWidth, align: 'right', lineBreak: false });
+  doc.text(formatCurrency(data.grandTotal, data.currency), x + labelWidth, rowY, {
+    width: valueWidth,
+    align: 'right',
+    lineBreak: false,
+  });
 
   engine.drawLine(x, rowY + 14, x + tableWidth, rowY + 14, { color: BRAND.primary, width: 1 });
 

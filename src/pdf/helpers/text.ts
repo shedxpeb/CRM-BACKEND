@@ -1,5 +1,3 @@
-import PDFDocument from 'pdfkit';
-
 export function wrapText(
   doc: PDFKit.PDFDocument,
   text: string,
@@ -77,7 +75,10 @@ export function drawLabelValue(
   const vf = options?.valueFontSize || 8;
   doc.font('Calibri-Bold').fontSize(lf).fillColor('#718096');
   doc.text(label, x, y, { width: labelWidth, lineBreak: false });
-  doc.font('Calibri').fontSize(vf).fillColor(options?.valueColor || '#1a202c');
+  doc
+    .font('Calibri')
+    .fontSize(vf)
+    .fillColor(options?.valueColor || '#1a202c');
   doc.text(value || '-', x + labelWidth, y, { width: valueWidth, lineBreak: false });
   return y + vf + 6;
 }

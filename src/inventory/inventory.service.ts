@@ -161,7 +161,11 @@ export class InventoryService extends BaseQueryService {
         ...(dto.customFields !== undefined && { customFields: dto.customFields }),
         totalValue: currentStock * purchaseRate,
         lastUpdated: new Date(),
-        status: this.deriveStatus(currentStock, Number(existing.minimumStock), Number(existing.reorderLevel)),
+        status: this.deriveStatus(
+          currentStock,
+          Number(existing.minimumStock),
+          Number(existing.reorderLevel),
+        ),
       },
     });
 
@@ -254,10 +258,12 @@ export class InventoryService extends BaseQueryService {
   // ─── WAREHOUSES ──────────────────────────────────────
 
   async getWarehouses(organizationId: string) {
-    return serializeDecimals(await this.prisma.warehouse.findMany({
-      where: { organizationId, isDeleted: false },
-      orderBy: { createdAt: 'desc' },
-    }));
+    return serializeDecimals(
+      await this.prisma.warehouse.findMany({
+        where: { organizationId, isDeleted: false },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   }
 
   async createWarehouse(dto: any, organizationId: string) {
@@ -268,41 +274,49 @@ export class InventoryService extends BaseQueryService {
     });
     const code = dto.warehouseCode || `WH-${String((lastWh ? 0 : 0) + 1).padStart(3, '0')}`;
 
-    return serializeDecimals(await this.prisma.warehouse.create({
-      data: {
-        organizationId,
-        warehouseCode: code,
-        name: dto.name,
-        location: dto.location,
-        address: dto.address,
-        manager: dto.manager,
-        contactNumber: dto.contactNumber,
-        capacity: dto.capacity,
-        notes: dto.notes,
-      },
-    }));
+    return serializeDecimals(
+      await this.prisma.warehouse.create({
+        data: {
+          organizationId,
+          warehouseCode: code,
+          name: dto.name,
+          location: dto.location,
+          address: dto.address,
+          manager: dto.manager,
+          contactNumber: dto.contactNumber,
+          capacity: dto.capacity,
+          notes: dto.notes,
+        },
+      }),
+    );
   }
 
   async updateWarehouse(id: string, dto: any, organizationId: string) {
-    const existing = await this.prisma.warehouse.findFirst({ where: { id, organizationId, isDeleted: false } });
+    const existing = await this.prisma.warehouse.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
     if (!existing) throw new NotFoundException('Warehouse not found in your organization');
-    return serializeDecimals(await this.prisma.warehouse.update({
-      where: { id },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.location !== undefined && { location: dto.location }),
-        ...(dto.address !== undefined && { address: dto.address }),
-        ...(dto.manager !== undefined && { manager: dto.manager }),
-        ...(dto.contactNumber !== undefined && { contactNumber: dto.contactNumber }),
-        ...(dto.capacity !== undefined && { capacity: dto.capacity }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.notes !== undefined && { notes: dto.notes }),
-      },
-    }));
+    return serializeDecimals(
+      await this.prisma.warehouse.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.location !== undefined && { location: dto.location }),
+          ...(dto.address !== undefined && { address: dto.address }),
+          ...(dto.manager !== undefined && { manager: dto.manager }),
+          ...(dto.contactNumber !== undefined && { contactNumber: dto.contactNumber }),
+          ...(dto.capacity !== undefined && { capacity: dto.capacity }),
+          ...(dto.status !== undefined && { status: dto.status }),
+          ...(dto.notes !== undefined && { notes: dto.notes }),
+        },
+      }),
+    );
   }
 
   async deleteWarehouse(id: string, organizationId: string) {
-    const existing = await this.prisma.warehouse.findFirst({ where: { id, organizationId, isDeleted: false } });
+    const existing = await this.prisma.warehouse.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
     if (!existing) throw new NotFoundException('Warehouse not found in your organization');
     return this.prisma.warehouse.update({
       where: { id },
@@ -313,55 +327,65 @@ export class InventoryService extends BaseQueryService {
   // ─── SUPPLIERS ──────────────────────────────────────
 
   async getSuppliers(organizationId: string) {
-    return serializeDecimals(await this.prisma.supplier.findMany({
-      where: { organizationId, isDeleted: false },
-      orderBy: { createdAt: 'desc' },
-    }));
+    return serializeDecimals(
+      await this.prisma.supplier.findMany({
+        where: { organizationId, isDeleted: false },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   }
 
   async createSupplier(dto: any, organizationId: string) {
-    return serializeDecimals(await this.prisma.supplier.create({
-      data: {
-        organizationId,
-        name: dto.name,
-        gstNumber: dto.gstNumber,
-        contactPerson: dto.contactPerson,
-        mobile: dto.mobile,
-        email: dto.email,
-        address: dto.address,
-        city: dto.city,
-        state: dto.state,
-        pincode: dto.pincode,
-        gstRegistered: dto.gstRegistered || false,
-        rating: dto.rating,
-        notes: dto.notes,
-      },
-    }));
+    return serializeDecimals(
+      await this.prisma.supplier.create({
+        data: {
+          organizationId,
+          name: dto.name,
+          gstNumber: dto.gstNumber,
+          contactPerson: dto.contactPerson,
+          mobile: dto.mobile,
+          email: dto.email,
+          address: dto.address,
+          city: dto.city,
+          state: dto.state,
+          pincode: dto.pincode,
+          gstRegistered: dto.gstRegistered || false,
+          rating: dto.rating,
+          notes: dto.notes,
+        },
+      }),
+    );
   }
 
   async updateSupplier(id: string, dto: any, organizationId: string) {
-    const existing = await this.prisma.supplier.findFirst({ where: { id, organizationId, isDeleted: false } });
+    const existing = await this.prisma.supplier.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
     if (!existing) throw new NotFoundException('Supplier not found in your organization');
-    return serializeDecimals(await this.prisma.supplier.update({
-      where: { id },
-      data: {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.gstNumber !== undefined && { gstNumber: dto.gstNumber }),
-        ...(dto.contactPerson !== undefined && { contactPerson: dto.contactPerson }),
-        ...(dto.mobile !== undefined && { mobile: dto.mobile }),
-        ...(dto.email !== undefined && { email: dto.email }),
-        ...(dto.address !== undefined && { address: dto.address }),
-        ...(dto.city !== undefined && { city: dto.city }),
-        ...(dto.state !== undefined && { state: dto.state }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.rating !== undefined && { rating: dto.rating }),
-        ...(dto.notes !== undefined && { notes: dto.notes }),
-      },
-    }));
+    return serializeDecimals(
+      await this.prisma.supplier.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.gstNumber !== undefined && { gstNumber: dto.gstNumber }),
+          ...(dto.contactPerson !== undefined && { contactPerson: dto.contactPerson }),
+          ...(dto.mobile !== undefined && { mobile: dto.mobile }),
+          ...(dto.email !== undefined && { email: dto.email }),
+          ...(dto.address !== undefined && { address: dto.address }),
+          ...(dto.city !== undefined && { city: dto.city }),
+          ...(dto.state !== undefined && { state: dto.state }),
+          ...(dto.status !== undefined && { status: dto.status }),
+          ...(dto.rating !== undefined && { rating: dto.rating }),
+          ...(dto.notes !== undefined && { notes: dto.notes }),
+        },
+      }),
+    );
   }
 
   async deleteSupplier(id: string, organizationId: string) {
-    const existing = await this.prisma.supplier.findFirst({ where: { id, organizationId, isDeleted: false } });
+    const existing = await this.prisma.supplier.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
     if (!existing) throw new NotFoundException('Supplier not found in your organization');
     return this.prisma.supplier.update({
       where: { id },
@@ -451,7 +475,9 @@ export class InventoryService extends BaseQueryService {
             : 0;
 
       if (stockDelta !== 0) {
-        const item = await tx.inventoryItem.findFirst({ where: { id: dto.itemId, organizationId } });
+        const item = await tx.inventoryItem.findFirst({
+          where: { id: dto.itemId, organizationId },
+        });
         if (item) {
           const currentStock = Number(item.currentStock);
           const purchaseRate = Number(item.purchaseRate || 0);
@@ -462,7 +488,11 @@ export class InventoryService extends BaseQueryService {
               currentStock: newStock,
               totalValue: newStock * purchaseRate,
               lastUpdated: new Date(),
-              status: this.deriveStatus(newStock, Number(item.minimumStock), Number(item.reorderLevel)),
+              status: this.deriveStatus(
+                newStock,
+                Number(item.minimumStock),
+                Number(item.reorderLevel),
+              ),
             },
           });
         }
@@ -484,11 +514,13 @@ export class InventoryService extends BaseQueryService {
   }
 
   async getMovementHistory(itemId: string, organizationId: string) {
-    return serializeDecimals(await this.prisma.stockMovement.findMany({
-      where: { inventoryItemId: itemId, organizationId },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    }));
+    return serializeDecimals(
+      await this.prisma.stockMovement.findMany({
+        where: { inventoryItemId: itemId, organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+    );
   }
 
   async getActivities(itemId: string, organizationId: string) {
@@ -522,11 +554,11 @@ export class InventoryService extends BaseQueryService {
     const typeMap: Record<string, string> = {
       'Stock In': 'stock_in',
       'Stock Out': 'stock_out',
-      'Transfer': 'transfer',
-      'Adjustment': 'adjustment',
-      'Reservation': 'reservation',
-      'Release': 'release',
-      'Consumption': 'consumption',
+      Transfer: 'transfer',
+      Adjustment: 'adjustment',
+      Reservation: 'reservation',
+      Release: 'release',
+      Consumption: 'consumption',
     };
     return typeMap[movementType] || 'adjustment';
   }

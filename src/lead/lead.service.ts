@@ -5,7 +5,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService, WhereClause, serializeDecimals } from '../common/services/base-query.service';
+import {
+  BaseQueryService,
+  WhereClause,
+  serializeDecimals,
+} from '../common/services/base-query.service';
 import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
@@ -82,6 +86,7 @@ export class LeadService extends BaseQueryService {
       totalFiltered - summaryNew - summaryContacted - summaryConverted,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filters: any = {};
     if (query.status) filters.status = query.status;
     if (query.priority) filters.priority = query.priority;
@@ -89,7 +94,9 @@ export class LeadService extends BaseQueryService {
     if (query.projectType) filters.projectType = query.projectType;
     if (query.structureType) filters.structureType = query.structureType;
     if (query.city) filters.city = query.city;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (assignedEmployeeId || (query as any).assignedToId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       filters.assignedToId = assignedEmployeeId || (query as any).assignedToId;
     }
 
@@ -119,6 +126,7 @@ export class LeadService extends BaseQueryService {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
 
     if (filters.search && filters.search.length >= 2) {
@@ -171,6 +179,7 @@ export class LeadService extends BaseQueryService {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statusGroups: Record<string, any[]> = {};
     for (const lead of leads) {
       const status = lead.status || 'Unknown';
@@ -196,6 +205,7 @@ export class LeadService extends BaseQueryService {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
 
     if (filters.search && filters.search.length >= 2) {
@@ -257,6 +267,7 @@ export class LeadService extends BaseQueryService {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { customFields, ...restData } = data as any;
 
     const createData = {

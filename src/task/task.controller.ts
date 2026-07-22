@@ -103,10 +103,7 @@ export class TaskController {
   @Get(':id')
   @RequirePermissions('task:list')
   @ApiOperation({ summary: 'Get task by ID' })
-  async findById(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.taskService.findById(id, organizationId);
     return { message: 'Task fetched successfully.', data };
   }
@@ -134,7 +131,13 @@ export class TaskController {
     @CurrentUser('id') userId: string,
     @CurrentUser('name') userName: string,
   ) {
-    const data = await this.taskService.complete(id, dto, organizationId, userId, userName || 'Unknown');
+    const data = await this.taskService.complete(
+      id,
+      dto,
+      organizationId,
+      userId,
+      userName || 'Unknown',
+    );
     return { message: 'Task completed successfully.', data };
   }
 
@@ -171,7 +174,12 @@ export class TaskController {
     @Body() dto: ApproveSalaryAdjustmentDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.taskService.approveSalaryAdjustment(id, dto.approvedBy, dto.approvedByName, organizationId);
+    const data = await this.taskService.approveSalaryAdjustment(
+      id,
+      dto.approvedBy,
+      dto.approvedByName,
+      organizationId,
+    );
     return { message: 'Salary adjustment approved.', data };
   }
 
@@ -183,7 +191,11 @@ export class TaskController {
     @Body() dto: ProcessSalaryAdjustmentDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.taskService.processSalaryAdjustment(id, dto.processedBy, organizationId);
+    const data = await this.taskService.processSalaryAdjustment(
+      id,
+      dto.processedBy,
+      organizationId,
+    );
     return { message: 'Salary adjustment processed.', data };
   }
 
@@ -197,7 +209,13 @@ export class TaskController {
     @CurrentUser('id') userId: string,
     @CurrentUser('name') userName: string,
   ) {
-    const data = await this.taskService.update(id, dto, organizationId, userId, userName || 'Unknown');
+    const data = await this.taskService.update(
+      id,
+      dto,
+      organizationId,
+      userId,
+      userName || 'Unknown',
+    );
     return { message: 'Task updated successfully.', data };
   }
 
@@ -222,7 +240,12 @@ export class TaskController {
     @CurrentUser('id') userId: string,
     @CurrentUser('name') userName: string,
   ) {
-    const data = await this.taskService.deleteTask(id, organizationId, userId, userName || 'Unknown');
+    const data = await this.taskService.deleteTask(
+      id,
+      organizationId,
+      userId,
+      userName || 'Unknown',
+    );
     return { message: 'Task deleted successfully.', data };
   }
 

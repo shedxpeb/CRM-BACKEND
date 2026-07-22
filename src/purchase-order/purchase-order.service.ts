@@ -51,12 +51,18 @@ export class PurchaseOrderService extends BaseQueryService {
     return `PO${String(sequence[0].lastvalue).padStart(6, '0')}`;
   }
 
-  async createWithRetry(dto: CreatePurchaseOrderDto, createdById: string, createdBy: string, organizationId: string, retries = 3) {
+  async createWithRetry(
+    dto: CreatePurchaseOrderDto,
+    createdById: string,
+    createdBy: string,
+    organizationId: string,
+    retries = 3,
+  ) {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         return await this.create(dto, createdById, createdBy, organizationId);
-      } catch (error: any) {
-        if (error.code === 'P2002' && attempt < retries - 1) {
+      } catch (error: unknown) {
+        if ((error as { code?: string }).code === 'P2002' && attempt < retries - 1) {
           this.poLogger.warn(`PO number collision on attempt ${attempt + 1}, retrying...`);
           continue;
         }
@@ -87,14 +93,23 @@ export class PurchaseOrderService extends BaseQueryService {
   }
 
   async findById(id: string, organizationId: string) {
-    return super.findById(id, {
-      items: true,
-      vendor: true,
-      timeline: { orderBy: { createdAt: 'desc' } },
-    }, organizationId);
+    return super.findById(
+      id,
+      {
+        items: true,
+        vendor: true,
+        timeline: { orderBy: { createdAt: 'desc' } },
+      },
+      organizationId,
+    );
   }
 
-  async create(dto: CreatePurchaseOrderDto, createdById: string, createdBy: string, organizationId: string) {
+  async create(
+    dto: CreatePurchaseOrderDto,
+    createdById: string,
+    createdBy: string,
+    organizationId: string,
+  ) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { id: dto.vendorId, organizationId, isDeleted: false },
     });
@@ -144,6 +159,7 @@ export class PurchaseOrderService extends BaseQueryService {
         warehouseName,
         paymentTerms: dto.paymentTerms,
         expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: (dto.status as any) || 'Draft',
         currency: dto.currency || 'INR',
         subtotal: financials.subtotal,
@@ -223,14 +239,27 @@ export class PurchaseOrderService extends BaseQueryService {
     return serializeDecimals(purchaseOrder);
   }
 
-  async update(id: string, dto: UpdatePurchaseOrderDto, updatedById: string, updatedBy: string, organizationId: string) {
+  async update(
+    id: string,
+    dto: UpdatePurchaseOrderDto,
+    updatedById: string,
+    updatedBy: string,
+    organizationId: string,
+  ) {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
     if (!po) throw new NotFoundException('Purchase Order not found');
 
-    if (po.status === 'Approved' || po.status === 'Sent' || po.status === 'FullyReceived' || po.status === 'Closed') {
-      throw new BadRequestException('Cannot update approved, sent, received, or closed purchase orders');
+    if (
+      po.status === 'Approved' ||
+      po.status === 'Sent' ||
+      po.status === 'FullyReceived' ||
+      po.status === 'Closed'
+    ) {
+      throw new BadRequestException(
+        'Cannot update approved, sent, received, or closed purchase orders',
+      );
     }
 
     if (dto.vendorId && dto.vendorId !== po.vendorId) {
@@ -248,6 +277,7 @@ export class PurchaseOrderService extends BaseQueryService {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       ...(dto.vendorId !== undefined && { vendorId: dto.vendorId }),
       ...(dto.projectId !== undefined && { projectId: dto.projectId }),
@@ -373,8 +403,14 @@ export class PurchaseOrderService extends BaseQueryService {
       return serializeDecimals(updatedPO);
     }
 
-    if (dto.discount !== undefined || dto.discountType !== undefined || dto.freight !== undefined ||
-        dto.packingCharges !== undefined || dto.shippingCharges !== undefined || dto.otherCharges !== undefined) {
+    if (
+      dto.discount !== undefined ||
+      dto.discountType !== undefined ||
+      dto.freight !== undefined ||
+      dto.packingCharges !== undefined ||
+      dto.shippingCharges !== undefined ||
+      dto.otherCharges !== undefined
+    ) {
       const existingItems = await this.prisma.purchaseOrderItem.findMany({
         where: { purchaseOrderId: id },
       });
@@ -451,7 +487,9 @@ export class PurchaseOrderService extends BaseQueryService {
     if (!po) throw new NotFoundException('Purchase Order not found');
 
     if (!canTransitionStatus(po.status, 'Approved')) {
-      throw new BadRequestException(`Cannot approve a purchase order with status "${po.status}". Must be Draft or PendingApproval.`);
+      throw new BadRequestException(
+        `Cannot approve a purchase order with status "${po.status}". Must be Draft or PendingApproval.`,
+      );
     }
 
     const updatedPO = await this.prisma.purchaseOrder.update({
@@ -502,7 +540,13 @@ export class PurchaseOrderService extends BaseQueryService {
     return serializeDecimals(updatedPO);
   }
 
-  async reject(id: string, rejectedById: string, rejectedBy: string, organizationId: string, reason?: string) {
+  async reject(
+    id: string,
+    rejectedById: string,
+    rejectedBy: string,
+    organizationId: string,
+    reason?: string,
+  ) {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
@@ -569,7 +613,9 @@ export class PurchaseOrderService extends BaseQueryService {
     if (!po) throw new NotFoundException('Purchase Order not found');
 
     if (!canTransitionStatus(po.status, 'Sent')) {
-      throw new BadRequestException(`Cannot mark a purchase order with status "${po.status}" as sent.`);
+      throw new BadRequestException(
+        `Cannot mark a purchase order with status "${po.status}" as sent.`,
+      );
     }
 
     const updatedPO = await this.prisma.purchaseOrder.update({
@@ -618,7 +664,12 @@ export class PurchaseOrderService extends BaseQueryService {
     return serializeDecimals(updatedPO);
   }
 
-  async receiveItems(id: string, items: { itemId: string; receivedQuantity: number }[], userId: string, organizationId: string) {
+  async receiveItems(
+    id: string,
+    items: { itemId: string; receivedQuantity: number }[],
+    userId: string,
+    organizationId: string,
+  ) {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
       include: { items: true },
@@ -626,7 +677,9 @@ export class PurchaseOrderService extends BaseQueryService {
     if (!po) throw new NotFoundException('Purchase Order not found');
 
     if (po.status !== 'Sent' && po.status !== 'PartiallyReceived') {
-      throw new BadRequestException('Can only receive items for Sent or PartiallyReceived purchase orders.');
+      throw new BadRequestException(
+        'Can only receive items for Sent or PartiallyReceived purchase orders.',
+      );
     }
 
     const updatedPO = await this.prisma.$transaction(async (tx) => {
@@ -664,6 +717,7 @@ export class PurchaseOrderService extends BaseQueryService {
       return tx.purchaseOrder.update({
         where: { id },
         data: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           status: newStatus as any,
           ...(allFullyReceived ? { actualDeliveryDate: new Date() } : {}),
           timeline: {
@@ -671,7 +725,9 @@ export class PurchaseOrderService extends BaseQueryService {
               organizationId,
               action: 'Received',
               performedById: userId,
-              metadata: { items: items.map((i) => ({ itemId: i.itemId, qty: i.receivedQuantity })) },
+              metadata: {
+                items: items.map((i) => ({ itemId: i.itemId, qty: i.receivedQuantity })),
+              },
             },
           },
         },
@@ -779,18 +835,27 @@ export class PurchaseOrderService extends BaseQueryService {
 
   async getStats(organizationId: string) {
     const where = { organizationId, isDeleted: false };
-    const [total, draft, approved, pendingApproval, sent, rejected, partiallyReceived, fullyReceived, cancelled] =
-      await Promise.all([
-        this.prisma.purchaseOrder.count({ where }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Draft' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Approved' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'PendingApproval' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Sent' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Rejected' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'PartiallyReceived' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'FullyReceived' } }),
-        this.prisma.purchaseOrder.count({ where: { ...where, status: 'Cancelled' } }),
-      ]);
+    const [
+      total,
+      draft,
+      approved,
+      pendingApproval,
+      sent,
+      rejected,
+      partiallyReceived,
+      fullyReceived,
+      cancelled,
+    ] = await Promise.all([
+      this.prisma.purchaseOrder.count({ where }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'Draft' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'Approved' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'PendingApproval' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'Sent' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'Rejected' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'PartiallyReceived' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'FullyReceived' } }),
+      this.prisma.purchaseOrder.count({ where: { ...where, status: 'Cancelled' } }),
+    ]);
 
     const totalPurchaseResult = await this.prisma.purchaseOrder.aggregate({
       where: {
@@ -814,6 +879,7 @@ export class PurchaseOrderService extends BaseQueryService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getCombobox(query: any, organizationId?: string) {
     return super.getCombobox(query, organizationId, [
       'id',

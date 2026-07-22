@@ -10,9 +10,18 @@ export class VendorService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: GetVendorsDto, organizationId: string) {
-    const { page = 1, limit = 10, search, status, sortBy = 'createdAt', sortOrder = 'desc', includeDeleted = false } = query;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      includeDeleted = false,
+    } = query;
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       organizationId,
       isDeleted: includeDeleted ? undefined : false,
@@ -56,6 +65,7 @@ export class VendorService {
   async findAllForExport(query: GetVendorsDto, organizationId: string) {
     const { search, status, includeDeleted = false } = query;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       organizationId,
       isDeleted: includeDeleted ? undefined : false,
@@ -75,14 +85,18 @@ export class VendorService {
       where.status = status;
     }
 
-    return serializeDecimals(await this.prisma.vendor.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    }));
+    return serializeDecimals(
+      await this.prisma.vendor.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getCombobox(query: any, organizationId: string) {
     const { search } = query;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       organizationId,
       isDeleted: false,
@@ -150,7 +164,12 @@ export class VendorService {
     return serializeDecimals(vendor);
   }
 
-  async create(dto: CreateVendorDto, createdById: string, createdBy: string, organizationId: string) {
+  async create(
+    dto: CreateVendorDto,
+    createdById: string,
+    createdBy: string,
+    organizationId: string,
+  ) {
     const existingVendor = await this.prisma.vendor.findFirst({
       where: {
         organizationId,
@@ -175,7 +194,13 @@ export class VendorService {
     return serializeDecimals(vendor);
   }
 
-  async update(id: string, dto: UpdateVendorDto, updatedById: string, updatedBy: string, organizationId: string) {
+  async update(
+    id: string,
+    dto: UpdateVendorDto,
+    updatedById: string,
+    updatedBy: string,
+    organizationId: string,
+  ) {
     const vendor = await this.prisma.vendor.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
@@ -203,7 +228,6 @@ export class VendorService {
       where: { id },
       data: {
         ...dto,
-        updatedById,
         updatedBy,
       },
     });

@@ -18,6 +18,7 @@ export interface WhereClause {
   AND?: any[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeDecimals(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === 'object' && typeof obj.toNumber === 'function') return obj.toNumber();
@@ -113,7 +114,7 @@ export class BaseQueryService {
     }
 
     if (extraWhere) {
-      const { include, ...whereOnly } = extraWhere;
+      const { include: _include, ...whereOnly } = extraWhere;
       Object.assign(where, whereOnly);
     }
 

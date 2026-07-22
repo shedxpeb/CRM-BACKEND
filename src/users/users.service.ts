@@ -6,6 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -28,6 +29,7 @@ export class UsersService {
     } = query;
     const skip = (page - 1) * pageSize;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId };
     if (search) {
       where.OR = [
@@ -125,6 +127,7 @@ export class UsersService {
         mobile: dto.mobile,
         department: dto.department,
         designation: dto.designation,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         role: dto.role as any,
         password: passwordHash,
         isActive: dto.isActive ?? true,
@@ -151,6 +154,7 @@ export class UsersService {
     const existing = await this.prisma.user.findFirst({ where: { id, organizationId } });
     if (!existing) throw new NotFoundException(`User with ID ${id} not found`);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = { ...dto };
     if (dto.password) {
       updateData.password = await bcrypt.hash(dto.password, 12);
@@ -193,7 +197,6 @@ export class UsersService {
   }
 
   private generateTempPassword(): string {
-    const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     const arr = crypto.randomBytes(12);
     let password = '';

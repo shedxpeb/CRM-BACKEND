@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsDateString, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsEnum, MinLength } from 'class-validator';
 
 export enum VerifyAction {
   Verified = 'Verified',

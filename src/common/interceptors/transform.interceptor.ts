@@ -1,4 +1,10 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, StreamableFile } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  StreamableFile,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import type { FastifyRequest } from 'fastify';
@@ -20,8 +26,11 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
+export class TransformInterceptor<T> implements NestInterceptor<T, Response<T> | StreamableFile> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<Response<T> | StreamableFile> {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const requestId = request.requestId || 'unknown';
     const path = request.url?.split('?')[0] || '';
@@ -37,9 +46,10 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
     }
 
     return next.handle().pipe(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       map((responseData: any) => {
         if (responseData instanceof StreamableFile) {
-          return responseData as any;
+          return responseData;
         }
 
         if (responseData && typeof responseData === 'object') {

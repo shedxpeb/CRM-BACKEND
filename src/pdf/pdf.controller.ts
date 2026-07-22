@@ -1,9 +1,20 @@
-import { Controller, Get, Param, NotFoundException, Logger, StreamableFile, Header } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  NotFoundException,
+  Logger,
+  StreamableFile,
+  Header,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { generatePurchaseOrderPdf, PurchaseOrderPdfData } from './templates/purchase-order.template';
+import {
+  generatePurchaseOrderPdf,
+  PurchaseOrderPdfData,
+} from './templates/purchase-order.template';
 
 @ApiTags('purchase-order-pdf')
 @ApiBearerAuth()

@@ -43,7 +43,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const responseObj = exceptionResponse as any;
+        const responseObj = exceptionResponse as { message?: unknown };
         if (responseObj.message && Array.isArray(responseObj.message)) {
           this.logger.error(
             `${request.method} ${request.url} - RequestId: ${requestId} - Status: ${status} - Validation Errors: ${JSON.stringify(responseObj.message)}`,
