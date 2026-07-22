@@ -30,6 +30,7 @@ export class WorkflowEngineService {
     entityType: string;
     entityId: string;
     eventType: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any;
     createdById?: string;
   }) {
@@ -202,8 +203,11 @@ export class WorkflowEngineService {
         source: 'event',
         action: ev.eventType,
         data: (ev.data as Record<string, unknown>) || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         toStatus: (ev.data as any)?.toStatus,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fromStatus: (ev.data as any)?.fromStatus,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         reason: (ev.data as any)?.reason,
       });
     }

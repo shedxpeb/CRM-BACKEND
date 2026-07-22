@@ -727,6 +727,7 @@ export class TrackingService {
     return pipeline.filter((s) => s.status !== currentStep.status).map((s) => s.status);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapStage(s: any, currentStatus: string | null, currentIndex: number, stageIndex: number) {
     const isCurrent =
       normalizeStatus(s.status) === normalizeStatus(currentStatus) ||

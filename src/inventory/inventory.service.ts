@@ -33,6 +33,7 @@ export class InventoryService extends BaseQueryService {
   }
 
   async findAll(query: GetInventoryDto, organizationId?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false };
     if (organizationId) where.organizationId = organizationId;
 
@@ -266,6 +267,7 @@ export class InventoryService extends BaseQueryService {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createWarehouse(dto: any, organizationId: string) {
     const lastWh = await this.prisma.warehouse.findFirst({
       where: { organizationId, isDeleted: false },
@@ -291,6 +293,7 @@ export class InventoryService extends BaseQueryService {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async updateWarehouse(id: string, dto: any, organizationId: string) {
     const existing = await this.prisma.warehouse.findFirst({
       where: { id, organizationId, isDeleted: false },
@@ -335,6 +338,7 @@ export class InventoryService extends BaseQueryService {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createSupplier(dto: any, organizationId: string) {
     return serializeDecimals(
       await this.prisma.supplier.create({
@@ -357,6 +361,7 @@ export class InventoryService extends BaseQueryService {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async updateSupplier(id: string, dto: any, organizationId: string) {
     const existing = await this.prisma.supplier.findFirst({
       where: { id, organizationId, isDeleted: false },
@@ -402,6 +407,7 @@ export class InventoryService extends BaseQueryService {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createCategory(dto: any, organizationId: string) {
     return this.prisma.inventoryCategory.create({
       data: {
@@ -418,6 +424,7 @@ export class InventoryService extends BaseQueryService {
   async getMovements(organizationId: string, query?: any) {
     const page = query?.page || 1;
     const pageSize = Math.min(query?.pageSize || 25, 100);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId };
     if (query?.inventoryItemId) where.inventoryItemId = query.inventoryItemId;
     if (query?.type) where.type = query.type;

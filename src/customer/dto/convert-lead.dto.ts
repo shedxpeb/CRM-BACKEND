@@ -59,6 +59,7 @@ export class ConvertLeadDto {
 
   @IsOptional()
   @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 
   @IsOptional()
@@ -71,6 +72,7 @@ export class ConvertLeadDto {
 
   @IsOptional()
   @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   conversionContext?: Record<string, any>;
 
   @IsOptional()

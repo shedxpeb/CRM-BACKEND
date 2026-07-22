@@ -306,15 +306,18 @@ export class LeadService extends BaseQueryService {
         createdById,
       });
       return serializeDecimals(lead);
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      if (err.code === 'P2002') {
+        throw new BadRequestException(`Duplicate value for field: ${err.meta?.target}`);
       }
-      throw new BadRequestException(`Database error: ${error.message}`);
+      throw new BadRequestException(`Database error: ${err.message}`);
     }
   }
 
   async update(id: string, data: UpdateLeadDto, updatedById?: string, organizationId?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id, isDeleted: false };
     if (!organizationId) throw new NotFoundException('Organization context required');
     where.organizationId = organizationId;
@@ -322,6 +325,7 @@ export class LeadService extends BaseQueryService {
     if (!existingLead) throw new NotFoundException(`Lead with ID ${id} not found`);
 
     if (data.mobile || data.email) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const duplicateWhere: any[] = [{ id: { not: id } }, { isDeleted: false }];
       if (organizationId) duplicateWhere.push({ organizationId });
       duplicateWhere.push({
@@ -348,6 +352,7 @@ export class LeadService extends BaseQueryService {
     try {
       const lead = await this.client.update({
         where: { id },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: { ...(data as any), updatedBy: updatedById },
       });
       await this.auditService.log({
@@ -366,11 +371,13 @@ export class LeadService extends BaseQueryService {
         createdById: updatedById,
       });
       return serializeDecimals(lead);
-    } catch (error: any) {
-      if (error.code === 'P2002') {
-        throw new BadRequestException(`Duplicate value for field: ${error.meta?.target}`);
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
+      if (err.code === 'P2002') {
+        throw new BadRequestException(`Duplicate value for field: ${err.meta?.target}`);
       }
-      throw new BadRequestException(`Database error: ${error.message}`);
+      throw new BadRequestException(`Database error: ${err.message}`);
     }
   }
 

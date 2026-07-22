@@ -235,6 +235,7 @@ export class ProjectService extends BaseQueryService {
       throw new BadRequestException('Organization context is required to create a project');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
 
     let customerName = data.customerName;
@@ -618,6 +619,7 @@ export class ProjectService extends BaseQueryService {
     deletedById?: string,
     organizationId?: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id: projectId, isDeleted: false };
     if (!organizationId) throw new NotFoundException('Organization context required');
     where.organizationId = organizationId;

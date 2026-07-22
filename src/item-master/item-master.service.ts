@@ -299,6 +299,7 @@ export class ItemMasterService extends BaseQueryService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getCombobox(query: any, organizationId?: string) {
     return super.getCombobox(query, organizationId, [
       'id',

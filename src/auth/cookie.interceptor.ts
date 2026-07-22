@@ -7,6 +7,7 @@ import { FastifyReply } from 'fastify';
 export class CookieInterceptor implements NestInterceptor {
   constructor(private readonly config: ConfigService) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const res = context.switchToHttp().getResponse<FastifyReply>();
     const name = this.config.get<string>('cookie.refreshName') || 'refreshToken';

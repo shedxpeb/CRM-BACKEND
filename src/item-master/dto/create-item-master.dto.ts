@@ -119,6 +119,7 @@ export class CreateItemMasterDto {
   description?: string;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   standardDimensions?: Record<string, any>;
 
   @IsOptional()
@@ -190,5 +191,6 @@ export class CreateItemMasterDto {
   width?: number;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }

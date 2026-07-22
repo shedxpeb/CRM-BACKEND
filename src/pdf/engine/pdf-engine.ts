@@ -183,6 +183,7 @@ export class PdfEngine {
       .fontSize(options?.size || 8)
       .fillColor(options?.color || BRAND.black);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const textOptions: any = {
       lineBreak: options?.lineBreak ?? false,
     };

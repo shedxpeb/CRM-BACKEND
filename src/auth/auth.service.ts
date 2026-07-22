@@ -73,12 +73,14 @@ export class AuthService {
   }
 
   private async issueSessionTokens(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: any,
     opts: {
       ipAddress?: string;
       userAgent?: string;
       rememberMe?: boolean;
       auditAction?: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       auditMeta?: any;
     },
   ) {
@@ -452,6 +454,7 @@ export class AuthService {
       user: {
         id: string;
         email: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         role: any;
         passwordVersion: number;
       };
@@ -838,7 +841,8 @@ export class AuthService {
     const history: Array<{ password: string }> =
       typeof user.passwordHistory === 'string'
         ? JSON.parse(user.passwordHistory)
-        : (user.passwordHistory as any);
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (user.passwordHistory as any);
     for (const entry of history || []) {
       if (await bcrypt.compare(newPassword, entry.password)) {
         throw new BadRequestException('You cannot reuse a recent password');
@@ -846,6 +850,7 @@ export class AuthService {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private pushPasswordHistory(existing: any, passwordHash: string) {
     const size = this.config.get<number>('security.passwordHistorySize') || 10;
     const history: Array<{ password: string; changedAt: string }> = existing

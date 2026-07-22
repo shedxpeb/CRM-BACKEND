@@ -108,6 +108,7 @@ export class SessionService {
   }
 
   async revokeAllUserSessions(userId: string, exceptSessionId?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sessionWhere: any = { userId, isRevoked: false };
     if (exceptSessionId) sessionWhere.id = { not: exceptSessionId };
 
@@ -116,6 +117,7 @@ export class SessionService {
       data: { isRevoked: true, revokedAt: new Date() },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const refreshWhere: any = { userId, isRevoked: false };
     if (exceptSessionId) refreshWhere.sessionId = { not: exceptSessionId };
 

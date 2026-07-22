@@ -14,11 +14,13 @@ export class AuditService {
     sessionId?: string;
     resource?: string;
     resourceId?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: Record<string, any>;
     ipAddress?: string;
     userAgent?: string;
   }) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.prisma.auditLog.create({ data: params as any });
     } catch (error) {
       this.logger.error(`Failed to write audit log: ${error.message}`);
@@ -32,6 +34,7 @@ export class AuditService {
     limit?: number;
     offset?: number;
   }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { organizationId: params.organizationId };
     if (params.userId) where.userId = params.userId;
     if (params.action) where.action = params.action;

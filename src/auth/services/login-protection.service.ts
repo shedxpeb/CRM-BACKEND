@@ -18,6 +18,7 @@ export class LoginProtectionService {
     success: boolean;
     failureReason?: string;
   }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.prisma.loginAttempt.create({ data: params as any });
 
     if (!params.success) {

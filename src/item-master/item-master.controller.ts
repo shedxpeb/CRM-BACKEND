@@ -55,6 +55,7 @@ export class ItemMasterController {
   @Get('combobox')
   @RequirePermissions('item-master:list')
   @ApiOperation({ summary: 'Get items for dropdown' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async combobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.itemMasterService.getCombobox(query, organizationId);
     return { message: 'Items fetched.', data };
@@ -168,6 +169,7 @@ export class ItemMasterController {
   @ApiOperation({ summary: 'Create variant' })
   async createVariant(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -196,6 +198,7 @@ export class ItemMasterController {
   async updateVariant(
     @Param('itemId') itemId: string,
     @Param('variantId') variantId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') _updatedById: string,
     @CurrentUser('organizationId') _organizationId: string,
@@ -244,6 +247,7 @@ export class ItemMasterController {
   @RequirePermissions('item-master:create')
   @ApiOperation({ summary: 'Create bundle' })
   async createBundle(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -259,6 +263,7 @@ export class ItemMasterController {
         status: dto.status || 'Active',
         items: dto.items
           ? {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               create: dto.items.map((item: any) => ({
                 organizationId,
                 itemMasterId: item.itemMasterId,
