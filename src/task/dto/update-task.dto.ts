@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsArray,
   IsDateString,
-  IsBoolean,
   MinLength,
   MaxLength,
   Min,

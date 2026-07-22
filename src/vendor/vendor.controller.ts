@@ -1,5 +1,16 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { VendorService } from './vendor.service';
 import { GetVendorsDto } from './dto/get-vendors.dto';
 import { CreateVendorDto } from './dto/create-vendor.dto';
@@ -39,6 +50,7 @@ export class VendorController {
   @Get('combobox')
   @RequirePermissions('vendor:list')
   @ApiOperation({ summary: 'Get vendors for dropdown' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async combobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.vendorService.getCombobox(query, organizationId);
     return { message: 'Vendors fetched.', data };
@@ -58,11 +70,7 @@ export class VendorController {
     @Body() body: BulkStatusVendorDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.vendorService.bulkStatusUpdate(
-      body.ids,
-      body.status,
-      organizationId,
-    );
+    const data = await this.vendorService.bulkStatusUpdate(body.ids, body.status, organizationId);
     return { message: 'Vendors updated.', data };
   }
 

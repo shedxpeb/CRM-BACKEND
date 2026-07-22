@@ -222,7 +222,7 @@ export class TrackingController {
   async requestApproval(
     @Param('entityType') entityType: string,
     @Param('entityId') entityId: string,
-    @Body() body: { approverId: string; level?: number; metadata?: any },
+    @Body() body: { approverId: string; level?: number; metadata?: unknown },
     @CurrentUser() user?: CurrentUserType,
   ) {
     const u = this.getUser(user);

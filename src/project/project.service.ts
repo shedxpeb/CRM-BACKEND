@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService } from '../common/services/base-query.service';
+import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { GetProjectsDto } from './dto/get-projects.dto';
@@ -63,6 +63,7 @@ export class ProjectService extends BaseQueryService {
 
     const safePageSize = Math.min(Math.max(Number(pageSize) || 25, 1), 500);
     const skip = (page - 1) * safePageSize;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
 
     if (search && search.length >= 2) {
@@ -132,13 +133,14 @@ export class ProjectService extends BaseQueryService {
       hasPrevious: page > 1,
     };
 
-    return { rows, pagination };
+    return { rows: serializeDecimals(rows), pagination };
   }
 
   async getStats(organizationId?: string) {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
 
     const [
@@ -197,18 +199,20 @@ export class ProjectService extends BaseQueryService {
       projectsInFabrication,
       projectsInInstallation,
       pendingApprovals,
-      projectRevenue: totalRevenue._sum.value || 0,
-      materialCost: totalMaterialCost._sum.materialCost || 0,
+      projectRevenue: Number(totalRevenue._sum.value) || 0,
+      materialCost: Number(totalMaterialCost._sum.materialCost) || 0,
       healthyProjects,
       atRiskProjects,
       criticalProjects,
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async findById(id: string, extraInclude?: any, organizationId?: string) {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id, isDeleted: false, organizationId };
     const project = await this.client.findFirst({
       where,
@@ -216,13 +220,14 @@ export class ProjectService extends BaseQueryService {
     });
     if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
     // Preserve FE contract (`team`) while Prisma relation is `teamMembers`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { teamMembers, ...rest } = project as any;
-    return {
+    return serializeDecimals({
       ...rest,
       teamMembers,
       team: Array.isArray(teamMembers) ? teamMembers : [],
       milestones: Array.isArray(project.milestones) ? project.milestones : [],
-    };
+    });
   }
 
   async create(data: CreateProjectDto, createdById: string, organizationId?: string) {
@@ -230,6 +235,7 @@ export class ProjectService extends BaseQueryService {
       throw new BadRequestException('Organization context is required to create a project');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
 
     let customerName = data.customerName;
@@ -267,6 +273,7 @@ export class ProjectService extends BaseQueryService {
         createdById,
         milestones: milestones?.length
           ? {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               create: milestones.map((m: any) => ({
                 name: m.name,
                 plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
@@ -276,6 +283,7 @@ export class ProjectService extends BaseQueryService {
           : undefined,
         teamMembers: team?.length
           ? {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               create: team.map((t: any) => ({
                 employeeId: t.employeeId,
                 name: t.name,
@@ -308,59 +316,68 @@ export class ProjectService extends BaseQueryService {
       createdById,
     });
 
-    return project;
+    return serializeDecimals(project);
   }
 
   async update(id: string, data: UpdateProjectDto, updatedById?: string, organizationId?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const existing = await this.client.findFirst({ where });
     if (!existing) throw new NotFoundException(`Project with ID ${id} not found`);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
 
-    const project = await this.client.update({
-      where: { id },
-      data: {
-        ...restData,
-        ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
-        ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
-        updatedBy: updatedById,
-        ...(customFields !== undefined ? { customFields } : {}),
-      },
-      include: { milestones: true, teamMembers: true },
+    const project = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.project.update({
+        where: { id },
+        data: {
+          ...restData,
+          ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
+          ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
+          updatedBy: updatedById,
+          ...(customFields !== undefined ? { customFields } : {}),
+        },
+        include: { milestones: true, teamMembers: true },
+      });
+
+      if (milestones) {
+        await tx.projectMilestone.deleteMany({ where: { projectId: id } });
+        if (milestones.length > 0) {
+          await tx.projectMilestone.createMany({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: milestones.map((m: any) => ({
+              projectId: id,
+              name: m.name,
+              plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
+              actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
+              status: m.status || 'Pending',
+              delay: m.delay,
+            })),
+          });
+        }
+      }
+
+      if (team) {
+        await tx.projectTeamMember.deleteMany({ where: { projectId: id } });
+        if (team.length > 0) {
+          await tx.projectTeamMember.createMany({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: team.map((t: any) => ({
+              projectId: id,
+              employeeId: t.employeeId,
+              name: t.name,
+              role: t.role,
+              workload: t.workload,
+            })),
+          });
+        }
+      }
+
+      return updated;
     });
-
-    if (milestones) {
-      await this.prisma.projectMilestone.deleteMany({ where: { projectId: id } });
-      if (milestones.length > 0) {
-        await this.prisma.projectMilestone.createMany({
-          data: milestones.map((m: any) => ({
-            projectId: id,
-            name: m.name,
-            plannedDate: m.plannedDate ? new Date(m.plannedDate) : undefined,
-            actualDate: m.actualDate ? new Date(m.actualDate) : undefined,
-            status: m.status || 'Pending',
-            delay: m.delay,
-          })),
-        });
-      }
-    }
-
-    if (team) {
-      await this.prisma.projectTeamMember.deleteMany({ where: { projectId: id } });
-      if (team.length > 0) {
-        await this.prisma.projectTeamMember.createMany({
-          data: team.map((t: any) => ({
-            projectId: id,
-            employeeId: t.employeeId,
-            name: t.name,
-            role: t.role,
-            workload: t.workload,
-          })),
-        });
-      }
-    }
 
     await this.auditService.log({
       action: 'project.updated',
@@ -379,7 +396,7 @@ export class ProjectService extends BaseQueryService {
       createdById: updatedById,
     });
 
-    return project;
+    return serializeDecimals(project);
   }
 
   async bulkUpdate(
@@ -393,9 +410,12 @@ export class ProjectService extends BaseQueryService {
       team: _team,
       customFields: _customFields,
       ...restData
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } = data as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id: { in: ids }, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
 
     const result = await this.client.updateMany({
       where,
@@ -431,6 +451,7 @@ export class ProjectService extends BaseQueryService {
     return { count: result.count };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
     const result = await super.softDelete(id, deletedById, organizationId);
     await this.auditService.log({
@@ -511,8 +532,10 @@ export class ProjectService extends BaseQueryService {
   }
 
   async createTask(projectId: string, data: CreateTaskDto, organizationId?: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
@@ -554,8 +577,10 @@ export class ProjectService extends BaseQueryService {
     updatedById?: string,
     organizationId?: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 
@@ -594,8 +619,10 @@ export class ProjectService extends BaseQueryService {
     deletedById?: string,
     organizationId?: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { id: projectId, isDeleted: false };
-    if (organizationId) where.organizationId = organizationId;
+    if (!organizationId) throw new NotFoundException('Organization context required');
+    where.organizationId = organizationId;
     const project = await this.client.findFirst({ where });
     if (!project) throw new NotFoundException(`Project with ID ${projectId} not found`);
 

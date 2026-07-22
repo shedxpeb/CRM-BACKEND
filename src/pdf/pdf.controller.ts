@@ -1,9 +1,20 @@
-import { Controller, Get, Param, NotFoundException, Logger, StreamableFile, Header } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  NotFoundException,
+  Logger,
+  StreamableFile,
+  Header,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { generatePurchaseOrderPdf, PurchaseOrderPdfData } from './templates/purchase-order.template';
+import {
+  generatePurchaseOrderPdf,
+  PurchaseOrderPdfData,
+} from './templates/purchase-order.template';
 
 @ApiTags('purchase-order-pdf')
 @ApiBearerAuth()
@@ -98,26 +109,26 @@ export class PdfController {
         itemName: item.itemName,
         description: item.description || undefined,
         hsnCode: item.hsnCode || undefined,
-        quantity: item.quantity,
+        quantity: Number(item.quantity),
         unit: item.unit,
-        rate: item.rate,
-        discount: item.discount || undefined,
+        rate: Number(item.rate),
+        discount: item.discount ? Number(item.discount) : undefined,
         discountType: item.discountType || undefined,
-        gstRate: item.gstRate || undefined,
-        gstAmount: item.gstAmount || undefined,
-        total: item.total,
+        gstRate: item.gstRate ? Number(item.gstRate) : undefined,
+        gstAmount: item.gstAmount ? Number(item.gstAmount) : undefined,
+        total: Number(item.total),
       })),
 
-      subtotal: po.subtotal,
-      discount: po.discount || undefined,
+      subtotal: Number(po.subtotal),
+      discount: po.discount ? Number(po.discount) : undefined,
       discountType: po.discountType || undefined,
-      tax: po.tax,
-      freight: po.freight || undefined,
-      packingCharges: po.packingCharges || undefined,
-      shippingCharges: po.shippingCharges || undefined,
-      otherCharges: po.otherCharges || undefined,
-      roundOff: po.roundOff || undefined,
-      grandTotal: po.grandTotal,
+      tax: Number(po.tax),
+      freight: po.freight ? Number(po.freight) : undefined,
+      packingCharges: po.packingCharges ? Number(po.packingCharges) : undefined,
+      shippingCharges: po.shippingCharges ? Number(po.shippingCharges) : undefined,
+      otherCharges: po.otherCharges ? Number(po.otherCharges) : undefined,
+      roundOff: po.roundOff ? Number(po.roundOff) : undefined,
+      grandTotal: Number(po.grandTotal),
       currency: po.currency || 'INR',
 
       notes: po.notes || undefined,

@@ -50,6 +50,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   private refreshFromCookie(req: FastifyRequest): string | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return req.cookies?.refreshToken || (req as any).cookies?.['refreshToken'];
   }
 

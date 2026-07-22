@@ -7,6 +7,7 @@ import { FastifyReply } from 'fastify';
 export class CookieInterceptor implements NestInterceptor {
   constructor(private readonly config: ConfigService) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const res = context.switchToHttp().getResponse<FastifyReply>();
     const name = this.config.get<string>('cookie.refreshName') || 'refreshToken';
@@ -36,7 +37,7 @@ export class CookieInterceptor implements NestInterceptor {
           return rest;
         }
         if (data?.clearRefreshCookie) {
-          res.clearCookie(name, { path });
+          res.clearCookie(name, { path, httpOnly: true, secure, sameSite });
           const { clearRefreshCookie: _clearRefreshCookie, ...rest } = data;
           return Object.keys(rest).length
             ? rest

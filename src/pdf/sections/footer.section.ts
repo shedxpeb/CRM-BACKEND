@@ -16,7 +16,10 @@ export function renderFooter(engine: PdfEngine, data?: FooterData) {
   const cw = engine.getContentWidth();
   const footerY = PAGE.height - 45;
 
-  engine.drawLine(margin.left, footerY - 6, margin.left + cw, footerY - 6, { color: BRAND.border, width: 0.5 });
+  engine.drawLine(margin.left, footerY - 6, margin.left + cw, footerY - 6, {
+    color: BRAND.border,
+    width: 0.5,
+  });
 
   const companyName = data?.companyName || 'PEB Systems';
   const details: string[] = [];

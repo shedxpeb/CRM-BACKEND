@@ -22,6 +22,7 @@ export class CreateItemVariantDto {
   standardWeight?: number;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dimensions?: Record<string, any>;
 
   @IsOptional()
@@ -35,6 +36,7 @@ export class CreateItemVariantDto {
   status?: string;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }
 
@@ -58,6 +60,7 @@ export class UpdateItemVariantDto {
   standardWeight?: number;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dimensions?: Record<string, any>;
 
   @IsOptional()
@@ -71,5 +74,6 @@ export class UpdateItemVariantDto {
   status?: string;
 
   @IsOptional()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }

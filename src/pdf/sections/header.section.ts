@@ -18,7 +18,9 @@ export function renderHeader(engine: PdfEngine, data: HeaderData) {
   if (logo) {
     try {
       doc.image(logo, margin.left, y, { width: 100, height: 40 });
-    } catch {}
+    } catch {
+      // Ignore logo loading errors
+    }
   }
 
   doc.font(FONTS.bold).fontSize(18).fillColor(BRAND.primary);

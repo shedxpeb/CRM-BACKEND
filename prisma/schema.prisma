@@ -269,8 +269,8 @@ model Project {
   customerName            String
   leadId                  String?
   projectType             String
-  value                   Float?
-  budget                  Float?
+  value                   Decimal?           @db.Decimal(14, 2)
+  budget                  Decimal?           @db.Decimal(14, 2)
   location                String
   city                    String
   state                   String
@@ -281,17 +281,17 @@ model Project {
   projectManager          String?
   projectManagerId        String?
   structureType           String
-  width                   Float?
-  length                  Float?
-  height                  Float?
-  baySpacing              Float?
+  width                   Decimal?           @db.Decimal(12, 3)
+  length                  Decimal?           @db.Decimal(12, 3)
+  height                  Decimal?           @db.Decimal(12, 3)
+  baySpacing              Decimal?           @db.Decimal(12, 3)
   roofType                String
   craneSystem             String
   mezzanine               Boolean             @default(false)
   wallType                String
   insulation              Boolean             @default(false)
-  coveredArea             Float?
-  totalWeight             Float?
+  coveredArea             Decimal?           @db.Decimal(12, 3)
+  totalWeight             Decimal?           @db.Decimal(12, 3)
   status                  String              @default("Lead")
   stage                   ProjectStage?
   progress                Int                 @default(0)
@@ -304,11 +304,11 @@ model Project {
   budgetHealth            String              @default("Healthy")
   materialHealth          String              @default("Healthy")
   resourceHealth          String              @default("Healthy")
-  materialCost            Float?
-  procurementCost         Float?
-  fabricationCost         Float?
-  installationCost        Float?
-  profitMargin            Float?
+  materialCost            Decimal?           @db.Decimal(14, 2)
+  procurementCost         Decimal?           @db.Decimal(14, 2)
+  fabricationCost         Decimal?           @db.Decimal(14, 2)
+  installationCost        Decimal?           @db.Decimal(14, 2)
+  profitMargin            Decimal?           @db.Decimal(5, 2)
   boqId                   String?
   designId                String?
   estimateId              String?
@@ -431,24 +431,24 @@ model Lead {
   alternateMobile     String?
   assignedTo          String?
   attachments         String[]
-  baySpacing          Float?
+  baySpacing          Decimal?           @db.Decimal(12, 3)
   convertedDate       DateTime?
-  craneCapacity       Float?
+  craneCapacity       Decimal?           @db.Decimal(12, 3)
   craneRequired       Boolean?            @default(false)
   createdBy           String?
   customFields        Json?
   customerId          String?
   customerNotes       String?
   gstNumber           String?
-  height              Float?
+  height              Decimal?           @db.Decimal(12, 3)
   insulationRequired  Boolean?            @default(false)
-  insulationThickness Float?
+  insulationThickness Decimal?           @db.Decimal(12, 3)
   insulationType      String?
-  length              Float?
+  length              Decimal?           @db.Decimal(12, 3)
   mapCoordinates      String?
   mezzanine           Boolean?            @default(false)
-  mezzanineArea       Float?
-  mezzanineLoad       Float?
+  mezzanineArea       Decimal?           @db.Decimal(12, 3)
+  mezzanineLoad       Decimal?           @db.Decimal(12, 3)
   pincode             String?
   score               Int?
   siteAddress         String?
@@ -457,10 +457,10 @@ model Lead {
   specialRequirement  String?
   state               String?
   updatedBy           String?
-  width               Float?
+  width               Decimal?           @db.Decimal(12, 3)
   addressLine1        String?
   addressLine2        String?
-  annualRevenue       Float?
+  annualRevenue       Decimal?           @db.Decimal(14, 2)
   area                String?
   businessType        BusinessType?
   companyLogo         String?
@@ -638,6 +638,19 @@ model EventRule {
 
   @@unique([organizationId, entityType, eventType, fromStatus])
   @@index([organizationId, entityType, isActive])
+}
+
+model NumberSequence {
+  id             String   @id @default(uuid())
+  organizationId String
+  entityName     String
+  prefix         String
+  lastValue      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, entityName])
+  @@index([organizationId])
 }
 
 enum LeadStatus {
@@ -822,9 +835,9 @@ model ItemMaster {
   specification       String?
   hsnCode             String?
   unit                String
-  weight              Float?
-  defaultRate         Float?
-  gstRate             Float?
+  weight              Decimal?           @db.Decimal(12, 3)
+  defaultRate         Decimal?           @db.Decimal(14, 2)
+  gstRate             Decimal?           @db.Decimal(5, 2)
   taxType             String?
   technicalDescription String?
   datasheetUrl        String?
@@ -848,9 +861,9 @@ model ItemMaster {
   isCladding          Boolean     @default(false)
   isAccessory         Boolean     @default(false)
   isService           Boolean     @default(false)
-  thickness           Float?
-  length              Float?
-  width               Float?
+  thickness           Decimal?           @db.Decimal(12, 3)
+  length              Decimal?           @db.Decimal(12, 3)
+  width               Decimal?           @db.Decimal(12, 3)
   customFields        Json?
   createdById         String?
   createdBy           String?
@@ -880,9 +893,9 @@ model ItemVariant {
   variantName    String
   variantCode    String
   specifications String?
-  standardWeight Float?
+  standardWeight Decimal?           @db.Decimal(12, 3)
   dimensions     Json?
-  defaultRate    Float?
+  defaultRate    Decimal?           @db.Decimal(14, 2)
   status         String    @default("Active")
   customFields   Json?
   createdAt      DateTime  @default(now())
@@ -900,8 +913,8 @@ model ItemBundle {
   bundleCode          String
   bundleName          String
   description         String?
-  bundleRate          Float?
-  discountPercentage  Float?
+  bundleRate          Decimal?           @db.Decimal(14, 2)
+  discountPercentage  Decimal?           @db.Decimal(5, 2)
   status              String    @default("Active")
   customFields        Json?
   createdAt           DateTime  @default(now())
@@ -921,7 +934,7 @@ model ItemBundleItem {
   itemMasterId   String
   quantity       Int        @default(1)
   unit           String?
-  rate           Float?
+  rate           Decimal?           @db.Decimal(14, 2)
   itemMaster     ItemMaster @relation(fields: [itemMasterId], references: [id])
   bundle         ItemBundle? @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
@@ -938,8 +951,8 @@ model Warehouse {
   address          String?
   manager          String?
   contactNumber    String?
-  capacity         Float?
-  currentOccupancy Float?    @default(0)
+  capacity         Decimal?           @db.Decimal(12, 3)
+  currentOccupancy Decimal?           @db.Decimal(12, 3)    @default(0)
   status           String    @default("Active")
   notes            String?
   createdAt        DateTime  @default(now())
@@ -968,7 +981,7 @@ model Supplier {
   gstRegistered    Boolean   @default(false)
   suppliedMaterials String[]
   leadTime         Int?
-  rating           Float?
+  rating           Decimal?           @db.Decimal(5, 2)
   notes            String?
   status           String    @default("Active")
   createdAt        DateTime  @default(now())
@@ -1005,20 +1018,20 @@ model InventoryItem {
   itemMasterId     String?
   itemName         String
   unit             String
-  currentStock     Float          @default(0)
-  reservedStock    Float          @default(0)
-  issuedStock      Float          @default(0)
-  minimumStock     Float          @default(0)
-  reorderLevel     Float          @default(0)
-  safetyStock      Float          @default(0)
-  purchaseRate     Float?
-  totalValue       Float          @default(0)
+  currentStock     Decimal          @default(0) @db.Decimal(12, 3)
+  reservedStock    Decimal          @default(0) @db.Decimal(12, 3)
+  issuedStock      Decimal          @default(0) @db.Decimal(12, 3)
+  minimumStock     Decimal          @default(0) @db.Decimal(12, 3)
+  reorderLevel     Decimal          @default(0) @db.Decimal(12, 3)
+  safetyStock      Decimal          @default(0) @db.Decimal(12, 3)
+  purchaseRate     Decimal?         @db.Decimal(14, 2)
+  totalValue       Decimal          @default(0) @db.Decimal(14, 2)
   warehouseId      String?
   warehouseName    String?
   binLocation      String?
-  reorderQuantity  Float?
-  incomingStock    Float          @default(0)
-  outgoingStock    Float          @default(0)
+  reorderQuantity  Decimal?         @db.Decimal(12, 3)
+  incomingStock    Decimal          @default(0) @db.Decimal(12, 3)
+  outgoingStock    Decimal          @default(0) @db.Decimal(12, 3)
   category         String?
   brand            String?
   itemTypeClass    String?
@@ -1054,7 +1067,7 @@ model StockMovement {
   inventoryItemId  String
   itemName         String
   type             String
-  quantity         Float
+  quantity         Decimal          @db.Decimal(12, 3)
   warehouseId      String?
   warehouseName    String?
   fromWarehouseId  String?
@@ -1120,9 +1133,9 @@ model Vendor {
   country             String?  @default("India")
   bankDetails         Json?
   paymentTerms        String?
-  creditLimit         Float?
+  creditLimit         Decimal?         @db.Decimal(14, 2)
   creditDays          Int?
-  outstanding         Float    @default(0)
+  outstanding         Decimal          @default(0) @db.Decimal(14, 2)
   status              String   @default("Active")
   notes               String?
   attachments         String[]
@@ -1161,16 +1174,16 @@ model PurchaseOrder {
   revision            Int      @default(0)
   revisionNote        String?
   currency            String   @default("INR")
-  subtotal            Float    @default(0)
-  discount            Float    @default(0)
+  subtotal            Decimal          @default(0) @db.Decimal(14, 2)
+  discount            Decimal          @default(0) @db.Decimal(14, 2)
   discountType        String?  @default("Amount")
-  tax                 Float    @default(0)
-  freight             Float    @default(0)
-  packingCharges      Float    @default(0)
-  shippingCharges     Float    @default(0)
-  otherCharges        Float    @default(0)
-  roundOff            Float    @default(0)
-  grandTotal          Float    @default(0)
+  tax                 Decimal          @default(0) @db.Decimal(14, 2)
+  freight             Decimal          @default(0) @db.Decimal(14, 2)
+  packingCharges      Decimal          @default(0) @db.Decimal(14, 2)
+  shippingCharges     Decimal          @default(0) @db.Decimal(14, 2)
+  otherCharges        Decimal          @default(0) @db.Decimal(14, 2)
+  roundOff            Decimal          @default(0) @db.Decimal(14, 2)
+  grandTotal          Decimal          @default(0) @db.Decimal(14, 2)
   notes               String?
   terms               String?
   internalNotes       String?
@@ -1218,17 +1231,17 @@ model PurchaseOrderItem {
   itemCode            String
   itemName            String
   description         String?
-  quantity            Float
+  quantity            Decimal          @db.Decimal(12, 3)
   unit                String
-  rate                Float
-  gstRate             Float?
-  gstAmount           Float    @default(0)
-  discount            Float    @default(0)
+  rate                Decimal          @db.Decimal(14, 2)
+  gstRate             Decimal?         @db.Decimal(5, 2)
+  gstAmount           Decimal          @default(0) @db.Decimal(14, 2)
+  discount            Decimal          @default(0) @db.Decimal(14, 2)
   discountType        String?  @default("Amount")
-  total               Float
+  total               Decimal          @db.Decimal(14, 2)
   hsnCode             String?
-  receivedQuantity    Float    @default(0)
-  pendingQuantity     Float?
+  receivedQuantity    Decimal          @default(0) @db.Decimal(12, 3)
+  pendingQuantity     Decimal?         @db.Decimal(12, 3)
   receivedDate        DateTime?
   customFields        Json?
   createdAt           DateTime @default(now())

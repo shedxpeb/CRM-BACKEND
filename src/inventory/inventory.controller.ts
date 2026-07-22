@@ -106,6 +106,7 @@ export class InventoryController {
   @RequirePermissions('inventory:update')
   async updateWarehouse(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('organizationId') organizationId: string,
   ) {
@@ -146,6 +147,7 @@ export class InventoryController {
   @RequirePermissions('inventory:update')
   async updateSupplier(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('organizationId') organizationId: string,
   ) {
@@ -187,6 +189,7 @@ export class InventoryController {
   @Get('movements')
   @RequirePermissions('inventory:list')
   @ApiOperation({ summary: 'Get stock movements' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getMovements(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getMovements(organizationId, query);
     return { message: 'Movements fetched.', data };

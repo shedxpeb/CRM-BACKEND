@@ -1,5 +1,16 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpStatus, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ItemMasterService } from './item-master.service';
 import { GetItemMastersDto } from './dto/get-item-masters.dto';
 import { CreateItemMasterDto } from './dto/create-item-master.dto';
@@ -8,6 +19,7 @@ import { BulkDeleteItemMasterDto, BulkStatusItemMasterDto } from './dto/bulk.dto
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { serializeDecimals } from '../common/services/base-query.service';
 
 @ApiTags('item-master')
 @ApiBearerAuth()
@@ -43,6 +55,7 @@ export class ItemMasterController {
   @Get('combobox')
   @RequirePermissions('item-master:list')
   @ApiOperation({ summary: 'Get items for dropdown' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async combobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.itemMasterService.getCombobox(query, organizationId);
     return { message: 'Items fetched.', data };
@@ -148,7 +161,7 @@ export class ItemMasterController {
       where: { itemMasterId: id, organizationId },
       orderBy: { createdAt: 'desc' },
     });
-    return { message: 'Variants fetched.', data };
+    return { message: 'Variants fetched.', data: serializeDecimals(data) };
   }
 
   @Post(':id/variants')
@@ -156,6 +169,7 @@ export class ItemMasterController {
   @ApiOperation({ summary: 'Create variant' })
   async createVariant(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -175,7 +189,7 @@ export class ItemMasterController {
         customFields: dto.customFields || undefined,
       },
     });
-    return { message: 'Variant created.', data };
+    return { message: 'Variant created.', data: serializeDecimals(data) };
   }
 
   @Patch(':itemId/variants/:variantId')
@@ -184,6 +198,7 @@ export class ItemMasterController {
   async updateVariant(
     @Param('itemId') itemId: string,
     @Param('variantId') variantId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') _updatedById: string,
     @CurrentUser('organizationId') _organizationId: string,
@@ -200,7 +215,7 @@ export class ItemMasterController {
         ...(dto.status !== undefined && { status: dto.status }),
       },
     });
-    return { message: 'Variant updated.', data };
+    return { message: 'Variant updated.', data: serializeDecimals(data) };
   }
 
   @Delete(':itemId/variants/:variantId')
@@ -225,13 +240,14 @@ export class ItemMasterController {
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
-    return { message: 'Bundles fetched.', data };
+    return { message: 'Bundles fetched.', data: serializeDecimals(data) };
   }
 
   @Post('bundles')
   @RequirePermissions('item-master:create')
   @ApiOperation({ summary: 'Create bundle' })
   async createBundle(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Body() dto: any,
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -247,6 +263,7 @@ export class ItemMasterController {
         status: dto.status || 'Active',
         items: dto.items
           ? {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               create: dto.items.map((item: any) => ({
                 organizationId,
                 itemMasterId: item.itemMasterId,
@@ -259,7 +276,7 @@ export class ItemMasterController {
       },
       include: { items: true },
     });
-    return { message: 'Bundle created.', data: bundle };
+    return { message: 'Bundle created.', data: serializeDecimals(bundle) };
   }
 
   @Delete('bundles/:id')

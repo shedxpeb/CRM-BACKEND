@@ -1,9 +1,16 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, Query, HttpStatus, HttpCode,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
-import {
-  ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PurchaseOrderService } from './purchase-order.service';
 import { GetPurchaseOrdersDto } from './dto/get-purchase-orders.dto';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
@@ -52,10 +59,8 @@ export class PurchaseOrderController {
   @Get('combobox')
   @RequirePermissions('purchase-order:list')
   @ApiOperation({ summary: 'Get purchase orders for combobox/dropdown' })
-  async getCombobox(
-    @Query() query: any,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getCombobox(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.purchaseOrderService.getCombobox(query, organizationId);
     return { message: 'Combobox data fetched.', data };
   }
@@ -68,7 +73,9 @@ export class PurchaseOrderController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.purchaseOrderService.bulkStatusUpdate(
-      body.ids, body.status, organizationId,
+      body.ids,
+      body.status,
+      organizationId,
     );
     return { message: 'Purchase Orders updated.', data };
   }
@@ -88,10 +95,7 @@ export class PurchaseOrderController {
   @Get(':id')
   @RequirePermissions('purchase-order:read')
   @ApiOperation({ summary: 'Get purchase order by ID' })
-  async findById(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.purchaseOrderService.findById(id, organizationId);
     return { message: 'Purchase Order fetched.', data };
   }
@@ -106,7 +110,12 @@ export class PurchaseOrderController {
     @CurrentUser('name') createdBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.purchaseOrderService.create(dto, createdById, createdBy, organizationId);
+    const data = await this.purchaseOrderService.createWithRetry(
+      dto,
+      createdById,
+      createdBy,
+      organizationId,
+    );
     return { message: 'Purchase Order created successfully.', data };
   }
 
@@ -120,7 +129,13 @@ export class PurchaseOrderController {
     @CurrentUser('name') updatedBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.purchaseOrderService.update(id, dto, updatedById, updatedBy, organizationId);
+    const data = await this.purchaseOrderService.update(
+      id,
+      dto,
+      updatedById,
+      updatedBy,
+      organizationId,
+    );
     return { message: 'Purchase Order updated successfully.', data };
   }
 
@@ -133,7 +148,12 @@ export class PurchaseOrderController {
     @CurrentUser('name') approvedBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.purchaseOrderService.approve(id, approvedById, approvedBy, organizationId);
+    const data = await this.purchaseOrderService.approve(
+      id,
+      approvedById,
+      approvedBy,
+      organizationId,
+    );
     return { message: 'Purchase Order approved successfully.', data };
   }
 
@@ -147,7 +167,13 @@ export class PurchaseOrderController {
     @CurrentUser('organizationId') organizationId: string,
     @Body('reason') reason?: string,
   ) {
-    const data = await this.purchaseOrderService.reject(id, rejectedById, rejectedBy, organizationId, reason);
+    const data = await this.purchaseOrderService.reject(
+      id,
+      rejectedById,
+      rejectedBy,
+      organizationId,
+      reason,
+    );
     return { message: 'Purchase Order rejected successfully.', data };
   }
 
@@ -172,17 +198,19 @@ export class PurchaseOrderController {
     @CurrentUser('id') userId: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.purchaseOrderService.receiveItems(id, body.items, userId, organizationId);
+    const data = await this.purchaseOrderService.receiveItems(
+      id,
+      body.items,
+      userId,
+      organizationId,
+    );
     return { message: 'Items received successfully.', data };
   }
 
   @Patch(':id/restore')
   @RequirePermissions('purchase-order:update')
   @ApiOperation({ summary: 'Restore a deleted purchase order' })
-  async restore(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async restore(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.purchaseOrderService.restore(id, organizationId);
     return { message: 'Purchase Order restored.', data };
   }

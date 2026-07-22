@@ -13,7 +13,7 @@ const DEFAULT_TERMS = [
   '3. Invoice must be submitted along with delivery challan and quality certificates.',
   '4. Payment will be processed as per the agreed payment terms after successful delivery.',
   '5. Any disputes arising shall be subject to the jurisdiction of local courts.',
-  '6. Goods found defective or not meeting specifications will be returned at supplier\'s risk and cost.',
+  "6. Goods found defective or not meeting specifications will be returned at supplier's risk and cost.",
   '7. GST will be charged as applicable and must be clearly mentioned on the invoice.',
 ];
 
@@ -52,6 +52,9 @@ export function renderTerms(engine: PdfEngine, data: TermsData) {
   }
 
   engine.setY(y + 8);
-  engine.drawLine(margin.left, engine.getY(), margin.left + cw, engine.getY(), { color: BRAND.border, width: 0.5 });
+  engine.drawLine(margin.left, engine.getY(), margin.left + cw, engine.getY(), {
+    color: BRAND.border,
+    width: 0.5,
+  });
   engine.moveY(10);
 }

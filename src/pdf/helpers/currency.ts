@@ -33,13 +33,28 @@ export function formatQuantity(num: number): string {
 }
 
 const ones = [
-  '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-  'Seventeen', 'Eighteen', 'Nineteen',
+  '',
+  'One',
+  'Two',
+  'Three',
+  'Four',
+  'Five',
+  'Six',
+  'Seven',
+  'Eight',
+  'Nine',
+  'Ten',
+  'Eleven',
+  'Twelve',
+  'Thirteen',
+  'Fourteen',
+  'Fifteen',
+  'Sixteen',
+  'Seventeen',
+  'Eighteen',
+  'Nineteen',
 ];
-const tens = [
-  '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
-];
+const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
 function convertBelow1000(n: number): string {
   if (n === 0) return '';
@@ -60,7 +75,9 @@ export function numberToWords(num: number): string {
     if (n < 100000) {
       const thousands = Math.floor(n / 1000);
       const remainder = n % 1000;
-      return convertBelow1000(thousands) + ' Thousand' + (remainder ? ' ' + convert(remainder) : '');
+      return (
+        convertBelow1000(thousands) + ' Thousand' + (remainder ? ' ' + convert(remainder) : '')
+      );
     }
     if (n < 10000000) {
       const lakhs = Math.floor(n / 100000);

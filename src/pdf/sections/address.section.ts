@@ -36,7 +36,7 @@ function renderAddressBlock(
 }
 
 export function renderAddresses(engine: PdfEngine, data: AddressData) {
-  const doc = engine.doc;
+  const _doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
   let y = engine.getY();
@@ -46,7 +46,11 @@ export function renderAddresses(engine: PdfEngine, data: AddressData) {
   const col2 = margin.left + thirdWidth + 8;
   const col3 = margin.left + (thirdWidth + 8) * 2;
 
-  const maxLines = Math.max(data.buyer.lines.length, data.supplier.lines.length, data.shipTo?.lines.length || 0);
+  const maxLines = Math.max(
+    data.buyer.lines.length,
+    data.supplier.lines.length,
+    data.shipTo?.lines.length || 0,
+  );
   const blockHeight = maxLines * 11 + 36;
   engine.ensureSpace(blockHeight + 10);
   y = engine.getY();
@@ -56,6 +60,9 @@ export function renderAddresses(engine: PdfEngine, data: AddressData) {
   const y3 = data.shipTo ? renderAddressBlock(engine, data.shipTo, col3, y, thirdWidth) : y;
 
   engine.setY(Math.max(y1, y2, y3) + 4);
-  engine.drawLine(margin.left, engine.getY(), margin.left + cw, engine.getY(), { color: BRAND.border, width: 0.5 });
+  engine.drawLine(margin.left, engine.getY(), margin.left + cw, engine.getY(), {
+    color: BRAND.border,
+    width: 0.5,
+  });
   engine.moveY(10);
 }

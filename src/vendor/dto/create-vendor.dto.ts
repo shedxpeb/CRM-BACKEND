@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, IsNumber, IsArray, IsObject, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsNumber, IsArray, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -58,6 +58,7 @@ export class CreateVendorDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bankDetails?: any;
 
   @ApiPropertyOptional()
@@ -96,5 +97,6 @@ export class CreateVendorDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: any;
 }

@@ -18,13 +18,19 @@ export class PdfEngine {
   private currentY: number;
   private pageHeight: number;
   private pageCount = 0;
-  private headerCallback: ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) | null = null;
-  private footerCallback: ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) | null = null;
+  private headerCallback:
+    | ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void)
+    | null = null;
+  private footerCallback:
+    | ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void)
+    | null = null;
   private stream: PassThrough;
   private assetsPath: string;
 
   constructor(options?: PdfEngineOptions) {
-    this.pageMargin = options?.margin || { ...PAGE.margin } as { top: number; bottom: number; left: number; right: number };
+    this.pageMargin =
+      options?.margin ||
+      ({ ...PAGE.margin } as { top: number; bottom: number; left: number; right: number });
     this.contentWidth = PAGE.width - this.pageMargin.left - this.pageMargin.right;
     this.pageHeight = PAGE.height;
     this.currentY = this.pageMargin.top;
@@ -119,7 +125,13 @@ export class PdfEngine {
     }
   }
 
-  drawLine(x1: number, y1: number, x2: number, y2: number, options?: { color?: string; width?: number; dash?: number[] }) {
+  drawLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    options?: { color?: string; width?: number; dash?: number[] },
+  ) {
     this.doc.save();
     this.doc.moveTo(x1, y1).lineTo(x2, y2);
     this.doc.strokeColor(options?.color || BRAND.border);
@@ -130,31 +142,48 @@ export class PdfEngine {
     return this;
   }
 
-  drawRect(x: number, y: number, w: number, h: number, options?: { fillColor?: string; strokeColor?: string; strokeWidth?: number; radius?: number }) {
+  drawRect(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    options?: { fillColor?: string; strokeColor?: string; strokeWidth?: number; radius?: number },
+  ) {
     this.doc.save();
     if (options?.fillColor) {
       this.doc.rect(x, y, w, h).fill(options.fillColor);
     }
     if (options?.strokeColor) {
-      this.doc.rect(x, y, w, h).lineWidth(options.strokeWidth || 0.5).strokeColor(options.strokeColor).stroke();
+      this.doc
+        .rect(x, y, w, h)
+        .lineWidth(options.strokeWidth || 0.5)
+        .strokeColor(options.strokeColor)
+        .stroke();
     }
     this.doc.restore();
     return this;
   }
 
-  drawText(text: string, x: number, y: number, options?: {
-    font?: string;
-    size?: number;
-    color?: string;
-    width?: number;
-    align?: 'left' | 'center' | 'right';
-    lineBreak?: boolean;
-  }): number {
+  drawText(
+    text: string,
+    x: number,
+    y: number,
+    options?: {
+      font?: string;
+      size?: number;
+      color?: string;
+      width?: number;
+      align?: 'left' | 'center' | 'right';
+      lineBreak?: boolean;
+    },
+  ): number {
     this.doc.save();
-    this.doc.font(options?.font || FONTS.regular)
+    this.doc
+      .font(options?.font || FONTS.regular)
       .fontSize(options?.size || 8)
       .fillColor(options?.color || BRAND.black);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const textOptions: any = {
       lineBreak: options?.lineBreak ?? false,
     };
@@ -167,7 +196,12 @@ export class PdfEngine {
     return y + height;
   }
 
-  measureText(text: string, font: string, size: number, width?: number): { width: number; height: number } {
+  measureText(
+    text: string,
+    font: string,
+    size: number,
+    width?: number,
+  ): { width: number; height: number } {
     this.doc.font(font).fontSize(size);
     const height = this.doc.heightOfString(text || '', { width: width || this.contentWidth });
     const textWidth = this.doc.widthOfString(text || '');

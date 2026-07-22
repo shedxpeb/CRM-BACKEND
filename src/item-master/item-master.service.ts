@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BaseQueryService } from '../common/services/base-query.service';
+import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
 import { GetItemMastersDto } from './dto/get-item-masters.dto';
@@ -148,7 +148,7 @@ export class ItemMasterService extends BaseQueryService {
       this.logger.error(`Failed to process workflow event for item creation: ${error.message}`);
     }
 
-    return item;
+    return serializeDecimals(item);
   }
 
   async update(id: string, dto: UpdateItemMasterDto, updatedById: string, organizationId: string) {
@@ -219,7 +219,7 @@ export class ItemMasterService extends BaseQueryService {
       this.logger.error(`Failed to process workflow event for item update: ${error.message}`);
     }
 
-    return item;
+    return serializeDecimals(item);
   }
 
   async softDelete(id: string, deletedById: string, organizationId: string) {
@@ -299,6 +299,7 @@ export class ItemMasterService extends BaseQueryService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getCombobox(query: any, organizationId?: string) {
     return super.getCombobox(query, organizationId, [
       'id',

@@ -181,5 +181,5 @@ export class CreateProjectDto {
   team?: CreateTeamMemberDto[];
 
   @IsOptional()
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
