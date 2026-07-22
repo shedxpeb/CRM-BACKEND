@@ -45,6 +45,8 @@ model Organization {
   inventoryCategories InventoryCategory[]
   vendors          Vendor[]
   purchaseOrders   PurchaseOrder[]
+  tasks            Task[]
+  salaryAdjustments SalaryAdjustment[]
 
   @@index([status])
   @@index([email])
@@ -1264,4 +1266,265 @@ enum PurchaseOrderStatus {
   FullyReceived
   Cancelled
   Closed
+}
+
+// ─── Task Management ──────────────────────────────────────────────────────────
+
+enum TaskStatus {
+  Pending
+  InProgress
+  Blocked
+  Review
+  Completed
+  Verified
+  Rejected
+  Closed
+  Cancelled
+  Reopened
+}
+
+enum TaskPriority {
+  Low
+  Medium
+  High
+  Critical
+}
+
+enum TaskCategory {
+  General
+  Office
+  FieldWork
+  Maintenance
+  Installation
+  Inspection
+  Documentation
+  Meeting
+  Training
+  Other
+}
+
+enum LinkedModule {
+  Leads
+  Customers
+  Projects
+  Estimates
+  Proposals
+  Quotations
+  Invoices
+  Inventory
+  Purchases
+  Finance
+  Documents
+  General
+}
+
+enum SalaryAdjustmentType {
+  Credit
+  Deduction
+  Advance
+  Bonus
+  Penalty
+}
+
+enum SalaryAdjustmentStatus {
+  Pending
+  Approved
+  Rejected
+  Processed
+}
+
+model Task {
+  id                  String          @id @default(uuid())
+  organizationId      String
+  taskId              Int             @unique @default(autoincrement())
+  title               String
+  description         String?
+
+  // Assignment
+  assignedUserId      String
+  assignedUserName    String
+  createdById         String
+  createdByName       String
+
+  // Dates
+  startDate           DateTime?
+  dueDate             DateTime
+  reminderDate        DateTime?
+  completedAt         DateTime?
+  verifiedAt          DateTime?
+  closedAt            DateTime?
+
+  // Status & Priority
+  status              TaskStatus      @default(Pending)
+  priority            TaskPriority    @default(Medium)
+  category            TaskCategory?
+
+  // Progress & Time
+  progress            Int             @default(0)
+  estimatedHours      Float?
+  timeSpent           Float?
+
+  // Cross-module links
+  linkedModule        LinkedModule?
+  linkedRecordId      String?
+  linkedRecordName    String?
+  projectId           String?
+  leadId              String?
+  customerId          String?
+  documentId          String?
+
+  // Payment
+  incentiveValue      Float           @default(0)
+  isPaymentEditable   Boolean         @default(false)
+
+  // Completion
+  completionNotes     String?
+  completionProof     Json?
+  beforeImages        String[]
+  afterImages         String[]
+
+  // Verification
+  verifiedBy          String?
+  verifiedByName      String?
+  verificationNotes   String?
+
+  // Notes
+  notes               String?
+  internalNotes       String?
+
+  // Tags
+  tags                String[]
+
+  // Metadata
+  createdById_field   String?
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  isDeleted           Boolean         @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+
+  // Relations
+  organization        Organization    @relation(fields: [organizationId], references: [id])
+  checklist           TaskChecklist[]
+  comments            TaskComment[]
+  attachments         TaskAttachment[]
+  dependencies        TaskDependency[]
+  activities          TaskActivityLog[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, priority])
+  @@index([assignedUserId])
+  @@index([createdById])
+  @@index([status])
+  @@index([dueDate])
+  @@index([isDeleted])
+  @@index([organizationId, isDeleted])
+}
+
+model TaskChecklist {
+  id             String   @id @default(uuid())
+  taskId         String
+  text           String
+  completed      Boolean  @default(false)
+  completedAt    DateTime?
+  completedBy    String?
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TaskComment {
+  id             String   @id @default(uuid())
+  taskId         String
+  content        String
+  authorId       String
+  authorName     String
+  isInternal     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isDeleted      Boolean  @default(false)
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([taskId, createdAt])
+}
+
+model TaskAttachment {
+  id             String   @id @default(uuid())
+  taskId         String
+  fileName       String
+  fileType       String
+  fileSize       Int
+  fileUrl        String
+  uploadedBy     String
+  uploadedByName String
+  description    String?
+  createdAt      DateTime @default(now())
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TaskDependency {
+  id             String   @id @default(uuid())
+  taskId         String
+  dependsOnTaskId String
+  relationship   String   @default("Depends On")
+  createdAt      DateTime @default(now())
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([dependsOnTaskId])
+}
+
+model TaskActivityLog {
+  id             String   @id @default(uuid())
+  taskId         String
+  activityType   String
+  description    String
+  performedBy    String
+  performedByName String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([taskId, createdAt])
+}
+
+model SalaryAdjustment {
+  id              String                @id @default(uuid())
+  organizationId  String
+  employeeId      String
+  employeeName    String
+  type            SalaryAdjustmentType
+  amount          Float
+  description     String
+  reason          String?
+  referenceType   String?
+  referenceId     String?
+  referenceName   String?
+  status          SalaryAdjustmentStatus @default(Pending)
+  approvedBy      String?
+  approvedByName  String?
+  approvedAt      DateTime?
+  processedAt     DateTime?
+  processedBy     String?
+  notes           String?
+  createdById     String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  isDeleted       Boolean               @default(false)
+  organization    Organization          @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([organizationId, employeeId])
+  @@index([organizationId, status])
+  @@index([employeeId])
+  @@index([isDeleted])
 }
