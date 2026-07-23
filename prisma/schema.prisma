@@ -672,6 +672,7 @@ enum ProjectType {
   IndustrialShed
   Commercial
   Residential
+  ColdStorage
   Other
 }
 
