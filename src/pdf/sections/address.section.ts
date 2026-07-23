@@ -1,5 +1,6 @@
 import { PdfEngine } from '../engine/pdf-engine';
 import { BRAND, FONTS } from '../helpers/colors';
+import { wrapText } from '../helpers/text';
 
 export interface AddressBlock {
   title: string;
@@ -12,57 +13,73 @@ export interface AddressData {
   shipTo?: AddressBlock;
 }
 
+function measureBlockHeight(engine: PdfEngine, block: AddressBlock, width: number): number {
+  const doc = engine.doc;
+  let height = 20;
+  for (const line of block.lines) {
+    const lines = wrapText(doc, line, FONTS.regular, 8, width - 20);
+    height += lines.length * 12;
+  }
+  return height + 10;
+}
+
 function renderAddressBlock(
   engine: PdfEngine,
   block: AddressBlock,
   x: number,
   y: number,
   width: number,
-): number {
+  height: number,
+): void {
   const doc = engine.doc;
-  let currentY = y;
+  const padding = 10;
 
-  doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.primary);
-  doc.text(block.title, x, currentY, { width, lineBreak: false });
-  currentY += 12;
+  doc.save();
+  doc.rect(x, y, width, height).lineWidth(0.5).fillAndStroke(BRAND.panelBg, BRAND.panelBorder);
+  doc.restore();
+
+  doc.save();
+  doc.rect(x, y, width, 20).fill(BRAND.panelHeaderBg);
+  doc.restore();
+
+  doc.font(FONTS.bold).fontSize(9).fillColor(BRAND.panelHeaderText);
+  doc.text(block.title, x + padding, y + 6, { width: width - padding * 2, lineBreak: false });
+
+  let currentY = y + 25;
 
   for (const line of block.lines) {
     doc.font(FONTS.regular).fontSize(8).fillColor(BRAND.black);
-    doc.text(line, x, currentY, { width, lineBreak: false });
-    currentY += 11;
+    const lines = wrapText(doc, line, FONTS.regular, 8, width - padding * 2);
+    for (const wrappedLine of lines) {
+      doc.text(wrappedLine, x + padding, currentY, {
+        width: width - padding * 2,
+        lineBreak: false,
+      });
+      currentY += 12;
+    }
   }
-
-  return currentY + 4;
 }
 
 export function renderAddresses(engine: PdfEngine, data: AddressData) {
-  const _doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
   let y = engine.getY();
 
-  const thirdWidth = cw / 3;
-  const col1 = margin.left;
-  const col2 = margin.left + thirdWidth + 8;
-  const col3 = margin.left + (thirdWidth + 8) * 2;
+  const GAP = 15;
+  const colWidth = (cw - GAP) / 2;
 
-  const maxLines = Math.max(
-    data.buyer.lines.length,
-    data.supplier.lines.length,
-    data.shipTo?.lines.length || 0,
-  );
-  const blockHeight = maxLines * 11 + 36;
-  engine.ensureSpace(blockHeight + 10);
+  const col1 = margin.left;
+  const col2 = margin.left + colWidth + GAP;
+
+  const h1 = measureBlockHeight(engine, data.buyer, colWidth);
+  const h2 = measureBlockHeight(engine, data.supplier, colWidth);
+  const maxH = Math.max(h1, h2);
+
+  engine.ensureSpace(maxH + 10);
   y = engine.getY();
 
-  const y1 = renderAddressBlock(engine, data.buyer, col1, y, thirdWidth);
-  const y2 = renderAddressBlock(engine, data.supplier, col2, y, thirdWidth);
-  const y3 = data.shipTo ? renderAddressBlock(engine, data.shipTo, col3, y, thirdWidth) : y;
+  renderAddressBlock(engine, data.buyer, col1, y, colWidth, maxH);
+  renderAddressBlock(engine, data.supplier, col2, y, colWidth, maxH);
 
-  engine.setY(Math.max(y1, y2, y3) + 4);
-  engine.drawLine(margin.left, engine.getY(), margin.left + cw, engine.getY(), {
-    color: BRAND.border,
-    width: 0.5,
-  });
-  engine.moveY(10);
+  engine.setY(y + maxH + 10);
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BadRequestException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationResult, PaginationMeta } from '../types';
@@ -18,7 +19,6 @@ export interface WhereClause {
   AND?: any[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeDecimals(obj: any): any {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === 'object' && typeof obj.toNumber === 'function') return obj.toNumber();

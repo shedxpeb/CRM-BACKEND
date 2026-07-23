@@ -114,6 +114,7 @@ export class LeadController {
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const file = await (request as any).file();
     if (!file) {
       return { message: 'No file uploaded', data: null };

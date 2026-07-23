@@ -13,10 +13,21 @@ export const BRAND = {
   black: '#1a202c',
   tableHeaderBg: '#1a365d',
   tableHeaderText: '#ffffff',
-  tableAltRow: '#f7fafc',
-  tableBorder: '#e2e8f0',
+  tableAltRow: '#edf2f7',
+  tableBorder: '#cbd5e0',
   summaryBg: '#f7fafc',
   summaryBorder: '#cbd5e0',
+  sectionHeaderBg: '#1a365d',
+  sectionHeaderText: '#ffffff',
+  panelBg: '#f0f7ff',
+  panelBorder: '#bee3f8',
+  panelHeaderBg: '#1a365d',
+  panelHeaderText: '#ffffff',
+  lightBlue: '#ebf8ff',
+  mediumBlue: '#bee3f8',
+  darkBlue: '#1a365d',
+  grandTotalBg: '#1a365d',
+  grandTotalText: '#ffffff',
 } as const;
 
 export const FONTS = {

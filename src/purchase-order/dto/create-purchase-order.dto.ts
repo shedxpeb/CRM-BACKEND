@@ -175,5 +175,6 @@ export class CreatePurchaseOrderDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: any;
 }

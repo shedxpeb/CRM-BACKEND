@@ -399,7 +399,7 @@ export class LeadService extends BaseQueryService {
     }));
   }
 
-  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
+  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<unknown> {
     const result = await super.softDelete(id, deletedById, organizationId);
     await this.auditService.log({
       action: 'lead.deleted',
