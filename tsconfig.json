@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "node16",
+    "moduleResolution": "node16",
     "types": ["node"],
     "typeRoots": ["./node_modules/@types"],
     "esModuleInterop": true,
