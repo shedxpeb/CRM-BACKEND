@@ -462,7 +462,7 @@ model Lead {
   addressLine2        String?
   annualRevenue       Decimal?           @db.Decimal(14, 2)
   area                String?
-  businessType        BusinessType?
+  businessType        String?
   companyLogo         String?
   companySize         String?
   country             String?             @default("India")

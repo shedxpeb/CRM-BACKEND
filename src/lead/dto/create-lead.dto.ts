@@ -76,8 +76,9 @@ export class CreateLeadDto {
   industry?: Industry;
 
   @IsOptional()
-  @IsEnum(BusinessType)
-  businessType?: BusinessType;
+  @IsString()
+  @MaxLength(100)
+  businessType?: string;
 
   // Address
   @IsOptional()
