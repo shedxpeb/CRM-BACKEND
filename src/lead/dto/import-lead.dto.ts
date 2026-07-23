@@ -70,9 +70,6 @@ export const LEAD_HEADER_MAP: ImportHeaderMap = {
   state: ['state', 'province', 'region'],
   country: ['country', 'nation'],
   pincode: ['pincode', 'pin code', 'postal code', 'zip', 'zip code', 'pin'],
-  companySize: ['company size', 'size', 'organization size'],
-  annualRevenue: ['annual revenue', 'revenue', 'turnover', 'annual turnover'],
-  employeeCount: ['employee count', 'employees', 'headcount', 'team size', 'staff'],
   linkedin: ['linkedin', 'linkedin url', 'linkedin profile'],
   facebook: ['facebook', 'facebook url', 'fb'],
   instagram: ['instagram', 'instagram url', 'insta'],
@@ -268,7 +265,6 @@ export const LEAD_IMPORT_CONFIG: ImportConfig = {
       'mezzanineArea',
       'mezzanineLoad',
       'insulationThickness',
-      'annualRevenue',
     ]) {
       if (row[numField] !== undefined && row[numField] !== '') {
         const num = parseFloat(String(row[numField]));
@@ -276,13 +272,6 @@ export const LEAD_IMPORT_CONFIG: ImportConfig = {
       } else {
         row[numField] = undefined;
       }
-    }
-
-    if (row.employeeCount !== undefined && row.employeeCount !== '') {
-      const num = parseInt(String(row.employeeCount), 10);
-      row.employeeCount = isNaN(num) ? undefined : num;
-    } else {
-      row.employeeCount = undefined;
     }
 
     const booleanFields = ['craneRequired', 'mezzanine', 'insulationRequired'];

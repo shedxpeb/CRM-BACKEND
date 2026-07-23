@@ -10,7 +10,6 @@ import {
   MaxLength,
   Matches,
   IsArray,
-  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -115,24 +114,6 @@ export class CreateLeadDto {
   @IsString()
   @MaxLength(10)
   pincode?: string;
-
-  // Company Info
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  companySize?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  annualRevenue?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  employeeCount?: number;
 
   // Social Links
   @IsOptional()
