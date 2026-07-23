@@ -6,7 +6,7 @@ import multipart from '@fastify/multipart';
 import helmet from '@fastify/helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { GlobalValidationPipe } from './common/pipes/validation.pipe';
@@ -25,7 +25,7 @@ async function bootstrap() {
 
   const fastify = app.getHttpAdapter().getInstance();
   fastify.addHook('onRequest', async (request, reply) => {
-    const requestId = (request.headers['x-request-id'] as string) || uuidv4();
+    const requestId = (request.headers['x-request-id'] as string) || randomUUID();
     request.requestId = requestId;
     reply.header('X-Request-ID', requestId);
   });

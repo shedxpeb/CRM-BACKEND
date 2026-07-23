@@ -9,13 +9,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
-import { FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import {
+import type { RegisterDto } from './dto/register.dto';
+import type { LoginDto } from './dto/login.dto';
+import type { VerifyOtpDto } from './dto/verify-otp.dto';
+import type { ForgotPasswordDto } from './dto/forgot-password.dto';
+import type {
   ResetPasswordDto,
   ResendOtpDto,
   ChangePasswordDto,

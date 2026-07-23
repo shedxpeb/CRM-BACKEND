@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Req } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { LeadService } from './lead.service';
-import { GetLeadsDto } from './dto/get-leads.dto';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadDto } from './dto/update-lead.dto';
-import { BulkStatusDto } from './dto/bulk-status.dto';
-import { BulkDeleteDto } from './dto/bulk-delete.dto';
-import { WorkflowDto } from './dto/workflow.dto';
+import type { GetLeadsDto } from './dto/get-leads.dto';
+import type { CreateLeadDto } from './dto/create-lead.dto';
+import type { UpdateLeadDto } from './dto/update-lead.dto';
+import type { BulkStatusDto } from './dto/bulk-status.dto';
+import type { BulkDeleteDto } from './dto/bulk-delete.dto';
+import type { WorkflowDto } from './dto/workflow.dto';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
