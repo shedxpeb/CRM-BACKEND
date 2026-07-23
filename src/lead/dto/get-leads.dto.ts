@@ -49,6 +49,7 @@ export enum ProjectType {
   IndustrialShed = 'IndustrialShed',
   Commercial = 'Commercial',
   Residential = 'Residential',
+  ColdStorage = 'ColdStorage',
   Other = 'Other',
 }
 
@@ -94,6 +95,8 @@ export enum Industry {
   Mining = 'Mining',
   Agriculture = 'Agriculture',
   Transportation = 'Transportation',
+  Logistics = 'Logistics',
+  Commercial = 'Commercial',
   Other = 'Other',
 }
 
