@@ -240,7 +240,7 @@ export const LEAD_IMPORT_CONFIG: ImportConfig = {
   },
   enumMaps: LEAD_ENUM_MAPS,
   uniqueCheckFields: ['mobile', 'email'],
-  transformRow: (row: Record<string, any>) => {
+  transformRow: (row: Record<string, unknown>) => {
     if (!row.companyName && row.customerName) {
       row.companyName = row.customerName;
     }

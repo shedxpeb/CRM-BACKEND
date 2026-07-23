@@ -1,6 +1,7 @@
 import { PdfEngine } from '../engine/pdf-engine';
 import { renderHeader, HeaderData } from '../sections/header.section';
 import { renderAddresses, AddressData } from '../sections/address.section';
+import { renderShipping, ShippingData } from '../sections/shipping.section';
 import { renderItemsTable, ItemsTableData } from '../sections/items-table.section';
 import { renderSummary, SummaryData } from '../sections/summary.section';
 import { renderTerms, TermsData } from '../sections/terms.section';
@@ -11,6 +12,8 @@ export interface PurchaseOrderPdfData {
   poDate: string;
   paymentTerms?: string;
   expectedDelivery?: string;
+  shippingTerms?: string;
+  shippingMethod?: string;
 
   buyer: {
     name: string;
@@ -121,12 +124,27 @@ export async function generatePurchaseOrderPdf(
     poDate: data.poDate,
     paymentTerms: data.paymentTerms,
     expectedDelivery: data.expectedDelivery,
+    companyName: data.company?.name,
+    companyAddress: data.company?.address,
+    companyPhone: data.company?.phone,
+    companyEmail: data.company?.email,
+    companyGstin: data.company?.gstin,
   };
 
   const addressData: AddressData = {
     buyer: {
-      title: 'BUYER',
-      lines: buildAddressLines(data.buyer),
+      title: 'SHIP TO ADDRESS',
+      lines: buildAddressLines({
+        name: data.shipTo?.name || data.buyer.name,
+        companyName: data.buyer.companyName,
+        address: data.shipTo?.address || data.buyer.address,
+        city: data.shipTo?.city || data.buyer.city,
+        state: data.shipTo?.state || data.buyer.state,
+        pincode: data.shipTo?.pincode || data.buyer.pincode,
+        phone: data.buyer.phone,
+        email: data.buyer.email,
+        gstin: data.buyer.gstin,
+      }),
     },
     supplier: {
       title: 'SUPPLIER',
@@ -134,12 +152,10 @@ export async function generatePurchaseOrderPdf(
     },
   };
 
-  if (data.shipTo) {
-    addressData.shipTo = {
-      title: 'SHIP TO',
-      lines: buildAddressLines(data.shipTo),
-    };
-  }
+  const shippingData: ShippingData = {
+    shippingTerms: data.shippingTerms,
+    shippingMethod: data.shippingMethod,
+  };
 
   const tableData: ItemsTableData = {
     items: data.items.map((item, idx) => ({
@@ -180,6 +196,7 @@ export async function generatePurchaseOrderPdf(
 
   renderHeader(engine, headerData);
   renderAddresses(engine, addressData);
+  renderShipping(engine, shippingData);
   renderItemsTable(engine, tableData);
   renderSummary(engine, summaryData);
   renderTerms(engine, termsData);

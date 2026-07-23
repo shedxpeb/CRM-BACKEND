@@ -421,6 +421,7 @@ export class InventoryService extends BaseQueryService {
 
   // ─── STOCK MOVEMENTS ─────────────────────────────────
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getMovements(organizationId: string, query?: any) {
     const page = query?.page || 1;
     const pageSize = Math.min(query?.pageSize || 25, 100);
@@ -452,6 +453,7 @@ export class InventoryService extends BaseQueryService {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createMovement(dto: any, organizationId: string, performedById: string) {
     const movementCount = await this.prisma.stockMovement.count({ where: { organizationId } });
     const movementNumber = `MOV-${String(movementCount + 1).padStart(6, '0')}`;

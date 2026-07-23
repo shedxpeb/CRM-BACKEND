@@ -836,13 +836,12 @@ export class AuthService {
     return this.sendForgotPasswordOtp(dto, requestId);
   }
 
-  private async ensurePasswordNotReused(user: { passwordHistory: any }, newPassword: string) {
+  private async ensurePasswordNotReused(user: { passwordHistory: unknown }, newPassword: string) {
     if (!user.passwordHistory) return;
     const history: Array<{ password: string }> =
       typeof user.passwordHistory === 'string'
-        ? JSON.parse(user.passwordHistory)
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (user.passwordHistory as any);
+        ? JSON.parse(user.passwordHistory as string)
+        : (user.passwordHistory as Array<{ password: string }>);
     for (const entry of history || []) {
       if (await bcrypt.compare(newPassword, entry.password)) {
         throw new BadRequestException('You cannot reuse a recent password');

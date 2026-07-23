@@ -31,11 +31,11 @@ export class TokenService {
         permissionVersion: params.permissionVersion || 1,
         tokenVersion: 1,
         passwordVersion: params.passwordVersion || 1,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       {
         expiresIn: this.configService.get<string>('jwt.accessExpiresIn') || '30m',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
     );
   }

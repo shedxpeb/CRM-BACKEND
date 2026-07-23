@@ -272,7 +272,7 @@ export class PurchaseOrderService extends BaseQueryService {
     if (dto.status && dto.status !== po.status) {
       if (!canTransitionStatus(po.status, dto.status)) {
         throw new BadRequestException(
-          `Cannot transition from "${po.status}" to "${dto.status}". Allowed: ${(canTransitionStatus as any)[po.status]?.join(', ') || 'none'}`,
+          `Cannot transition from "${po.status}" to "${dto.status}". Allowed: ${(canTransitionStatus as unknown as Record<string, string[]>)[po.status]?.join(', ') || 'none'}`,
         );
       }
     }

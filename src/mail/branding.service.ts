@@ -45,12 +45,11 @@ export class BrandingService {
       return { ...defaults, year, socialLinks: { ...defaults.socialLinks } };
     }
 
-    const settings = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const settings: Record<string, any> =
       org.settings && typeof org.settings === 'object' && !Array.isArray(org.settings)
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (org.settings as Record<string, any>)
-        : {}
-    ) as Record<string, any>;
+        ? (org.settings as Record<string, any>) // eslint-disable-line @typescript-eslint/no-explicit-any
+        : {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const branding = (settings.branding || {}) as Record<string, any>;
 

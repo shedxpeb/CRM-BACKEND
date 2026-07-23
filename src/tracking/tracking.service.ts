@@ -189,6 +189,7 @@ export class TrackingService {
     entityId: string,
     stage: string,
     organizationId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sanitizeEntity = (entity: Record<string, any> | null) => {

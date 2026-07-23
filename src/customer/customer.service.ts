@@ -58,6 +58,7 @@ export class CustomerService extends BaseQueryService {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let customer: any;
 
       if (data.leadId) {
@@ -68,12 +69,13 @@ export class CustomerService extends BaseQueryService {
         if (lead && !lead.isConverted) {
           customer = await this.prisma.$transaction(async (tx) => {
             const created = await tx.customer.create({
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               data: { ...(data as any), email: data.email || '', organizationId, createdById },
             });
             await tx.lead.update({
               where: { id: lead.id },
               data: {
-                status: 'Converted' as any,
+                status: 'Converted',
                 isConverted: true,
                 customerId: created.id,
                 convertedDate: new Date(),
@@ -86,6 +88,7 @@ export class CustomerService extends BaseQueryService {
 
       if (!customer) {
         customer = await this.client.create({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data: { ...(data as any), email: data.email || '', organizationId, createdById },
         });
       }
@@ -109,9 +112,10 @@ export class CustomerService extends BaseQueryService {
       });
 
       return customer;
-    } catch (error: any) {
-      if (error.code === 'P2002') throw new BadRequestException('Duplicate value');
-      throw new BadRequestException(`Database error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === 'P2002') throw new BadRequestException('Duplicate value');
+      throw new BadRequestException(`Database error: ${err.message}`);
     }
   }
 
@@ -119,7 +123,7 @@ export class CustomerService extends BaseQueryService {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
     }
-    const where: any = { id, isDeleted: false, organizationId };
+    const where: Record<string, unknown> = { id, isDeleted: false, organizationId };
     const existing = await this.client.findFirst({ where });
     if (!existing) throw new NotFoundException(`Customer not found`);
 
@@ -133,7 +137,7 @@ export class CustomerService extends BaseQueryService {
     try {
       const customer = await this.client.update({
         where: { id },
-        data: { ...(data as any), updatedBy: updatedById },
+        data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
       });
       await this.auditService.log({
         action: 'customer.updated',
@@ -151,15 +155,16 @@ export class CustomerService extends BaseQueryService {
         createdById: updatedById,
       });
       return customer;
-    } catch (error: any) {
-      if (error.code === 'P2002') throw new BadRequestException('Duplicate value');
-      throw new BadRequestException(`Database error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === 'P2002') throw new BadRequestException('Duplicate value');
+      throw new BadRequestException(`Database error: ${err.message}`);
     }
   }
 
   async getStats(organizationId?: string) {
     if (!organizationId) throw new NotFoundException('Organization context required');
-    const where: any = { isDeleted: false, organizationId };
+    const where: Record<string, unknown> = { isDeleted: false, organizationId };
 
     const [total, active, newThisMonth] = await Promise.all([
       this.client.count({ where }),
@@ -200,7 +205,7 @@ export class CustomerService extends BaseQueryService {
     };
   }
 
-  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<any> {
+  async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<unknown> {
     const result = await super.softDelete(id, deletedById, organizationId);
     await this.auditService.log({
       action: 'customer.deleted',
@@ -329,7 +334,7 @@ export class CustomerService extends BaseQueryService {
       lead.customFields &&
       typeof lead.customFields === 'object' &&
       !Array.isArray(lead.customFields)
-        ? (lead.customFields as Record<string, any>)
+        ? (lead.customFields as Record<string, unknown>)
         : {};
     const mergedCustomFields = !transfer.customFields
       ? undefined
@@ -356,8 +361,10 @@ export class CustomerService extends BaseQueryService {
           email: pick(data.email, lead.email || undefined, transfer.contact) || '',
           gstNumber: pick(data.gstNumber, lead.gstNumber || undefined, transfer.company),
           panNumber: pick(data.panNumber, lead.panNumber || undefined, transfer.company),
+
           industry:
-            (pick(data.industry, lead.industry as any, transfer.company) as any) || undefined,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (pick(data.industry, lead.industry || undefined, transfer.company) as any) || undefined,
           businessType: pick(data.businessType, lead.businessType || undefined, transfer.company),
           website: pick(data.website, lead.website || undefined, transfer.company),
           address:
@@ -386,7 +393,8 @@ export class CustomerService extends BaseQueryService {
           convertedFromLeadId: lead.id,
           organizationId: orgId,
           createdById,
-          status: (data.status as any) || ('Active' as any),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          status: (data.status || 'Active') as any,
           customFields: mergedCustomFields || undefined,
           attachments: attachments.length ? attachments : [],
         },
@@ -395,7 +403,7 @@ export class CustomerService extends BaseQueryService {
       const updatedLead = await tx.lead.update({
         where: { id: lead.id },
         data: {
-          status: 'Converted' as any,
+          status: 'Converted',
           isConverted: true,
           customerId: customer.id,
           convertedDate: new Date(),
