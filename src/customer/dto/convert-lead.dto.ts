@@ -5,8 +5,10 @@ import {
   IsArray,
   IsBoolean,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BusinessType } from '../../lead/dto/get-leads.dto';
 
 class TransferOptionsDto {
   @IsOptional() @IsBoolean() standard?: boolean;
@@ -47,7 +49,7 @@ export class ConvertLeadDto {
   @IsOptional() @IsString() pincode?: string;
   @IsOptional() @IsString() country?: string;
   @IsOptional() @IsString() industry?: string;
-  @IsOptional() @IsString() businessType?: string;
+  @IsOptional() @IsEnum(BusinessType) businessType?: BusinessType;
   @IsOptional() @IsString() website?: string;
 
   @IsString()
