@@ -365,10 +365,7 @@ export class CustomerService extends BaseQueryService {
           industry:
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (pick(data.industry, lead.industry || undefined, transfer.company) as any) || undefined,
-          businessType:
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (pick(data.businessType, lead.businessType || undefined, transfer.company) as any) ||
-            undefined,
+          businessType: pick(data.businessType, lead.businessType || undefined, transfer.company),
           website: pick(data.website, lead.website || undefined, transfer.company),
           address:
             pick(

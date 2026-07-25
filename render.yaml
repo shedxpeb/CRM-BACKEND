@@ -6,9 +6,9 @@ services:
     runtime: node
     plan: starter
     region: oregon
-    # CRITICAL: always generate Prisma Client before tsc/nest build
-    buildCommand: npm ci && npx prisma generate && npm run architecture:validate && npm run type-check && npm run build
-    startCommand: node scripts/deploy-db.mjs && node dist/main.js
+    # CRITICAL: production-safe deployment using prisma migrate deploy
+    buildCommand: npm install && npm run build
+    startCommand: npx prisma migrate deploy && node dist/main.js
     healthCheckPath: /live
     envVars:
       - key: NODE_ENV

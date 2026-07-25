@@ -222,7 +222,7 @@ model Customer {
   gstNumber           String?
   panNumber           String?
   industry            Industry?
-  businessType        BusinessType?
+  businessType        String?
   website             String?
   address             String
   city                String
