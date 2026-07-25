@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
 import { SystemCapabilitiesService } from './system-capabilities.service';
-import type { SeedAdminDto, SystemSeedService } from './system-seed.service';
+import { SystemSeedService } from './system-seed.service';
+import type { SeedAdminDto } from './system-seed.service';
 
 @Controller('system')
 export class SystemController {
