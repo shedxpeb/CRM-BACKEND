@@ -9,6 +9,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { CustomerStatus } from './get-customers.dto';
+import { BusinessType } from '../../lead/dto/get-leads.dto';
 
 export class CreateCustomerDto {
   @IsString()
@@ -52,9 +53,8 @@ export class CreateCustomerDto {
   industry?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  businessType?: string;
+  @IsEnum(BusinessType)
+  businessType?: BusinessType;
 
   @IsOptional()
   @IsString()
