@@ -222,7 +222,7 @@ model Customer {
   gstNumber           String?
   panNumber           String?
   industry            Industry?
-  businessType        String?
+  businessType        BusinessType?
   website             String?
   address             String
   city                String
@@ -462,7 +462,7 @@ model Lead {
   addressLine2        String?
   annualRevenue       Decimal?           @db.Decimal(14, 2)
   area                String?
-  businessType        String?
+  businessType        BusinessType?
   companyLogo         String?
   companySize         String?
   country             String?             @default("India")
