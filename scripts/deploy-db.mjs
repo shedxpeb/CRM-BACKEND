@@ -13,7 +13,7 @@ function run(cmd, args) {
 const preferPush = process.env.PRISMA_DEPLOY_MODE === 'push';
 
 if (preferPush) {
-  const push = run('npx', ['prisma', 'db', 'push', '--skip-generate']);
+  const push = run('npx', ['prisma', 'db', 'push', '--skip-generate', '--accept-data-loss']);
   process.exit(push.status ?? 1);
 }
 
@@ -28,5 +28,5 @@ console.warn(
     'and create a baseline migration for long-term production.',
 );
 
-const push = run('npx', ['prisma', 'db', 'push', '--skip-generate']);
+const push = run('npx', ['prisma', 'db', 'push', '--skip-generate', '--accept-data-loss']);
 process.exit(push.status ?? 1);
