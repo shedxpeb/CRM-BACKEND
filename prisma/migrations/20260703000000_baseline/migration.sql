@@ -2,88 +2,196 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "LeadStatus" AS ENUM ('New', 'Contacted', 'DesignPending', 'BOQPending', 'EstimateSent', 'ProposalSent', 'Negotiation', 'Approved', 'Rejected', 'Converted');
+DO $$ BEGIN
+  CREATE TYPE "LeadStatus" AS ENUM ('New', 'Contacted', 'DesignPending', 'BOQPending', 'EstimateSent', 'ProposalSent', 'Negotiation', 'Approved', 'Rejected', 'Converted');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectType" AS ENUM ('Factory', 'Warehouse', 'IndustrialShed', 'Commercial', 'Residential', 'ColdStorage', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "ProjectType" AS ENUM ('Factory', 'Warehouse', 'IndustrialShed', 'Commercial', 'Residential', 'ColdStorage', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "StructureType" AS ENUM ('PEB', 'SteelStructure', 'Hybrid', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "StructureType" AS ENUM ('PEB', 'SteelStructure', 'Hybrid', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "RoofType" AS ENUM ('MetalSheet', 'DeckSheet', 'SandwichPanel', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "RoofType" AS ENUM ('MetalSheet', 'DeckSheet', 'SandwichPanel', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "WallType" AS ENUM ('MetalSheet', 'BrickWall', 'SandwichPanel', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "WallType" AS ENUM ('MetalSheet', 'BrickWall', 'SandwichPanel', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "MaterialPreference" AS ENUM ('Standard', 'Premium', 'Economy');
+DO $$ BEGIN
+  CREATE TYPE "MaterialPreference" AS ENUM ('Standard', 'Premium', 'Economy');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "LeadSource" AS ENUM ('Website', 'Referral', 'ColdCall', 'Email', 'SocialMedia', 'TradeShow', 'Advertisement', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "LeadSource" AS ENUM ('Website', 'Referral', 'ColdCall', 'Email', 'SocialMedia', 'TradeShow', 'Advertisement', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "LeadPriority" AS ENUM ('Low', 'Medium', 'High', 'Urgent');
+DO $$ BEGIN
+  CREATE TYPE "LeadPriority" AS ENUM ('Low', 'Medium', 'High', 'Urgent');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "CustomerStatus" AS ENUM ('Active', 'Inactive', 'Prospect', 'Converted', 'Churned', 'Archived');
+DO $$ BEGIN
+  CREATE TYPE "CustomerStatus" AS ENUM ('Active', 'Inactive', 'Prospect', 'Converted', 'Churned', 'Archived');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "Industry" AS ENUM ('Construction', 'Manufacturing', 'Technology', 'Healthcare', 'Hospitality', 'Retail', 'Education', 'Finance', 'RealEstate', 'Infrastructure', 'Energy', 'Mining', 'Agriculture', 'Transportation', 'Logistics', 'Commercial', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "Industry" AS ENUM ('Construction', 'Manufacturing', 'Technology', 'Healthcare', 'Hospitality', 'Retail', 'Education', 'Finance', 'RealEstate', 'Infrastructure', 'Energy', 'Mining', 'Agriculture', 'Transportation', 'Logistics', 'Commercial', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "BusinessType" AS ENUM ('SoleProprietorship', 'Partnership', 'PrivateLimited', 'PublicLimited', 'LLP', 'Government', 'NonProfit', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "BusinessType" AS ENUM ('SoleProprietorship', 'Partnership', 'PrivateLimited', 'PublicLimited', 'LLP', 'Government', 'NonProfit', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'OWNER', 'EMPLOYEE', 'ADMIN');
+DO $$ BEGIN
+  CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'OWNER', 'EMPLOYEE', 'ADMIN');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "OrganizationType" AS ENUM ('SYSTEM', 'COMPANY');
+DO $$ BEGIN
+  CREATE TYPE "OrganizationType" AS ENUM ('SYSTEM', 'COMPANY');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "OrganizationStatus" AS ENUM ('Active', 'Inactive', 'Suspended');
+DO $$ BEGIN
+  CREATE TYPE "OrganizationStatus" AS ENUM ('Active', 'Inactive', 'Suspended');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "OtpPurpose" AS ENUM ('REGISTRATION', 'FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'CHANGE_EMAIL', 'TWO_FACTOR', 'ORGANIZATION_INVITE');
+DO $$ BEGIN
+  CREATE TYPE "OtpPurpose" AS ENUM ('REGISTRATION', 'FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'CHANGE_EMAIL', 'TWO_FACTOR', 'ORGANIZATION_INVITE');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectStage" AS ENUM ('Design', 'BOQ', 'Procurement', 'Fabrication', 'Dispatch', 'Installation', 'Handover');
+DO $$ BEGIN
+  CREATE TYPE "ProjectStage" AS ENUM ('Design', 'BOQ', 'Procurement', 'Fabrication', 'Dispatch', 'Installation', 'Handover');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectPriority" AS ENUM ('Low', 'Medium', 'High', 'Urgent');
+DO $$ BEGIN
+  CREATE TYPE "ProjectPriority" AS ENUM ('Low', 'Medium', 'High', 'Urgent');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectTaskStatus" AS ENUM ('Pending', 'InProgress', 'Completed', 'Overdue');
+DO $$ BEGIN
+  CREATE TYPE "ProjectTaskStatus" AS ENUM ('Pending', 'InProgress', 'Completed', 'Overdue');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectMilestoneStatus" AS ENUM ('Pending', 'InProgress', 'Completed', 'Delayed');
+DO $$ BEGIN
+  CREATE TYPE "ProjectMilestoneStatus" AS ENUM ('Pending', 'InProgress', 'Completed', 'Delayed');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ProjectActivityType" AS ENUM ('project_created', 'project_updated', 'design_started', 'design_completed', 'design_uploaded', 'boq_created', 'boq_updated', 'procurement_started', 'material_reserved', 'purchase_request_created', 'fabrication_started', 'fabrication_completed', 'dispatch_started', 'dispatch_completed', 'installation_started', 'installation_completed', 'milestone_completed', 'team_assigned', 'task_assigned', 'status_changed', 'stage_changed', 'document_uploaded', 'note_added', 'payment_received', 'project_completed', 'handover_completed');
+DO $$ BEGIN
+  CREATE TYPE "ProjectActivityType" AS ENUM ('project_created', 'project_updated', 'design_started', 'design_completed', 'design_uploaded', 'boq_created', 'boq_updated', 'procurement_started', 'material_reserved', 'purchase_request_created', 'fabrication_started', 'fabrication_completed', 'dispatch_started', 'dispatch_completed', 'installation_started', 'installation_completed', 'milestone_completed', 'team_assigned', 'task_assigned', 'status_changed', 'stage_changed', 'document_uploaded', 'note_added', 'payment_received', 'project_completed', 'handover_completed');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "PurchaseOrderStatus" AS ENUM ('Draft', 'PendingApproval', 'Approved', 'Rejected', 'Sent', 'PartiallyReceived', 'FullyReceived', 'Cancelled', 'Closed');
+DO $$ BEGIN
+  CREATE TYPE "PurchaseOrderStatus" AS ENUM ('Draft', 'PendingApproval', 'Approved', 'Rejected', 'Sent', 'PartiallyReceived', 'FullyReceived', 'Cancelled', 'Closed');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "TaskStatus" AS ENUM ('Pending', 'InProgress', 'Blocked', 'Review', 'Completed', 'Verified', 'Rejected', 'Closed', 'Cancelled', 'Reopened');
+DO $$ BEGIN
+  CREATE TYPE "TaskStatus" AS ENUM ('Pending', 'InProgress', 'Blocked', 'Review', 'Completed', 'Verified', 'Rejected', 'Closed', 'Cancelled', 'Reopened');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "TaskPriority" AS ENUM ('Low', 'Medium', 'High', 'Critical');
+DO $$ BEGIN
+  CREATE TYPE "TaskPriority" AS ENUM ('Low', 'Medium', 'High', 'Critical');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "TaskCategory" AS ENUM ('General', 'Office', 'FieldWork', 'Maintenance', 'Installation', 'Inspection', 'Documentation', 'Meeting', 'Training', 'Other');
+DO $$ BEGIN
+  CREATE TYPE "TaskCategory" AS ENUM ('General', 'Office', 'FieldWork', 'Maintenance', 'Installation', 'Inspection', 'Documentation', 'Meeting', 'Training', 'Other');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "LinkedModule" AS ENUM ('Leads', 'Customers', 'Projects', 'Estimates', 'Proposals', 'Quotations', 'Invoices', 'Inventory', 'Purchases', 'Finance', 'Documents', 'General');
+DO $$ BEGIN
+  CREATE TYPE "LinkedModule" AS ENUM ('Leads', 'Customers', 'Projects', 'Estimates', 'Proposals', 'Quotations', 'Invoices', 'Inventory', 'Purchases', 'Finance', 'Documents', 'General');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "SalaryAdjustmentType" AS ENUM ('Credit', 'Deduction', 'Advance', 'Bonus', 'Penalty');
+DO $$ BEGIN
+  CREATE TYPE "SalaryAdjustmentType" AS ENUM ('Credit', 'Deduction', 'Advance', 'Bonus', 'Penalty');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "SalaryAdjustmentStatus" AS ENUM ('Pending', 'Approved', 'Rejected', 'Processed');
+DO $$ BEGIN
+  CREATE TYPE "SalaryAdjustmentStatus" AS ENUM ('Pending', 'Approved', 'Rejected', 'Processed');
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- CreateTable
-CREATE TABLE "Organization" (
+CREATE TABLE  IF NOT EXISTS "Organization" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT,
@@ -111,7 +219,7 @@ CREATE TABLE "Organization" (
 );
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE  IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
@@ -141,7 +249,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Session" (
+CREATE TABLE  IF NOT EXISTS "Session" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "organizationId" TEXT,
@@ -164,7 +272,7 @@ CREATE TABLE "Session" (
 );
 
 -- CreateTable
-CREATE TABLE "RefreshToken" (
+CREATE TABLE  IF NOT EXISTS "RefreshToken" (
     "id" TEXT NOT NULL,
     "tokenHash" TEXT NOT NULL,
     "sessionId" TEXT NOT NULL,
@@ -179,7 +287,7 @@ CREATE TABLE "RefreshToken" (
 );
 
 -- CreateTable
-CREATE TABLE "LoginAttempt" (
+CREATE TABLE  IF NOT EXISTS "LoginAttempt" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "organizationId" TEXT,
@@ -194,7 +302,7 @@ CREATE TABLE "LoginAttempt" (
 );
 
 -- CreateTable
-CREATE TABLE "OtpChallenge" (
+CREATE TABLE  IF NOT EXISTS "OtpChallenge" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "userId" TEXT,
@@ -215,7 +323,7 @@ CREATE TABLE "OtpChallenge" (
 );
 
 -- CreateTable
-CREATE TABLE "AuditLog" (
+CREATE TABLE  IF NOT EXISTS "AuditLog" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT,
     "userId" TEXT,
@@ -232,7 +340,7 @@ CREATE TABLE "AuditLog" (
 );
 
 -- CreateTable
-CREATE TABLE "Role" (
+CREATE TABLE  IF NOT EXISTS "Role" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -247,7 +355,7 @@ CREATE TABLE "Role" (
 );
 
 -- CreateTable
-CREATE TABLE "Customer" (
+CREATE TABLE  IF NOT EXISTS "Customer" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "customerId" SERIAL NOT NULL,
@@ -289,7 +397,7 @@ CREATE TABLE "Customer" (
 );
 
 -- CreateTable
-CREATE TABLE "Project" (
+CREATE TABLE  IF NOT EXISTS "Project" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "projectId" SERIAL NOT NULL,
@@ -362,7 +470,7 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
-CREATE TABLE "ProjectMilestone" (
+CREATE TABLE  IF NOT EXISTS "ProjectMilestone" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -375,7 +483,7 @@ CREATE TABLE "ProjectMilestone" (
 );
 
 -- CreateTable
-CREATE TABLE "ProjectTeamMember" (
+CREATE TABLE  IF NOT EXISTS "ProjectTeamMember" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "employeeId" TEXT NOT NULL,
@@ -388,7 +496,7 @@ CREATE TABLE "ProjectTeamMember" (
 );
 
 -- CreateTable
-CREATE TABLE "ProjectActivity" (
+CREATE TABLE  IF NOT EXISTS "ProjectActivity" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "type" "ProjectActivityType" NOT NULL,
@@ -401,7 +509,7 @@ CREATE TABLE "ProjectActivity" (
 );
 
 -- CreateTable
-CREATE TABLE "ProjectTask" (
+CREATE TABLE  IF NOT EXISTS "ProjectTask" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -419,7 +527,7 @@ CREATE TABLE "ProjectTask" (
 );
 
 -- CreateTable
-CREATE TABLE "Lead" (
+CREATE TABLE  IF NOT EXISTS "Lead" (
     "id" TEXT NOT NULL,
     "customerName" TEXT NOT NULL,
     "companyName" TEXT NOT NULL,
@@ -501,7 +609,7 @@ CREATE TABLE "Lead" (
 );
 
 -- CreateTable
-CREATE TABLE "StatusPipeline" (
+CREATE TABLE  IF NOT EXISTS "StatusPipeline" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -520,7 +628,7 @@ CREATE TABLE "StatusPipeline" (
 );
 
 -- CreateTable
-CREATE TABLE "StatusHistory" (
+CREATE TABLE  IF NOT EXISTS "StatusHistory" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -536,7 +644,7 @@ CREATE TABLE "StatusHistory" (
 );
 
 -- CreateTable
-CREATE TABLE "Comment" (
+CREATE TABLE  IF NOT EXISTS "Comment" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -552,7 +660,7 @@ CREATE TABLE "Comment" (
 );
 
 -- CreateTable
-CREATE TABLE "Attachment" (
+CREATE TABLE  IF NOT EXISTS "Attachment" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -571,7 +679,7 @@ CREATE TABLE "Attachment" (
 );
 
 -- CreateTable
-CREATE TABLE "ApprovalRequest" (
+CREATE TABLE  IF NOT EXISTS "ApprovalRequest" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -590,7 +698,7 @@ CREATE TABLE "ApprovalRequest" (
 );
 
 -- CreateTable
-CREATE TABLE "Notification" (
+CREATE TABLE  IF NOT EXISTS "Notification" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -607,7 +715,7 @@ CREATE TABLE "Notification" (
 );
 
 -- CreateTable
-CREATE TABLE "BusinessEvent" (
+CREATE TABLE  IF NOT EXISTS "BusinessEvent" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -621,7 +729,7 @@ CREATE TABLE "BusinessEvent" (
 );
 
 -- CreateTable
-CREATE TABLE "EventRule" (
+CREATE TABLE  IF NOT EXISTS "EventRule" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityType" TEXT NOT NULL,
@@ -639,7 +747,7 @@ CREATE TABLE "EventRule" (
 );
 
 -- CreateTable
-CREATE TABLE "NumberSequence" (
+CREATE TABLE  IF NOT EXISTS "NumberSequence" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "entityName" TEXT NOT NULL,
@@ -652,7 +760,7 @@ CREATE TABLE "NumberSequence" (
 );
 
 -- CreateTable
-CREATE TABLE "ItemMaster" (
+CREATE TABLE  IF NOT EXISTS "ItemMaster" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "itemNumber" SERIAL NOT NULL,
@@ -712,7 +820,7 @@ CREATE TABLE "ItemMaster" (
 );
 
 -- CreateTable
-CREATE TABLE "ItemVariant" (
+CREATE TABLE  IF NOT EXISTS "ItemVariant" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "itemMasterId" TEXT NOT NULL,
@@ -731,7 +839,7 @@ CREATE TABLE "ItemVariant" (
 );
 
 -- CreateTable
-CREATE TABLE "ItemBundle" (
+CREATE TABLE  IF NOT EXISTS "ItemBundle" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "bundleCode" TEXT NOT NULL,
@@ -749,7 +857,7 @@ CREATE TABLE "ItemBundle" (
 );
 
 -- CreateTable
-CREATE TABLE "ItemBundleItem" (
+CREATE TABLE  IF NOT EXISTS "ItemBundleItem" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "bundleId" TEXT,
@@ -762,7 +870,7 @@ CREATE TABLE "ItemBundleItem" (
 );
 
 -- CreateTable
-CREATE TABLE "Warehouse" (
+CREATE TABLE  IF NOT EXISTS "Warehouse" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "warehouseCode" TEXT NOT NULL,
@@ -783,7 +891,7 @@ CREATE TABLE "Warehouse" (
 );
 
 -- CreateTable
-CREATE TABLE "Supplier" (
+CREATE TABLE  IF NOT EXISTS "Supplier" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -809,7 +917,7 @@ CREATE TABLE "Supplier" (
 );
 
 -- CreateTable
-CREATE TABLE "InventoryCategory" (
+CREATE TABLE  IF NOT EXISTS "InventoryCategory" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -825,7 +933,7 @@ CREATE TABLE "InventoryCategory" (
 );
 
 -- CreateTable
-CREATE TABLE "InventoryItem" (
+CREATE TABLE  IF NOT EXISTS "InventoryItem" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "itemNumber" SERIAL NOT NULL,
@@ -865,7 +973,7 @@ CREATE TABLE "InventoryItem" (
 );
 
 -- CreateTable
-CREATE TABLE "StockMovement" (
+CREATE TABLE  IF NOT EXISTS "StockMovement" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "movementNumber" TEXT NOT NULL,
@@ -888,7 +996,7 @@ CREATE TABLE "StockMovement" (
 );
 
 -- CreateTable
-CREATE TABLE "Vendor" (
+CREATE TABLE  IF NOT EXISTS "Vendor" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "vendorNumber" SERIAL NOT NULL,
@@ -925,7 +1033,7 @@ CREATE TABLE "Vendor" (
 );
 
 -- CreateTable
-CREATE TABLE "PurchaseOrder" (
+CREATE TABLE  IF NOT EXISTS "PurchaseOrder" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "poNumber" TEXT NOT NULL,
@@ -980,7 +1088,7 @@ CREATE TABLE "PurchaseOrder" (
 );
 
 -- CreateTable
-CREATE TABLE "PurchaseOrderItem" (
+CREATE TABLE  IF NOT EXISTS "PurchaseOrderItem" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "purchaseOrderId" TEXT NOT NULL,
@@ -1008,7 +1116,7 @@ CREATE TABLE "PurchaseOrderItem" (
 );
 
 -- CreateTable
-CREATE TABLE "PurchaseOrderTimeline" (
+CREATE TABLE  IF NOT EXISTS "PurchaseOrderTimeline" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "purchaseOrderId" TEXT NOT NULL,
@@ -1022,7 +1130,7 @@ CREATE TABLE "PurchaseOrderTimeline" (
 );
 
 -- CreateTable
-CREATE TABLE "Task" (
+CREATE TABLE  IF NOT EXISTS "Task" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "taskId" SERIAL NOT NULL,
@@ -1076,7 +1184,7 @@ CREATE TABLE "Task" (
 );
 
 -- CreateTable
-CREATE TABLE "TaskChecklist" (
+CREATE TABLE  IF NOT EXISTS "TaskChecklist" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "text" TEXT NOT NULL,
@@ -1090,7 +1198,7 @@ CREATE TABLE "TaskChecklist" (
 );
 
 -- CreateTable
-CREATE TABLE "TaskComment" (
+CREATE TABLE  IF NOT EXISTS "TaskComment" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
@@ -1105,7 +1213,7 @@ CREATE TABLE "TaskComment" (
 );
 
 -- CreateTable
-CREATE TABLE "TaskAttachment" (
+CREATE TABLE  IF NOT EXISTS "TaskAttachment" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
@@ -1121,7 +1229,7 @@ CREATE TABLE "TaskAttachment" (
 );
 
 -- CreateTable
-CREATE TABLE "TaskDependency" (
+CREATE TABLE  IF NOT EXISTS "TaskDependency" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "dependsOnTaskId" TEXT NOT NULL,
@@ -1132,7 +1240,7 @@ CREATE TABLE "TaskDependency" (
 );
 
 -- CreateTable
-CREATE TABLE "TaskActivityLog" (
+CREATE TABLE  IF NOT EXISTS "TaskActivityLog" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "activityType" TEXT NOT NULL,
@@ -1146,7 +1254,7 @@ CREATE TABLE "TaskActivityLog" (
 );
 
 -- CreateTable
-CREATE TABLE "SalaryAdjustment" (
+CREATE TABLE  IF NOT EXISTS "SalaryAdjustment" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "employeeId" TEXT NOT NULL,
@@ -1174,629 +1282,773 @@ CREATE TABLE "SalaryAdjustment" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Organization_email_key" ON "Organization"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "Organization_email_key" ON "Organization"("email");
 
 -- CreateIndex
-CREATE INDEX "Organization_status_idx" ON "Organization"("status");
+CREATE INDEX IF NOT EXISTS "Organization_status_idx" ON "Organization"("status");
 
 -- CreateIndex
-CREATE INDEX "Organization_email_idx" ON "Organization"("email");
+CREATE INDEX IF NOT EXISTS "Organization_email_idx" ON "Organization"("email");
 
 -- CreateIndex
-CREATE INDEX "Organization_name_idx" ON "Organization"("name");
+CREATE INDEX IF NOT EXISTS "Organization_name_idx" ON "Organization"("name");
 
 -- CreateIndex
-CREATE INDEX "Organization_isDeleted_idx" ON "Organization"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Organization_isDeleted_idx" ON "Organization"("isDeleted");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE INDEX "User_email_idx" ON "User"("email");
+CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");
 
 -- CreateIndex
-CREATE INDEX "User_role_idx" ON "User"("role");
+CREATE INDEX IF NOT EXISTS "User_role_idx" ON "User"("role");
 
 -- CreateIndex
-CREATE INDEX "User_organizationId_idx" ON "User"("organizationId");
+CREATE INDEX IF NOT EXISTS "User_organizationId_idx" ON "User"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "User_organizationId_role_idx" ON "User"("organizationId", "role");
+CREATE INDEX IF NOT EXISTS "User_organizationId_role_idx" ON "User"("organizationId", "role");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Session_token_key" ON "Session"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "Session_token_key" ON "Session"("token");
 
 -- CreateIndex
-CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+CREATE INDEX IF NOT EXISTS "Session_userId_idx" ON "Session"("userId");
 
 -- CreateIndex
-CREATE INDEX "Session_token_idx" ON "Session"("token");
+CREATE INDEX IF NOT EXISTS "Session_token_idx" ON "Session"("token");
 
 -- CreateIndex
-CREATE INDEX "Session_userId_isRevoked_idx" ON "Session"("userId", "isRevoked");
+CREATE INDEX IF NOT EXISTS "Session_userId_isRevoked_idx" ON "Session"("userId", "isRevoked");
 
 -- CreateIndex
-CREATE INDEX "Session_expiresAt_idx" ON "Session"("expiresAt");
+CREATE INDEX IF NOT EXISTS "Session_expiresAt_idx" ON "Session"("expiresAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
+CREATE UNIQUE INDEX IF NOT EXISTS "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
 
 -- CreateIndex
-CREATE INDEX "RefreshToken_tokenHash_idx" ON "RefreshToken"("tokenHash");
+CREATE INDEX IF NOT EXISTS "RefreshToken_tokenHash_idx" ON "RefreshToken"("tokenHash");
 
 -- CreateIndex
-CREATE INDEX "RefreshToken_sessionId_idx" ON "RefreshToken"("sessionId");
+CREATE INDEX IF NOT EXISTS "RefreshToken_sessionId_idx" ON "RefreshToken"("sessionId");
 
 -- CreateIndex
-CREATE INDEX "RefreshToken_userId_idx" ON "RefreshToken"("userId");
+CREATE INDEX IF NOT EXISTS "RefreshToken_userId_idx" ON "RefreshToken"("userId");
 
 -- CreateIndex
-CREATE INDEX "LoginAttempt_email_idx" ON "LoginAttempt"("email");
+CREATE INDEX IF NOT EXISTS "LoginAttempt_email_idx" ON "LoginAttempt"("email");
 
 -- CreateIndex
-CREATE INDEX "LoginAttempt_createdAt_idx" ON "LoginAttempt"("createdAt");
+CREATE INDEX IF NOT EXISTS "LoginAttempt_createdAt_idx" ON "LoginAttempt"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "LoginAttempt_email_createdAt_idx" ON "LoginAttempt"("email", "createdAt");
+CREATE INDEX IF NOT EXISTS "LoginAttempt_email_createdAt_idx" ON "LoginAttempt"("email", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "OtpChallenge_email_purpose_consumedAt_idx" ON "OtpChallenge"("email", "purpose", "consumedAt");
+CREATE INDEX IF NOT EXISTS "OtpChallenge_email_purpose_consumedAt_idx" ON "OtpChallenge"("email", "purpose", "consumedAt");
 
 -- CreateIndex
-CREATE INDEX "OtpChallenge_userId_purpose_idx" ON "OtpChallenge"("userId", "purpose");
+CREATE INDEX IF NOT EXISTS "OtpChallenge_userId_purpose_idx" ON "OtpChallenge"("userId", "purpose");
 
 -- CreateIndex
-CREATE INDEX "OtpChallenge_expiresAt_idx" ON "OtpChallenge"("expiresAt");
+CREATE INDEX IF NOT EXISTS "OtpChallenge_expiresAt_idx" ON "OtpChallenge"("expiresAt");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_organizationId_idx" ON "AuditLog"("organizationId");
+CREATE INDEX IF NOT EXISTS "AuditLog_organizationId_idx" ON "AuditLog"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
+CREATE INDEX IF NOT EXISTS "AuditLog_userId_idx" ON "AuditLog"("userId");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
+CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
+CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Role_organizationId_idx" ON "Role"("organizationId");
+CREATE INDEX IF NOT EXISTS "Role_organizationId_idx" ON "Role"("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Role_organizationId_name_key" ON "Role"("organizationId", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Role_organizationId_name_key" ON "Role"("organizationId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Customer_customerId_key" ON "Customer"("customerId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Customer_customerId_key" ON "Customer"("customerId");
 
 -- CreateIndex
-CREATE INDEX "Customer_leadId_idx" ON "Customer"("leadId");
+CREATE INDEX IF NOT EXISTS "Customer_leadId_idx" ON "Customer"("leadId");
 
 -- CreateIndex
-CREATE INDEX "Customer_status_idx" ON "Customer"("status");
+CREATE INDEX IF NOT EXISTS "Customer_status_idx" ON "Customer"("status");
 
 -- CreateIndex
-CREATE INDEX "Customer_createdAt_idx" ON "Customer"("createdAt");
+CREATE INDEX IF NOT EXISTS "Customer_createdAt_idx" ON "Customer"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Customer_mobile_idx" ON "Customer"("mobile");
+CREATE INDEX IF NOT EXISTS "Customer_mobile_idx" ON "Customer"("mobile");
 
 -- CreateIndex
-CREATE INDEX "Customer_companyName_idx" ON "Customer"("companyName");
+CREATE INDEX IF NOT EXISTS "Customer_companyName_idx" ON "Customer"("companyName");
 
 -- CreateIndex
-CREATE INDEX "Customer_isDeleted_idx" ON "Customer"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Customer_isDeleted_idx" ON "Customer"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "Customer_organizationId_idx" ON "Customer"("organizationId");
+CREATE INDEX IF NOT EXISTS "Customer_organizationId_idx" ON "Customer"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Customer_organizationId_status_idx" ON "Customer"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "Customer_organizationId_status_idx" ON "Customer"("organizationId", "status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Project_projectId_key" ON "Project"("projectId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Project_projectId_key" ON "Project"("projectId");
 
 -- CreateIndex
-CREATE INDEX "Project_status_idx" ON "Project"("status");
+CREATE INDEX IF NOT EXISTS "Project_status_idx" ON "Project"("status");
 
 -- CreateIndex
-CREATE INDEX "Project_stage_idx" ON "Project"("stage");
+CREATE INDEX IF NOT EXISTS "Project_stage_idx" ON "Project"("stage");
 
 -- CreateIndex
-CREATE INDEX "Project_priority_idx" ON "Project"("priority");
+CREATE INDEX IF NOT EXISTS "Project_priority_idx" ON "Project"("priority");
 
 -- CreateIndex
-CREATE INDEX "Project_createdAt_idx" ON "Project"("createdAt");
+CREATE INDEX IF NOT EXISTS "Project_createdAt_idx" ON "Project"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Project_customerId_idx" ON "Project"("customerId");
+CREATE INDEX IF NOT EXISTS "Project_customerId_idx" ON "Project"("customerId");
 
 -- CreateIndex
-CREATE INDEX "Project_customerName_idx" ON "Project"("customerName");
+CREATE INDEX IF NOT EXISTS "Project_customerName_idx" ON "Project"("customerName");
 
 -- CreateIndex
-CREATE INDEX "Project_projectManagerId_idx" ON "Project"("projectManagerId");
+CREATE INDEX IF NOT EXISTS "Project_projectManagerId_idx" ON "Project"("projectManagerId");
 
 -- CreateIndex
-CREATE INDEX "Project_isDeleted_idx" ON "Project"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Project_isDeleted_idx" ON "Project"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "Project_projectCode_idx" ON "Project"("projectCode");
+CREATE INDEX IF NOT EXISTS "Project_projectCode_idx" ON "Project"("projectCode");
 
 -- CreateIndex
-CREATE INDEX "Project_organizationId_idx" ON "Project"("organizationId");
+CREATE INDEX IF NOT EXISTS "Project_organizationId_idx" ON "Project"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Project_organizationId_status_idx" ON "Project"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "Project_organizationId_status_idx" ON "Project"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "ProjectMilestone_projectId_idx" ON "ProjectMilestone"("projectId");
+CREATE INDEX IF NOT EXISTS "ProjectMilestone_projectId_idx" ON "ProjectMilestone"("projectId");
 
 -- CreateIndex
-CREATE INDEX "ProjectTeamMember_projectId_idx" ON "ProjectTeamMember"("projectId");
+CREATE INDEX IF NOT EXISTS "ProjectTeamMember_projectId_idx" ON "ProjectTeamMember"("projectId");
 
 -- CreateIndex
-CREATE INDEX "ProjectTeamMember_employeeId_idx" ON "ProjectTeamMember"("employeeId");
+CREATE INDEX IF NOT EXISTS "ProjectTeamMember_employeeId_idx" ON "ProjectTeamMember"("employeeId");
 
 -- CreateIndex
-CREATE INDEX "ProjectActivity_projectId_idx" ON "ProjectActivity"("projectId");
+CREATE INDEX IF NOT EXISTS "ProjectActivity_projectId_idx" ON "ProjectActivity"("projectId");
 
 -- CreateIndex
-CREATE INDEX "ProjectActivity_projectId_performedAt_idx" ON "ProjectActivity"("projectId", "performedAt");
+CREATE INDEX IF NOT EXISTS "ProjectActivity_projectId_performedAt_idx" ON "ProjectActivity"("projectId", "performedAt");
 
 -- CreateIndex
-CREATE INDEX "ProjectTask_projectId_idx" ON "ProjectTask"("projectId");
+CREATE INDEX IF NOT EXISTS "ProjectTask_projectId_idx" ON "ProjectTask"("projectId");
 
 -- CreateIndex
-CREATE INDEX "ProjectTask_projectId_status_idx" ON "ProjectTask"("projectId", "status");
+CREATE INDEX IF NOT EXISTS "ProjectTask_projectId_status_idx" ON "ProjectTask"("projectId", "status");
 
 -- CreateIndex
-CREATE INDEX "ProjectTask_assignedTo_idx" ON "ProjectTask"("assignedTo");
+CREATE INDEX IF NOT EXISTS "ProjectTask_assignedTo_idx" ON "ProjectTask"("assignedTo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Lead_leadNumber_key" ON "Lead"("leadNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "Lead_leadNumber_key" ON "Lead"("leadNumber");
 
 -- CreateIndex
-CREATE INDEX "Lead_status_idx" ON "Lead"("status");
+CREATE INDEX IF NOT EXISTS "Lead_status_idx" ON "Lead"("status");
 
 -- CreateIndex
-CREATE INDEX "Lead_priority_idx" ON "Lead"("priority");
+CREATE INDEX IF NOT EXISTS "Lead_priority_idx" ON "Lead"("priority");
 
 -- CreateIndex
-CREATE INDEX "Lead_createdAt_idx" ON "Lead"("createdAt");
+CREATE INDEX IF NOT EXISTS "Lead_createdAt_idx" ON "Lead"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Lead_nextFollowUpDate_idx" ON "Lead"("nextFollowUpDate");
+CREATE INDEX IF NOT EXISTS "Lead_nextFollowUpDate_idx" ON "Lead"("nextFollowUpDate");
 
 -- CreateIndex
-CREATE INDEX "Lead_mobile_idx" ON "Lead"("mobile");
+CREATE INDEX IF NOT EXISTS "Lead_mobile_idx" ON "Lead"("mobile");
 
 -- CreateIndex
-CREATE INDEX "Lead_companyName_idx" ON "Lead"("companyName");
+CREATE INDEX IF NOT EXISTS "Lead_companyName_idx" ON "Lead"("companyName");
 
 -- CreateIndex
-CREATE INDEX "Lead_createdById_idx" ON "Lead"("createdById");
+CREATE INDEX IF NOT EXISTS "Lead_createdById_idx" ON "Lead"("createdById");
 
 -- CreateIndex
-CREATE INDEX "Lead_assignedToId_idx" ON "Lead"("assignedToId");
+CREATE INDEX IF NOT EXISTS "Lead_assignedToId_idx" ON "Lead"("assignedToId");
 
 -- CreateIndex
-CREATE INDEX "Lead_isDeleted_idx" ON "Lead"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Lead_isDeleted_idx" ON "Lead"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "Lead_organizationId_idx" ON "Lead"("organizationId");
+CREATE INDEX IF NOT EXISTS "Lead_organizationId_idx" ON "Lead"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Lead_organizationId_status_idx" ON "Lead"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "Lead_organizationId_status_idx" ON "Lead"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "StatusPipeline_organizationId_entityType_order_idx" ON "StatusPipeline"("organizationId", "entityType", "order");
+CREATE INDEX IF NOT EXISTS "StatusPipeline_organizationId_entityType_order_idx" ON "StatusPipeline"("organizationId", "entityType", "order");
 
 -- CreateIndex
-CREATE INDEX "StatusPipeline_organizationId_entityType_idx" ON "StatusPipeline"("organizationId", "entityType");
+CREATE INDEX IF NOT EXISTS "StatusPipeline_organizationId_entityType_idx" ON "StatusPipeline"("organizationId", "entityType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "StatusPipeline_organizationId_entityType_status_key" ON "StatusPipeline"("organizationId", "entityType", "status");
+CREATE UNIQUE INDEX IF NOT EXISTS "StatusPipeline_organizationId_entityType_status_key" ON "StatusPipeline"("organizationId", "entityType", "status");
 
 -- CreateIndex
-CREATE INDEX "StatusHistory_entityType_entityId_changedAt_idx" ON "StatusHistory"("entityType", "entityId", "changedAt");
+CREATE INDEX IF NOT EXISTS "StatusHistory_entityType_entityId_changedAt_idx" ON "StatusHistory"("entityType", "entityId", "changedAt");
 
 -- CreateIndex
-CREATE INDEX "StatusHistory_entityType_entityId_idx" ON "StatusHistory"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "StatusHistory_entityType_entityId_idx" ON "StatusHistory"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "StatusHistory_organizationId_entityType_changedAt_idx" ON "StatusHistory"("organizationId", "entityType", "changedAt");
+CREATE INDEX IF NOT EXISTS "StatusHistory_organizationId_entityType_changedAt_idx" ON "StatusHistory"("organizationId", "entityType", "changedAt");
 
 -- CreateIndex
-CREATE INDEX "Comment_entityType_entityId_createdAt_idx" ON "Comment"("entityType", "entityId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Comment_entityType_entityId_createdAt_idx" ON "Comment"("entityType", "entityId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Comment_entityType_entityId_idx" ON "Comment"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "Comment_entityType_entityId_idx" ON "Comment"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "Comment_authorId_idx" ON "Comment"("authorId");
+CREATE INDEX IF NOT EXISTS "Comment_authorId_idx" ON "Comment"("authorId");
 
 -- CreateIndex
-CREATE INDEX "Attachment_entityType_entityId_idx" ON "Attachment"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "Attachment_entityType_entityId_idx" ON "Attachment"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "Attachment_entityType_entityId_createdAt_idx" ON "Attachment"("entityType", "entityId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Attachment_entityType_entityId_createdAt_idx" ON "Attachment"("entityType", "entityId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "ApprovalRequest_entityType_entityId_level_idx" ON "ApprovalRequest"("entityType", "entityId", "level");
+CREATE INDEX IF NOT EXISTS "ApprovalRequest_entityType_entityId_level_idx" ON "ApprovalRequest"("entityType", "entityId", "level");
 
 -- CreateIndex
-CREATE INDEX "ApprovalRequest_entityType_entityId_idx" ON "ApprovalRequest"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "ApprovalRequest_entityType_entityId_idx" ON "ApprovalRequest"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "ApprovalRequest_approverId_status_idx" ON "ApprovalRequest"("approverId", "status");
+CREATE INDEX IF NOT EXISTS "ApprovalRequest_approverId_status_idx" ON "ApprovalRequest"("approverId", "status");
 
 -- CreateIndex
-CREATE INDEX "ApprovalRequest_organizationId_idx" ON "ApprovalRequest"("organizationId");
+CREATE INDEX IF NOT EXISTS "ApprovalRequest_organizationId_idx" ON "ApprovalRequest"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
+CREATE INDEX IF NOT EXISTS "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
 
 -- CreateIndex
-CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Notification_organizationId_idx" ON "Notification"("organizationId");
+CREATE INDEX IF NOT EXISTS "Notification_organizationId_idx" ON "Notification"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "BusinessEvent_organizationId_entityType_entityId_createdAt_idx" ON "BusinessEvent"("organizationId", "entityType", "entityId", "createdAt");
+CREATE INDEX IF NOT EXISTS "BusinessEvent_organizationId_entityType_entityId_createdAt_idx" ON "BusinessEvent"("organizationId", "entityType", "entityId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "BusinessEvent_organizationId_entityType_eventType_idx" ON "BusinessEvent"("organizationId", "entityType", "eventType");
+CREATE INDEX IF NOT EXISTS "BusinessEvent_organizationId_entityType_eventType_idx" ON "BusinessEvent"("organizationId", "entityType", "eventType");
 
 -- CreateIndex
-CREATE INDEX "BusinessEvent_entityType_entityId_idx" ON "BusinessEvent"("entityType", "entityId");
+CREATE INDEX IF NOT EXISTS "BusinessEvent_entityType_entityId_idx" ON "BusinessEvent"("entityType", "entityId");
 
 -- CreateIndex
-CREATE INDEX "EventRule_organizationId_entityType_isActive_idx" ON "EventRule"("organizationId", "entityType", "isActive");
+CREATE INDEX IF NOT EXISTS "EventRule_organizationId_entityType_isActive_idx" ON "EventRule"("organizationId", "entityType", "isActive");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EventRule_organizationId_entityType_eventType_fromStatus_key" ON "EventRule"("organizationId", "entityType", "eventType", "fromStatus");
+CREATE UNIQUE INDEX IF NOT EXISTS "EventRule_organizationId_entityType_eventType_fromStatus_key" ON "EventRule"("organizationId", "entityType", "eventType", "fromStatus");
 
 -- CreateIndex
-CREATE INDEX "NumberSequence_organizationId_idx" ON "NumberSequence"("organizationId");
+CREATE INDEX IF NOT EXISTS "NumberSequence_organizationId_idx" ON "NumberSequence"("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "NumberSequence_organizationId_entityName_key" ON "NumberSequence"("organizationId", "entityName");
+CREATE UNIQUE INDEX IF NOT EXISTS "NumberSequence_organizationId_entityName_key" ON "NumberSequence"("organizationId", "entityName");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ItemMaster_itemNumber_key" ON "ItemMaster"("itemNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "ItemMaster_itemNumber_key" ON "ItemMaster"("itemNumber");
 
 -- CreateIndex
-CREATE INDEX "ItemMaster_organizationId_idx" ON "ItemMaster"("organizationId");
+CREATE INDEX IF NOT EXISTS "ItemMaster_organizationId_idx" ON "ItemMaster"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "ItemMaster_organizationId_status_idx" ON "ItemMaster"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "ItemMaster_organizationId_status_idx" ON "ItemMaster"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "ItemMaster_organizationId_category_idx" ON "ItemMaster"("organizationId", "category");
+CREATE INDEX IF NOT EXISTS "ItemMaster_organizationId_category_idx" ON "ItemMaster"("organizationId", "category");
 
 -- CreateIndex
-CREATE INDEX "ItemMaster_itemCode_idx" ON "ItemMaster"("itemCode");
+CREATE INDEX IF NOT EXISTS "ItemMaster_itemCode_idx" ON "ItemMaster"("itemCode");
 
 -- CreateIndex
-CREATE INDEX "ItemMaster_isDeleted_idx" ON "ItemMaster"("isDeleted");
+CREATE INDEX IF NOT EXISTS "ItemMaster_isDeleted_idx" ON "ItemMaster"("isDeleted");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ItemMaster_organizationId_sku_key" ON "ItemMaster"("organizationId", "sku");
+CREATE UNIQUE INDEX IF NOT EXISTS "ItemMaster_organizationId_sku_key" ON "ItemMaster"("organizationId", "sku");
 
 -- CreateIndex
-CREATE INDEX "ItemVariant_itemMasterId_idx" ON "ItemVariant"("itemMasterId");
+CREATE INDEX IF NOT EXISTS "ItemVariant_itemMasterId_idx" ON "ItemVariant"("itemMasterId");
 
 -- CreateIndex
-CREATE INDEX "ItemVariant_organizationId_idx" ON "ItemVariant"("organizationId");
+CREATE INDEX IF NOT EXISTS "ItemVariant_organizationId_idx" ON "ItemVariant"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "ItemBundle_organizationId_idx" ON "ItemBundle"("organizationId");
+CREATE INDEX IF NOT EXISTS "ItemBundle_organizationId_idx" ON "ItemBundle"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "ItemBundle_isDeleted_idx" ON "ItemBundle"("isDeleted");
+CREATE INDEX IF NOT EXISTS "ItemBundle_isDeleted_idx" ON "ItemBundle"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "ItemBundleItem_bundleId_idx" ON "ItemBundleItem"("bundleId");
+CREATE INDEX IF NOT EXISTS "ItemBundleItem_bundleId_idx" ON "ItemBundleItem"("bundleId");
 
 -- CreateIndex
-CREATE INDEX "ItemBundleItem_itemMasterId_idx" ON "ItemBundleItem"("itemMasterId");
+CREATE INDEX IF NOT EXISTS "ItemBundleItem_itemMasterId_idx" ON "ItemBundleItem"("itemMasterId");
 
 -- CreateIndex
-CREATE INDEX "Warehouse_organizationId_idx" ON "Warehouse"("organizationId");
+CREATE INDEX IF NOT EXISTS "Warehouse_organizationId_idx" ON "Warehouse"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Warehouse_isDeleted_idx" ON "Warehouse"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Warehouse_isDeleted_idx" ON "Warehouse"("isDeleted");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Warehouse_organizationId_warehouseCode_key" ON "Warehouse"("organizationId", "warehouseCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "Warehouse_organizationId_warehouseCode_key" ON "Warehouse"("organizationId", "warehouseCode");
 
 -- CreateIndex
-CREATE INDEX "Supplier_organizationId_idx" ON "Supplier"("organizationId");
+CREATE INDEX IF NOT EXISTS "Supplier_organizationId_idx" ON "Supplier"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Supplier_isDeleted_idx" ON "Supplier"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Supplier_isDeleted_idx" ON "Supplier"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "InventoryCategory_organizationId_idx" ON "InventoryCategory"("organizationId");
+CREATE INDEX IF NOT EXISTS "InventoryCategory_organizationId_idx" ON "InventoryCategory"("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "InventoryItem_itemNumber_key" ON "InventoryItem"("itemNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "InventoryItem_itemNumber_key" ON "InventoryItem"("itemNumber");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_organizationId_idx" ON "InventoryItem"("organizationId");
+CREATE INDEX IF NOT EXISTS "InventoryItem_organizationId_idx" ON "InventoryItem"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_organizationId_status_idx" ON "InventoryItem"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "InventoryItem_organizationId_status_idx" ON "InventoryItem"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_itemCode_idx" ON "InventoryItem"("itemCode");
+CREATE INDEX IF NOT EXISTS "InventoryItem_itemCode_idx" ON "InventoryItem"("itemCode");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_itemMasterId_idx" ON "InventoryItem"("itemMasterId");
+CREATE INDEX IF NOT EXISTS "InventoryItem_itemMasterId_idx" ON "InventoryItem"("itemMasterId");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_warehouseId_idx" ON "InventoryItem"("warehouseId");
+CREATE INDEX IF NOT EXISTS "InventoryItem_warehouseId_idx" ON "InventoryItem"("warehouseId");
 
 -- CreateIndex
-CREATE INDEX "InventoryItem_isDeleted_idx" ON "InventoryItem"("isDeleted");
+CREATE INDEX IF NOT EXISTS "InventoryItem_isDeleted_idx" ON "InventoryItem"("isDeleted");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "InventoryItem_organizationId_itemCode_key" ON "InventoryItem"("organizationId", "itemCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "InventoryItem_organizationId_itemCode_key" ON "InventoryItem"("organizationId", "itemCode");
 
 -- CreateIndex
-CREATE INDEX "StockMovement_organizationId_idx" ON "StockMovement"("organizationId");
+CREATE INDEX IF NOT EXISTS "StockMovement_organizationId_idx" ON "StockMovement"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "StockMovement_inventoryItemId_idx" ON "StockMovement"("inventoryItemId");
+CREATE INDEX IF NOT EXISTS "StockMovement_inventoryItemId_idx" ON "StockMovement"("inventoryItemId");
 
 -- CreateIndex
-CREATE INDEX "StockMovement_type_idx" ON "StockMovement"("type");
+CREATE INDEX IF NOT EXISTS "StockMovement_type_idx" ON "StockMovement"("type");
 
 -- CreateIndex
-CREATE INDEX "StockMovement_date_idx" ON "StockMovement"("date");
+CREATE INDEX IF NOT EXISTS "StockMovement_date_idx" ON "StockMovement"("date");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vendor_vendorNumber_key" ON "Vendor"("vendorNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "Vendor_vendorNumber_key" ON "Vendor"("vendorNumber");
 
 -- CreateIndex
-CREATE INDEX "Vendor_organizationId_idx" ON "Vendor"("organizationId");
+CREATE INDEX IF NOT EXISTS "Vendor_organizationId_idx" ON "Vendor"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Vendor_status_idx" ON "Vendor"("status");
+CREATE INDEX IF NOT EXISTS "Vendor_status_idx" ON "Vendor"("status");
 
 -- CreateIndex
-CREATE INDEX "Vendor_isDeleted_idx" ON "Vendor"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Vendor_isDeleted_idx" ON "Vendor"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "Vendor_organizationId_status_idx" ON "Vendor"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "Vendor_organizationId_status_idx" ON "Vendor"("organizationId", "status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PurchaseOrder_poNumber_key" ON "PurchaseOrder"("poNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "PurchaseOrder_poNumber_key" ON "PurchaseOrder"("poNumber");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PurchaseOrder_poNumberInt_key" ON "PurchaseOrder"("poNumberInt");
+CREATE UNIQUE INDEX IF NOT EXISTS "PurchaseOrder_poNumberInt_key" ON "PurchaseOrder"("poNumberInt");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_organizationId_idx" ON "PurchaseOrder"("organizationId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_organizationId_idx" ON "PurchaseOrder"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_vendorId_idx" ON "PurchaseOrder"("vendorId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_vendorId_idx" ON "PurchaseOrder"("vendorId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_projectId_idx" ON "PurchaseOrder"("projectId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_projectId_idx" ON "PurchaseOrder"("projectId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_status_idx" ON "PurchaseOrder"("status");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_status_idx" ON "PurchaseOrder"("status");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_poNumber_idx" ON "PurchaseOrder"("poNumber");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_poNumber_idx" ON "PurchaseOrder"("poNumber");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_createdAt_idx" ON "PurchaseOrder"("createdAt");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_createdAt_idx" ON "PurchaseOrder"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_isDeleted_idx" ON "PurchaseOrder"("isDeleted");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_isDeleted_idx" ON "PurchaseOrder"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_organizationId_status_idx" ON "PurchaseOrder"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_organizationId_status_idx" ON "PurchaseOrder"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrder_organizationId_isDeleted_idx" ON "PurchaseOrder"("organizationId", "isDeleted");
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_organizationId_isDeleted_idx" ON "PurchaseOrder"("organizationId", "isDeleted");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderItem_purchaseOrderId_idx" ON "PurchaseOrderItem"("purchaseOrderId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderItem_purchaseOrderId_idx" ON "PurchaseOrderItem"("purchaseOrderId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderItem_itemMasterId_idx" ON "PurchaseOrderItem"("itemMasterId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderItem_itemMasterId_idx" ON "PurchaseOrderItem"("itemMasterId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderItem_organizationId_idx" ON "PurchaseOrderItem"("organizationId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderItem_organizationId_idx" ON "PurchaseOrderItem"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderTimeline_purchaseOrderId_idx" ON "PurchaseOrderTimeline"("purchaseOrderId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderTimeline_purchaseOrderId_idx" ON "PurchaseOrderTimeline"("purchaseOrderId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderTimeline_organizationId_idx" ON "PurchaseOrderTimeline"("organizationId");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderTimeline_organizationId_idx" ON "PurchaseOrderTimeline"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "PurchaseOrderTimeline_createdAt_idx" ON "PurchaseOrderTimeline"("createdAt");
+CREATE INDEX IF NOT EXISTS "PurchaseOrderTimeline_createdAt_idx" ON "PurchaseOrderTimeline"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Task_taskId_key" ON "Task"("taskId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Task_taskId_key" ON "Task"("taskId");
 
 -- CreateIndex
-CREATE INDEX "Task_organizationId_idx" ON "Task"("organizationId");
+CREATE INDEX IF NOT EXISTS "Task_organizationId_idx" ON "Task"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "Task_organizationId_status_idx" ON "Task"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "Task_organizationId_status_idx" ON "Task"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "Task_organizationId_priority_idx" ON "Task"("organizationId", "priority");
+CREATE INDEX IF NOT EXISTS "Task_organizationId_priority_idx" ON "Task"("organizationId", "priority");
 
 -- CreateIndex
-CREATE INDEX "Task_assignedUserId_idx" ON "Task"("assignedUserId");
+CREATE INDEX IF NOT EXISTS "Task_assignedUserId_idx" ON "Task"("assignedUserId");
 
 -- CreateIndex
-CREATE INDEX "Task_createdById_idx" ON "Task"("createdById");
+CREATE INDEX IF NOT EXISTS "Task_createdById_idx" ON "Task"("createdById");
 
 -- CreateIndex
-CREATE INDEX "Task_status_idx" ON "Task"("status");
+CREATE INDEX IF NOT EXISTS "Task_status_idx" ON "Task"("status");
 
 -- CreateIndex
-CREATE INDEX "Task_dueDate_idx" ON "Task"("dueDate");
+CREATE INDEX IF NOT EXISTS "Task_dueDate_idx" ON "Task"("dueDate");
 
 -- CreateIndex
-CREATE INDEX "Task_isDeleted_idx" ON "Task"("isDeleted");
+CREATE INDEX IF NOT EXISTS "Task_isDeleted_idx" ON "Task"("isDeleted");
 
 -- CreateIndex
-CREATE INDEX "Task_organizationId_isDeleted_idx" ON "Task"("organizationId", "isDeleted");
+CREATE INDEX IF NOT EXISTS "Task_organizationId_isDeleted_idx" ON "Task"("organizationId", "isDeleted");
 
 -- CreateIndex
-CREATE INDEX "TaskChecklist_taskId_idx" ON "TaskChecklist"("taskId");
+CREATE INDEX IF NOT EXISTS "TaskChecklist_taskId_idx" ON "TaskChecklist"("taskId");
 
 -- CreateIndex
-CREATE INDEX "TaskComment_taskId_idx" ON "TaskComment"("taskId");
+CREATE INDEX IF NOT EXISTS "TaskComment_taskId_idx" ON "TaskComment"("taskId");
 
 -- CreateIndex
-CREATE INDEX "TaskComment_taskId_createdAt_idx" ON "TaskComment"("taskId", "createdAt");
+CREATE INDEX IF NOT EXISTS "TaskComment_taskId_createdAt_idx" ON "TaskComment"("taskId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "TaskAttachment_taskId_idx" ON "TaskAttachment"("taskId");
+CREATE INDEX IF NOT EXISTS "TaskAttachment_taskId_idx" ON "TaskAttachment"("taskId");
 
 -- CreateIndex
-CREATE INDEX "TaskDependency_taskId_idx" ON "TaskDependency"("taskId");
+CREATE INDEX IF NOT EXISTS "TaskDependency_taskId_idx" ON "TaskDependency"("taskId");
 
 -- CreateIndex
-CREATE INDEX "TaskDependency_dependsOnTaskId_idx" ON "TaskDependency"("dependsOnTaskId");
+CREATE INDEX IF NOT EXISTS "TaskDependency_dependsOnTaskId_idx" ON "TaskDependency"("dependsOnTaskId");
 
 -- CreateIndex
-CREATE INDEX "TaskActivityLog_taskId_idx" ON "TaskActivityLog"("taskId");
+CREATE INDEX IF NOT EXISTS "TaskActivityLog_taskId_idx" ON "TaskActivityLog"("taskId");
 
 -- CreateIndex
-CREATE INDEX "TaskActivityLog_taskId_createdAt_idx" ON "TaskActivityLog"("taskId", "createdAt");
+CREATE INDEX IF NOT EXISTS "TaskActivityLog_taskId_createdAt_idx" ON "TaskActivityLog"("taskId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "SalaryAdjustment_organizationId_idx" ON "SalaryAdjustment"("organizationId");
+CREATE INDEX IF NOT EXISTS "SalaryAdjustment_organizationId_idx" ON "SalaryAdjustment"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "SalaryAdjustment_organizationId_employeeId_idx" ON "SalaryAdjustment"("organizationId", "employeeId");
+CREATE INDEX IF NOT EXISTS "SalaryAdjustment_organizationId_employeeId_idx" ON "SalaryAdjustment"("organizationId", "employeeId");
 
 -- CreateIndex
-CREATE INDEX "SalaryAdjustment_organizationId_status_idx" ON "SalaryAdjustment"("organizationId", "status");
+CREATE INDEX IF NOT EXISTS "SalaryAdjustment_organizationId_status_idx" ON "SalaryAdjustment"("organizationId", "status");
 
 -- CreateIndex
-CREATE INDEX "SalaryAdjustment_employeeId_idx" ON "SalaryAdjustment"("employeeId");
+CREATE INDEX IF NOT EXISTS "SalaryAdjustment_employeeId_idx" ON "SalaryAdjustment"("employeeId");
 
 -- CreateIndex
-CREATE INDEX "SalaryAdjustment_isDeleted_idx" ON "SalaryAdjustment"("isDeleted");
+CREATE INDEX IF NOT EXISTS "SalaryAdjustment_isDeleted_idx" ON "SalaryAdjustment"("isDeleted");
 
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "User" ADD CONSTRAINT "User_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Customer" ADD CONSTRAINT "Customer_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Customer" ADD CONSTRAINT "Customer_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Project" ADD CONSTRAINT "Project_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Project" ADD CONSTRAINT "Project_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ProjectMilestone" ADD CONSTRAINT "ProjectMilestone_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ProjectMilestone" ADD CONSTRAINT "ProjectMilestone_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ProjectTeamMember" ADD CONSTRAINT "ProjectTeamMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ProjectTeamMember" ADD CONSTRAINT "ProjectTeamMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Lead" ADD CONSTRAINT "Lead_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Lead" ADD CONSTRAINT "Lead_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemMaster" ADD CONSTRAINT "ItemMaster_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemMaster" ADD CONSTRAINT "ItemMaster_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemVariant" ADD CONSTRAINT "ItemVariant_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemVariant" ADD CONSTRAINT "ItemVariant_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemVariant" ADD CONSTRAINT "ItemVariant_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemVariant" ADD CONSTRAINT "ItemVariant_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemBundle" ADD CONSTRAINT "ItemBundle_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemBundle" ADD CONSTRAINT "ItemBundle_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemBundleItem" ADD CONSTRAINT "ItemBundleItem_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemBundleItem" ADD CONSTRAINT "ItemBundleItem_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "ItemBundleItem" ADD CONSTRAINT "ItemBundleItem_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "ItemBundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "ItemBundleItem" ADD CONSTRAINT "ItemBundleItem_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "ItemBundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "InventoryCategory" ADD CONSTRAINT "InventoryCategory_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "InventoryCategory" ADD CONSTRAINT "InventoryCategory_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_itemMasterId_fkey" FOREIGN KEY ("itemMasterId") REFERENCES "ItemMaster"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Vendor" ADD CONSTRAINT "Vendor_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Vendor" ADD CONSTRAINT "Vendor_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseOrderTimeline" ADD CONSTRAINT "PurchaseOrderTimeline_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "PurchaseOrderTimeline" ADD CONSTRAINT "PurchaseOrderTimeline_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Task" ADD CONSTRAINT "Task_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "Task" ADD CONSTRAINT "Task_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "TaskChecklist" ADD CONSTRAINT "TaskChecklist_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "TaskChecklist" ADD CONSTRAINT "TaskChecklist_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "TaskAttachment" ADD CONSTRAINT "TaskAttachment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "TaskAttachment" ADD CONSTRAINT "TaskAttachment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "TaskDependency" ADD CONSTRAINT "TaskDependency_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "TaskDependency" ADD CONSTRAINT "TaskDependency_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "TaskActivityLog" ADD CONSTRAINT "TaskActivityLog_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "TaskActivityLog" ADD CONSTRAINT "TaskActivityLog_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "SalaryAdjustment" ADD CONSTRAINT "SalaryAdjustment_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "SalaryAdjustment" ADD CONSTRAINT "SalaryAdjustment_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
 
