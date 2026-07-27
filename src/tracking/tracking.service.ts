@@ -487,7 +487,7 @@ export class TrackingService {
     const authorIds = [...new Set(comments.map((c) => c.authorId).filter(Boolean))];
     const users = authorIds.length
       ? await this.prisma.user.findMany({
-          where: { id: { in: authorIds } },
+          where: { id: { in: authorIds }, organizationId },
           select: { id: true, name: true, email: true, designation: true, department: true },
         })
       : [];

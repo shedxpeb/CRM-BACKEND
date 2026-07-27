@@ -73,8 +73,8 @@ export class TaskService extends BaseQueryService {
 
     let assignedUserName = dto.assignedUserName;
     if (!assignedUserName && dto.assignedUserId) {
-      const assignee = await this.prisma.user.findUnique({
-        where: { id: dto.assignedUserId },
+      const assignee = await this.prisma.user.findFirst({
+        where: { id: dto.assignedUserId, organizationId: orgId },
         select: { name: true },
       });
       assignedUserName = assignee?.name || dto.assignedUserId;

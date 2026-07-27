@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PurchaseOrderController } from './purchase-order.controller';
 import { PurchaseOrderService } from './purchase-order.service';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -13,9 +13,9 @@ import { ProjectModule } from '../project/project.module';
     PrismaModule,
     AuthModule,
     WorkflowModule,
-    forwardRef(() => VendorModule),
-    forwardRef(() => ItemMasterModule),
-    forwardRef(() => ProjectModule),
+    VendorModule,
+    ItemMasterModule,
+    ProjectModule,
   ],
   controllers: [PurchaseOrderController],
   providers: [PurchaseOrderService],

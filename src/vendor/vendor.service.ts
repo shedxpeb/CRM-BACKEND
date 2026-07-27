@@ -245,7 +245,7 @@ export class VendorService {
     }
 
     const hasPurchaseOrders = await this.prisma.purchaseOrder.count({
-      where: { vendorId: id, isDeleted: false },
+      where: { vendorId: id, organizationId, isDeleted: false },
     });
 
     if (hasPurchaseOrders > 0) {
@@ -279,7 +279,7 @@ export class VendorService {
 
   async bulkDelete(ids: string[], deletedById: string, organizationId: string) {
     const hasPurchaseOrders = await this.prisma.purchaseOrder.count({
-      where: { vendorId: { in: ids }, isDeleted: false },
+      where: { vendorId: { in: ids }, organizationId, isDeleted: false },
     });
 
     if (hasPurchaseOrders > 0) {
