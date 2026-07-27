@@ -147,7 +147,6 @@ export class PurchaseOrderService extends BaseQueryService {
       ? (await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } }))?.name
       : null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const purchaseOrder = await this.prisma.purchaseOrder.create({
       data: {
         poNumber,
