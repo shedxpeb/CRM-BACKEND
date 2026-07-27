@@ -153,7 +153,7 @@ export class WorkflowEngineService {
 
     const users = userIds.size
       ? await this.prisma.user.findMany({
-          where: { id: { in: [...userIds] } },
+          where: { id: { in: [...userIds] }, organizationId },
           select: {
             id: true,
             name: true,

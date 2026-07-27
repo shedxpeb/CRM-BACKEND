@@ -28,7 +28,7 @@ export class PurchaseOrderService extends BaseQueryService {
   }
 
   async generatePONumber(organizationId: string): Promise<string> {
-    const sequence = await this.prisma.$queryRaw<{ lastvalue: number }[]>`
+    const sequence = await this.prisma.$queryRaw<{ lastValue: number }[]>`
       UPDATE "NumberSequence"
       SET "lastValue" = "lastValue" + 1, "updatedAt" = NOW()
       WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
@@ -41,14 +41,14 @@ export class PurchaseOrderService extends BaseQueryService {
         VALUES (gen_random_uuid(), ${organizationId}, 'PO', 'PO', 1, NOW(), NOW())
         ON CONFLICT ("organizationId", "entityName") DO UPDATE SET "lastValue" = "NumberSequence"."lastValue" + 1, "updatedAt" = NOW()
       `;
-      const retry = await this.prisma.$queryRaw<{ lastvalue: number }[]>`
-        SELECT "lastValue" as lastvalue FROM "NumberSequence"
+      const retry = await this.prisma.$queryRaw<{ lastValue: number }[]>`
+        SELECT "lastValue" FROM "NumberSequence"
         WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
       `;
-      return `PO${String(retry[0].lastvalue).padStart(6, '0')}`;
+      return `PO${String(retry[0].lastValue).padStart(6, '0')}`;
     }
 
-    return `PO${String(sequence[0].lastvalue).padStart(6, '0')}`;
+    return `PO${String(sequence[0].lastValue).padStart(6, '0')}`;
   }
 
   async createWithRetry(
@@ -150,7 +150,6 @@ export class PurchaseOrderService extends BaseQueryService {
     const purchaseOrder = await this.prisma.purchaseOrder.create({
       data: {
         poNumber,
-        poNumberInt: parseInt(poNumber.replace('PO', '')),
         vendorId: dto.vendorId,
         vendorName: vendor.companyName,
         projectId: dto.projectId,
@@ -179,34 +178,42 @@ export class PurchaseOrderService extends BaseQueryService {
         createdById,
         createdBy,
         organizationId,
-        items: {
-          create: dto.items.map((item, idx) => ({
-            organizationId,
-            itemMasterId: item.itemMasterId,
-            itemCode: item.itemCode,
-            itemName: item.itemName,
-            description: item.description,
-            quantity: item.quantity,
-            unit: item.unit,
-            rate: item.rate,
-            gstRate: item.gstRate,
-            gstAmount: financials.itemDetails[idx].gstAmount,
-            discount: item.discount || 0,
-            discountType: item.discountType,
-            total: financials.itemDetails[idx].total,
-            hsnCode: item.hsnCode,
-            pendingQuantity: financials.itemDetails[idx].pendingQuantity,
-          })),
-        },
-        timeline: {
-          create: {
-            organizationId,
-            action: 'Created',
-            performedById: createdById,
-            performedBy: createdBy,
-          },
-        },
+      } as any,
+    });
+
+    await this.prisma.purchaseOrderItem.createMany({
+      data: dto.items.map((item, idx) => ({
+        organizationId,
+        purchaseOrderId: purchaseOrder.id,
+        itemMasterId: item.itemMasterId || '',
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        description: item.description || '',
+        quantity: item.quantity,
+        unit: item.unit,
+        rate: item.rate,
+        gstRate: item.gstRate || 0,
+        gstAmount: financials.itemDetails[idx].gstAmount,
+        discount: item.discount || 0,
+        discountType: item.discountType || '',
+        total: financials.itemDetails[idx].total,
+        hsnCode: item.hsnCode || '',
+        pendingQuantity: financials.itemDetails[idx].pendingQuantity,
+      })),
+    });
+
+    await this.prisma.purchaseOrderTimeline.create({
+      data: {
+        organizationId,
+        purchaseOrderId: purchaseOrder.id,
+        action: 'Created',
+        performedById: createdById,
+        performedBy: createdBy,
       },
+    });
+
+    const fullPO = await this.prisma.purchaseOrder.findUnique({
+      where: { id: purchaseOrder.id },
       include: { items: true, timeline: true },
     });
 
@@ -236,7 +243,7 @@ export class PurchaseOrderService extends BaseQueryService {
       this.poLogger.error(`Workflow event failed: ${e.message}`);
     }
 
-    return serializeDecimals(purchaseOrder);
+    return serializeDecimals(fullPO);
   }
 
   async update(

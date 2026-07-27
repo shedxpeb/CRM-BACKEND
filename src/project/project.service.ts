@@ -256,7 +256,7 @@ export class ProjectService extends BaseQueryService {
     let projectManager = data.projectManager;
     if (!projectManager && data.projectManagerId) {
       const manager = await this.prisma.user.findFirst({
-        where: { id: data.projectManagerId },
+        where: { id: data.projectManagerId, organizationId },
         select: { name: true, email: true },
       });
       projectManager = manager?.name || manager?.email || undefined;
