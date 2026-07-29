@@ -22,6 +22,7 @@ const EVENT_TITLE_MAP: Record<string, string> = {
   'status.changed': 'Status Changed',
   converted: 'Converted to Customer',
   'converted-from-lead': 'Created from Lead Conversion',
+  'conversion-reverted': 'Conversion Reverted',
   'lead.converted': 'Lead Converted to Customer',
   'lead.converted-to-customer': 'Lead Converted to Customer',
   'comment.added': 'Comment Added',

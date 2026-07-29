@@ -381,6 +381,53 @@ export class LeadService extends BaseQueryService {
     }
   }
 
+  async getProjectData(id: string, organizationId: string) {
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const lead = await this.client.findFirst({
+      where: { id, isDeleted: false, organizationId },
+      select: {
+        id: true,
+        leadNumber: true,
+        customerName: true,
+        companyName: true,
+        mobile: true,
+        email: true,
+        customerId: true,
+        status: true,
+        isConverted: true,
+        projectTitle: true,
+        projectType: true,
+        structureType: true,
+        width: true,
+        length: true,
+        height: true,
+        baySpacing: true,
+        roofType: true,
+        craneRequired: true,
+        craneCapacity: true,
+        mezzanine: true,
+        mezzanineArea: true,
+        wallType: true,
+        insulationRequired: true,
+        addressLine1: true,
+        addressLine2: true,
+        city: true,
+        state: true,
+        pincode: true,
+        siteAddress: true,
+        siteLocation: true,
+        specialRequirement: true,
+        customerNotes: true,
+      },
+    });
+    if (!lead) {
+      throw new NotFoundException(`Lead with ID ${id} not found`);
+    }
+    return serializeDecimals(lead);
+  }
+
   async getLogs(id: string, organizationId: string) {
     await this.findById(id, undefined, organizationId);
     const logs = await this.prisma.auditLog.findMany({
