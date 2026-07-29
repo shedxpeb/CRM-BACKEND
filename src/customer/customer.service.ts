@@ -180,6 +180,45 @@ export class CustomerService extends BaseQueryService {
     return { total, active, newThisMonth };
   }
 
+  async getProjectData(id: string, organizationId: string) {
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+    const customer = await this.client.findFirst({
+      where: { id, isDeleted: false, organizationId },
+      select: {
+        id: true,
+        customerId: true,
+        customerName: true,
+        companyName: true,
+        mobile: true,
+        alternateMobile: true,
+        email: true,
+        gstNumber: true,
+        panNumber: true,
+        industry: true,
+        businessType: true,
+        website: true,
+        address: true,
+        city: true,
+        state: true,
+        country: true,
+        pincode: true,
+        assignedEmployee: true,
+        assignedEmployeeId: true,
+        source: true,
+        status: true,
+        notes: true,
+        customFields: true,
+        leadId: true,
+      },
+    });
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${id} not found`);
+    }
+    return serializeDecimals(customer);
+  }
+
   async getActivities(id: string, organizationId: string) {
     const activities = await this.prisma.auditLog.findMany({
       where: { resource: 'customer', resourceId: id, organizationId },
@@ -206,12 +245,68 @@ export class CustomerService extends BaseQueryService {
   }
 
   async softDelete(id: string, deletedById?: string, organizationId?: string): Promise<unknown> {
+    const customer = await this.client.findFirst({
+      where: { id, organizationId, isDeleted: false },
+      select: { id: true, convertedFromLeadId: true, customerName: true, customerId: true },
+    });
+
     const result = await super.softDelete(id, deletedById, organizationId);
+
+    if (customer?.convertedFromLeadId && organizationId) {
+      const lead = await this.prisma.lead.findFirst({
+        where: { id: customer.convertedFromLeadId, organizationId, isDeleted: false },
+        select: { id: true, status: true, customerId: true, isConverted: true },
+      });
+
+      if (lead && lead.customerId === id && lead.isConverted) {
+        await this.prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            customerId: null,
+            isConverted: false,
+            convertedDate: null,
+            status: 'Contacted',
+          },
+        });
+
+        await this.prisma.statusHistory.create({
+          data: {
+            entityType: 'lead',
+            entityId: lead.id,
+            organizationId,
+            fromStatus: 'Converted',
+            toStatus: 'Contacted',
+            changedById: deletedById,
+            reason: 'Customer deleted — conversion reverted',
+          },
+        });
+
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'lead',
+          entityId: lead.id,
+          eventType: 'conversion-reverted',
+          data: {
+            fromStatus: 'Converted',
+            toStatus: 'Contacted',
+            customerId: id,
+            customerName: customer.customerName,
+          },
+          createdById: deletedById,
+        });
+      }
+    }
+
     await this.auditService.log({
       action: 'customer.deleted',
       userId: deletedById,
       resource: 'customer',
       resourceId: id,
+      metadata: {
+        customerName: customer?.customerName,
+        convertedFromLeadId: customer?.convertedFromLeadId,
+        leadReverted: !!customer?.convertedFromLeadId,
+      },
     });
     await this.workflowEngine.processEvent({
       organizationId,
@@ -410,6 +505,18 @@ export class CustomerService extends BaseQueryService {
           isConverted: true,
           customerId: customer.id,
           convertedDate: new Date(),
+        },
+      });
+
+      await tx.statusHistory.create({
+        data: {
+          entityType: 'lead',
+          entityId: lead.id,
+          organizationId: orgId,
+          fromStatus: lead.status,
+          toStatus: 'Converted',
+          changedById: createdById,
+          reason: 'Lead converted to customer',
         },
       });
 

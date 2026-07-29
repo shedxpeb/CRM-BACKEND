@@ -84,6 +84,17 @@ export class CustomerController {
     return { message: 'Customer restored.', data };
   }
 
+  @Get(':id/project-data')
+  @RequirePermissions('customer:read')
+  @ApiOperation({ summary: 'Get customer data optimized for project creation' })
+  async getProjectData(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.customerService.getProjectData(id, organizationId);
+    return { message: 'Customer project data fetched successfully.', data };
+  }
+
   @Get(':id')
   @RequirePermissions('customer:read')
   @ApiOperation({ summary: 'Get customer by ID' })

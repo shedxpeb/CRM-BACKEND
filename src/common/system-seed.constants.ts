@@ -65,7 +65,7 @@ export const LEAD_PIPELINE = [
     order: 1,
     isInitial: true,
     isFinal: false,
-    allowedTransitions: ['Contacted', 'Rejected'],
+    allowedTransitions: ['Contacted', 'Rejected', 'Converted'],
     color: '#6b7280',
   },
   {

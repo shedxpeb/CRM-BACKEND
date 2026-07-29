@@ -135,6 +135,17 @@ export class LeadController {
     return { message: 'Lead created successfully.', data };
   }
 
+  @Get(':id/project-data')
+  @RequirePermissions('lead:read')
+  @ApiOperation({ summary: 'Get lead data optimized for project creation' })
+  async getProjectData(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.leadService.getProjectData(id, organizationId);
+    return { message: 'Lead project data fetched successfully.', data };
+  }
+
   @Get(':id')
   @RequirePermissions('lead:read')
   async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {

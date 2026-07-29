@@ -27,7 +27,7 @@ const DEFAULT_PIPELINES: Record<
       order: 1,
       isInitial: true,
       color: '#6366f1',
-      allowedTransitions: ['Contacted', 'Rejected'],
+      allowedTransitions: ['Contacted', 'Rejected', 'Converted'],
     },
     {
       status: 'Contacted',
@@ -282,6 +282,14 @@ export class TrackingService {
     const currentIndex = this.findStageIndex(pipeline, fromStatus);
     const currentStep = currentIndex >= 0 ? pipeline[currentIndex] : null;
     const allowed = this.resolveTransitions(currentStep, pipeline);
+
+    // Terminal stages have empty allowedTransitions — block ALL transitions
+    if (Array.isArray(currentStep?.allowedTransitions) && currentStep.allowedTransitions.length === 0) {
+      throw new BadRequestException(
+        `"${fromStatus || 'unset'}" is a terminal status. No further transitions are allowed.`,
+      );
+    }
+
     if (
       allowed.length > 0 &&
       !allowed.some((a) => normalizeStatus(a) === normalizeStatus(canonicalStatus))
@@ -363,14 +371,25 @@ export class TrackingService {
   }
 
   private async getCurrentStatus(entityType: string, entityId: string, organizationId: string) {
-    const latest = await this.prisma.statusHistory.findFirst({
-      where: { entityType, entityId, organizationId },
-      orderBy: { changedAt: 'desc' },
-    });
-    if (latest?.toStatus) return latest.toStatus;
+    const [latestHistory, entityStatus] = await Promise.all([
+      this.prisma.statusHistory.findFirst({
+        where: { entityType, entityId, organizationId },
+        orderBy: { changedAt: 'desc' },
+      }),
+      this.getEntityStatus(entityType, entityId, organizationId),
+    ]);
 
-    // Fall back to live entity status — critical so UI never shows "No stage set" for real records
-    return this.getEntityStatus(entityType, entityId, organizationId);
+    const historyStatus = latestHistory?.toStatus || null;
+
+    // If both exist but differ, the live entity status is the source of truth
+    // (statusHistory can be stale when entities are updated outside the tracking pipeline,
+    // e.g. convert-lead endpoint updates Lead.status directly)
+    if (entityStatus && historyStatus && normalizeStatus(entityStatus) !== normalizeStatus(historyStatus)) {
+      return entityStatus;
+    }
+
+    if (historyStatus) return historyStatus;
+    return entityStatus;
   }
 
   private async getEntityStatus(
@@ -723,8 +742,12 @@ export class TrackingService {
       if (initial?.allowedTransitions?.length) return initial.allowedTransitions;
       return pipeline.map((s) => s.status);
     }
-    if (currentStep.allowedTransitions?.length) return currentStep.allowedTransitions;
-    // If transitions not configured, allow any other stage in pipeline
+    // Explicit allowedTransitions array (even if empty) is the source of truth.
+    // An empty array means the stage is terminal — no further transitions.
+    if (Array.isArray(currentStep.allowedTransitions)) {
+      return currentStep.allowedTransitions;
+    }
+    // If transitions not configured at all, allow any other stage in pipeline
     return pipeline.filter((s) => s.status !== currentStep.status).map((s) => s.status);
   }
 
