@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model Organization {
@@ -238,6 +237,8 @@ model Customer {
   customerSince       DateTime       @default(now())
   leadId              String?
   convertedFromLeadId String?
+  projectTitle        String?
+  projectType         String?
   createdById         String?
   createdBy           String?
   updatedBy           String?
@@ -263,7 +264,7 @@ model Project {
   id                      String              @id @default(uuid())
   organizationId          String
   projectId               Int                 @unique @default(autoincrement())
-  projectCode             String?
+  projectCode             String              @unique
   projectName             String
   customerId              String
   customerName            String
@@ -420,7 +421,6 @@ model Lead {
   nextFollowUpDate    DateTime?
   updatedAt           DateTime            @updatedAt
   remarks             String?
-  assignedToId        String?
   createdAt           DateTime            @default(now())
   createdById         String
   isConverted         Boolean             @default(false)
@@ -429,7 +429,6 @@ model Lead {
   deletedById         String?
   isDeleted           Boolean             @default(false)
   alternateMobile     String?
-  assignedTo          String?
   attachments         String[]
   baySpacing          Decimal?           @db.Decimal(12, 3)
   convertedDate       DateTime?
@@ -489,7 +488,6 @@ model Lead {
   @@index([mobile])
   @@index([companyName])
   @@index([createdById])
-  @@index([assignedToId])
   @@index([isDeleted])
   @@index([organizationId])
   @@index([organizationId, status])
@@ -728,6 +726,7 @@ enum CustomerStatus {
   Converted
   Churned
   Archived
+  Rejected
 }
 
 enum Industry {

@@ -82,30 +82,36 @@ const DEFAULT_PIPELINES: Record<
       status: 'Rejected',
       label: 'Rejected',
       order: 9,
-      isFinal: true,
+      isFinal: false,
       color: '#ef4444',
-      allowedTransitions: ['New', 'Contacted'],
+      allowedTransitions: ['New'],
     },
     {
       status: 'Converted',
       label: 'Converted',
       order: 10,
-      isFinal: true,
-      color: '#059669',
-      allowedTransitions: [],
+      isFinal: false,
+      color: '#14b8a6',
+      allowedTransitions: ['New'],
     },
   ],
   customer: [
-    { status: 'Prospect', label: 'Prospect', order: 1, isInitial: true, color: '#6366f1' },
-    { status: 'Active', label: 'Active', order: 2, color: '#22c55e' },
-    { status: 'Inactive', label: 'Inactive', order: 3, isFinal: true, color: '#94a3b8' },
+    { status: 'Active', label: 'Active', order: 1, isInitial: true, color: '#22c55e', allowedTransitions: ['Inactive', 'Archived', 'Rejected'] },
+    { status: 'Inactive', label: 'Inactive', order: 2, color: '#94a3b8', allowedTransitions: ['Active', 'Archived', 'Rejected'] },
+    { status: 'Archived', label: 'Archived', order: 3, isFinal: true, color: '#6b7280', allowedTransitions: [] },
+    { status: 'Rejected', label: 'Rejected', order: 4, isFinal: false, color: '#ef4444', allowedTransitions: ['Active'] },
   ],
   project: [
-    { status: 'Lead', label: 'Lead', order: 1, isInitial: true, color: '#6366f1' },
-    { status: 'Active', label: 'Active', order: 2, color: '#22c55e' },
-    { status: 'OnHold', label: 'On Hold', order: 3, color: '#eab308' },
-    { status: 'Completed', label: 'Completed', order: 4, isFinal: true, color: '#059669' },
-    { status: 'Cancelled', label: 'Cancelled', order: 5, isFinal: true, color: '#ef4444' },
+    { status: 'New', label: 'New', order: 1, isInitial: true, color: '#6b7280', allowedTransitions: ['DesignInProgress', 'OnHold', 'Cancelled'] },
+    { status: 'DesignInProgress', label: 'Design In Progress', order: 2, color: '#3b82f6', allowedTransitions: ['DesignApproved', 'OnHold', 'Cancelled'] },
+    { status: 'DesignApproved', label: 'Design Approved', order: 3, color: '#8b5cf6', allowedTransitions: ['Fabrication', 'OnHold', 'Cancelled'] },
+    { status: 'Fabrication', label: 'Fabrication', order: 4, color: '#f59e0b', allowedTransitions: ['DispatchReady', 'OnHold', 'Cancelled'] },
+    { status: 'DispatchReady', label: 'Dispatch Ready', order: 5, color: '#f97316', allowedTransitions: ['Dispatched', 'OnHold'] },
+    { status: 'Dispatched', label: 'Dispatched', order: 6, color: '#10b981', allowedTransitions: ['Installation', 'Cancelled'] },
+    { status: 'Installation', label: 'Installation', order: 7, color: '#14b8a6', allowedTransitions: ['Completed', 'OnHold', 'Cancelled'] },
+    { status: 'Completed', label: 'Completed', order: 8, isFinal: true, color: '#22c55e', allowedTransitions: [] },
+    { status: 'OnHold', label: 'On Hold', order: 9, color: '#f59e0b', allowedTransitions: ['DesignInProgress', 'Fabrication', 'Installation', 'Cancelled'] },
+    { status: 'Cancelled', label: 'Cancelled', order: 10, isFinal: false, color: '#ef4444', allowedTransitions: ['New'] },
   ],
   'purchase-order': [
     { status: 'Draft', label: 'Draft', order: 1, isInitial: true, color: '#6366f1' },
@@ -339,35 +345,91 @@ export class TrackingService {
   }
 
   private async ensurePipeline(entityType: string, organizationId: string) {
-    const existing = await this.prisma.statusPipeline.findMany({
-      where: { entityType, organizationId, isActive: true },
-      orderBy: { order: 'asc' },
-    });
-    if (existing.length > 0) return existing;
-
     const defaults = DEFAULT_PIPELINES[entityType];
-    if (!defaults?.length) return [];
+    if (!defaults?.length) {
+      return this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
 
-    await this.prisma.statusPipeline.createMany({
-      data: defaults.map((d) => ({
-        organizationId,
-        entityType,
-        status: d.status,
-        label: d.label,
-        order: d.order,
-        color: d.color,
-        isInitial: !!d.isInitial,
-        isFinal: !!d.isFinal,
-        isActive: true,
-        allowedTransitions: d.allowedTransitions || [],
-      })),
-      skipDuplicates: true,
-    });
-
-    return this.prisma.statusPipeline.findMany({
+    let pipeline = await this.prisma.statusPipeline.findMany({
       where: { entityType, organizationId, isActive: true },
       orderBy: { order: 'asc' },
     });
+
+    if (pipeline.length === 0) {
+      await this.prisma.statusPipeline.createMany({
+        data: defaults.map((d) => ({
+          organizationId,
+          entityType,
+          status: d.status,
+          label: d.label,
+          order: d.order,
+          color: d.color,
+          isInitial: !!d.isInitial,
+          isFinal: !!d.isFinal,
+          isActive: true,
+          allowedTransitions: d.allowedTransitions || [],
+        })),
+        skipDuplicates: true,
+      });
+      return this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
+
+    // Keep existing pipelines in sync with the canonical defaults.
+    // Org pipelines seeded before a stage was introduced will never show it otherwise.
+    const existingStatuses = new Set(pipeline.map((s) => s.status));
+    const missing = defaults.filter((d) => !existingStatuses.has(d.status));
+
+    if (missing.length > 0) {
+      const maxOrder = pipeline.reduce((max, s) => Math.max(max, s.order), 0);
+      await this.prisma.statusPipeline.createMany({
+        data: missing.map((d, i) => ({
+          organizationId,
+          entityType,
+          status: d.status,
+          label: d.label,
+          order: maxOrder + i + 1,
+          color: d.color,
+          isInitial: !!d.isInitial,
+          isFinal: !!d.isFinal,
+          isActive: true,
+          allowedTransitions: d.allowedTransitions || [],
+        })),
+        skipDuplicates: true,
+      });
+
+      // Extend existing stages' transitions so records can move into the newly added stage.
+      const defaultByStatus = new Map(defaults.map((d) => [d.status, d]));
+      const updates: Array<Promise<unknown>> = [];
+      for (const stage of pipeline) {
+        const def = defaultByStatus.get(stage.status);
+        if (!def) continue;
+        const merged = [
+          ...new Set([...(stage.allowedTransitions || []), ...(def.allowedTransitions || [])]),
+        ];
+        if (merged.join(',') !== (stage.allowedTransitions || []).join(',')) {
+          updates.push(
+            this.prisma.statusPipeline.update({
+              where: { id: stage.id },
+              data: { allowedTransitions: merged },
+            }),
+          );
+        }
+      }
+      if (updates.length > 0) await Promise.all(updates);
+
+      pipeline = await this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
+
+    return pipeline;
   }
 
   private async getCurrentStatus(entityType: string, entityId: string, organizationId: string) {
@@ -451,21 +513,129 @@ export class TrackingService {
       case 'customer': {
         const customer = await this.prisma.customer.findFirst({
           where: { id: entityId, organizationId, isDeleted: false },
+          select: { id: true, leadId: true, convertedFromLeadId: true, status: true },
         });
         if (!customer) throw new NotFoundException('Customer not found');
-        await this.prisma.customer.update({
-          where: { id: entityId },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: { status: status as any },
-        });
+
+        const isStatusChangeToRejected = normalizeStatus(status) === 'rejected' && normalizeStatus(customer.status) !== 'rejected';
+        const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
+
+        if (isStatusChangeToRejected && linkedLeadId) {
+          // Use transaction to update both customer and lead atomically
+          await this.prisma.$transaction(async (tx) => {
+            await tx.customer.update({
+              where: { id: entityId },
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data: { status: status as any },
+            });
+
+            // Update linked lead status to Rejected
+            const lead = await tx.lead.findFirst({
+              where: { id: linkedLeadId, organizationId, isDeleted: false },
+            });
+
+            if (lead) {
+              await tx.lead.update({
+                where: { id: linkedLeadId },
+                data: { status: 'Rejected' },
+              });
+
+              // Create status history for lead
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'lead',
+                  entityId: linkedLeadId,
+                  organizationId,
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  changedById: null,
+                  reason: 'Customer status changed to Rejected via workflow - synchronized',
+                },
+              });
+            }
+          });
+        } else {
+          // Regular update without lead sync
+          await this.prisma.customer.update({
+            where: { id: entityId },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: { status: status as any },
+          });
+        }
         return;
       }
       case 'project': {
         const project = await this.prisma.project.findFirst({
           where: { id: entityId, organizationId, isDeleted: false },
+          select: { id: true, customerId: true, leadId: true, status: true },
         });
         if (!project) throw new NotFoundException('Project not found');
-        await this.prisma.project.update({ where: { id: entityId }, data: { status } });
+
+        const isStatusChangeToCancelled = normalizeStatus(status) === 'cancelled' && normalizeStatus(project.status) !== 'cancelled';
+
+        if (isStatusChangeToCancelled && project.customerId) {
+          // Use transaction for cascade sync: Project → Customer → Lead
+          await this.prisma.$transaction(async (tx) => {
+            await tx.project.update({ where: { id: entityId }, data: { status } });
+
+            // Update Customer to Rejected
+            const customer = await tx.customer.findFirst({
+              where: { id: project.customerId, organizationId, isDeleted: false },
+              select: { id: true, status: true, leadId: true, convertedFromLeadId: true },
+            });
+
+            if (customer) {
+              await tx.customer.update({
+                where: { id: project.customerId },
+                data: { status: 'Rejected' },
+              });
+
+              // Create status history for customer
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'customer',
+                  entityId: project.customerId,
+                  organizationId,
+                  fromStatus: customer.status,
+                  toStatus: 'Rejected',
+                  changedById: null,
+                  reason: 'Project cancelled via workflow - synchronized',
+                },
+              });
+
+              // Update linked Lead to Rejected
+              const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
+              if (linkedLeadId) {
+                const lead = await tx.lead.findFirst({
+                  where: { id: linkedLeadId, organizationId, isDeleted: false },
+                });
+
+                if (lead) {
+                  await tx.lead.update({
+                    where: { id: linkedLeadId },
+                    data: { status: 'Rejected' },
+                  });
+
+                  // Create status history for lead
+                  await tx.statusHistory.create({
+                    data: {
+                      entityType: 'lead',
+                      entityId: linkedLeadId,
+                      organizationId,
+                      fromStatus: lead.status,
+                      toStatus: 'Rejected',
+                      changedById: null,
+                      reason: 'Project cancelled via workflow - cascade synchronized',
+                    },
+                  });
+                }
+              }
+            }
+          });
+        } else {
+          // Regular update without cascade sync
+          await this.prisma.project.update({ where: { id: entityId }, data: { status } });
+        }
         return;
       }
       case 'purchase-order': {
