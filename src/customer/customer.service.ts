@@ -135,16 +135,102 @@ export class CustomerService extends BaseQueryService {
     }
 
     try {
-      const customer = await this.client.update({
-        where: { id },
-        data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
-      });
+      const isStatusChangeToRejected = data.status === 'Rejected' && existing.status !== 'Rejected';
+      const isStatusChangeToActive = data.status === 'Active' && existing.status === 'Rejected';
+      const linkedLeadId = existing.leadId || existing.convertedFromLeadId;
+
+      let customer;
+      if ((isStatusChangeToRejected || isStatusChangeToActive) && linkedLeadId) {
+        // Use transaction to update both customer and lead atomically
+        customer = await this.prisma.$transaction(async (tx) => {
+          const updatedCustomer = await tx.customer.update({
+            where: { id },
+            data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
+          });
+
+          // Update linked lead status
+          const lead = await tx.lead.findFirst({
+            where: { id: linkedLeadId, organizationId, isDeleted: false },
+          });
+
+          if (lead) {
+            if (isStatusChangeToRejected) {
+              // Customer Rejected → Lead Rejected
+              await tx.lead.update({
+                where: { id: linkedLeadId },
+                data: { status: 'Rejected' },
+              });
+
+              // Create status history for lead
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'lead',
+                  entityId: linkedLeadId,
+                  organizationId,
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  changedById: updatedById,
+                  reason: 'Customer status changed to Rejected - synchronized',
+                },
+              });
+
+              // Process workflow event for lead
+              await this.workflowEngine.processEvent({
+                organizationId,
+                entityType: 'lead',
+                entityId: linkedLeadId,
+                eventType: 'status.changed',
+                data: { fromStatus: lead.status, toStatus: 'Rejected', reason: 'Customer rejected' },
+                createdById: updatedById,
+              });
+            } else if (isStatusChangeToActive) {
+              // Customer Rejected → Active → Lead Rejected → Active
+              await tx.lead.update({
+                where: { id: linkedLeadId },
+                data: { status: 'New' },
+              });
+
+              // Create status history for lead
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'lead',
+                  entityId: linkedLeadId,
+                  organizationId,
+                  fromStatus: lead.status,
+                  toStatus: 'New',
+                  changedById: updatedById,
+                  reason: 'Customer reactivated to Active - synchronized',
+                },
+              });
+
+              // Process workflow event for lead
+              await this.workflowEngine.processEvent({
+                organizationId,
+                entityType: 'lead',
+                entityId: linkedLeadId,
+                eventType: 'status.changed',
+                data: { fromStatus: lead.status, toStatus: 'New', reason: 'Customer reactivated' },
+                createdById: updatedById,
+              });
+            }
+          }
+
+          return updatedCustomer;
+        });
+      } else {
+        // Regular update without lead sync
+        customer = await this.client.update({
+          where: { id },
+          data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
+        });
+      }
+
       await this.auditService.log({
         action: 'customer.updated',
         userId: updatedById,
         resource: 'customer',
         resourceId: id,
-        metadata: { changes: Object.keys(data) },
+        metadata: { changes: Object.keys(data), leadSynced: (isStatusChangeToRejected || isStatusChangeToActive) && !!linkedLeadId },
       });
       await this.workflowEngine.processEvent({
         organizationId,
@@ -352,6 +438,86 @@ export class CustomerService extends BaseQueryService {
     updatedById?: string,
     organizationId?: string,
   ): Promise<{ count: number }> {
+    const isRejected = status === 'Rejected';
+
+    if (isRejected && organizationId) {
+      // Get customers with linked leads
+      const customers = await this.client.findMany({
+        where: { id: { in: ids }, organizationId, isDeleted: false },
+        select: { id: true, leadId: true, convertedFromLeadId: true, status: true },
+      });
+
+      // Use transaction for atomic updates
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updateResult = await tx.customer.updateMany({
+          where: { id: { in: ids }, organizationId },
+          data: { status },
+        });
+
+        // Update linked leads
+        for (const customer of customers) {
+          const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
+          if (linkedLeadId && customer.status !== 'Rejected') {
+            const lead = await tx.lead.findFirst({
+              where: { id: linkedLeadId, organizationId, isDeleted: false },
+            });
+
+            if (lead) {
+              await tx.lead.update({
+                where: { id: linkedLeadId },
+                data: { status: 'Rejected' },
+              });
+
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'lead',
+                  entityId: linkedLeadId,
+                  organizationId,
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  changedById: updatedById,
+                  reason: 'Customer bulk status changed to Rejected - synchronized',
+                },
+              });
+
+              await this.workflowEngine.processEvent({
+                organizationId,
+                entityType: 'lead',
+                entityId: linkedLeadId,
+                eventType: 'status.changed',
+                data: { fromStatus: lead.status, toStatus: 'Rejected', reason: 'Customer bulk rejected' },
+                createdById: updatedById,
+              });
+            }
+          }
+        }
+
+        return updateResult;
+      });
+
+      await this.auditService.log({
+        action: 'customer.bulk-status-updated',
+        userId: updatedById,
+        resource: 'customer',
+        resourceId: ids.join(','),
+        metadata: { count: result.count, status, ids, leadsSynced: true },
+      });
+
+      for (const id of ids) {
+        await this.workflowEngine.processEvent({
+          organizationId,
+          entityType: 'customer',
+          entityId: id,
+          eventType: 'bulk-status-updated',
+          data: { status, count: result.count },
+          createdById: updatedById,
+        });
+      }
+
+      return result;
+    }
+
+    // Regular bulk update without lead sync
     const result = await super.bulkStatusUpdate(ids, status, organizationId);
     await this.auditService.log({
       action: 'customer.bulk-status-updated',
@@ -482,10 +648,10 @@ export class CustomerService extends BaseQueryService {
           source: data.source || lead.source,
           assignedEmployeeId: pick(
             data.assignedEmployeeId,
-            lead.assignedToId || undefined,
+            undefined,
             transfer.standard,
           ),
-          assignedEmployee: transfer.standard ? lead.assignedTo : undefined,
+          assignedEmployee: undefined,
           notes: pick(data.notes, lead.remarks || undefined, transfer.notes),
           leadId: lead.id,
           convertedFromLeadId: lead.id,

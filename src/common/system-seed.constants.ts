@@ -136,8 +136,8 @@ export const LEAD_PIPELINE = [
     label: 'Rejected',
     order: 9,
     isInitial: false,
-    isFinal: true,
-    allowedTransitions: [] as string[],
+    isFinal: false,
+    allowedTransitions: ['New'],
     color: '#ef4444',
   },
   {
@@ -145,8 +145,8 @@ export const LEAD_PIPELINE = [
     label: 'Converted',
     order: 10,
     isInitial: false,
-    isFinal: true,
-    allowedTransitions: [] as string[],
+    isFinal: false,
+    allowedTransitions: ['New'],
     color: '#14b8a6',
   },
 ];
@@ -158,7 +158,7 @@ export const CUSTOMER_PIPELINE = [
     order: 1,
     isInitial: true,
     isFinal: false,
-    allowedTransitions: ['Inactive', 'Archived'],
+    allowedTransitions: ['Inactive', 'Archived', 'Rejected'],
     color: '#22c55e',
   },
   {
@@ -167,7 +167,7 @@ export const CUSTOMER_PIPELINE = [
     order: 2,
     isInitial: false,
     isFinal: false,
-    allowedTransitions: ['Active', 'Archived'],
+    allowedTransitions: ['Active', 'Archived', 'Rejected'],
     color: '#f59e0b',
   },
   {
@@ -178,6 +178,15 @@ export const CUSTOMER_PIPELINE = [
     isFinal: true,
     allowedTransitions: [] as string[],
     color: '#6b7280',
+  },
+  {
+    status: 'Rejected',
+    label: 'Rejected',
+    order: 4,
+    isInitial: false,
+    isFinal: false,
+    allowedTransitions: ['Active'],
+    color: '#ef4444',
   },
 ];
 
@@ -268,8 +277,8 @@ export const PROJECT_PIPELINE = [
     label: 'Cancelled',
     order: 10,
     isInitial: false,
-    isFinal: true,
-    allowedTransitions: [] as string[],
+    isFinal: false,
+    allowedTransitions: ['New'],
     color: '#ef4444',
   },
 ];
@@ -296,6 +305,7 @@ export const EVENT_RULES: Record<
     { eventType: 'deactivated', fromStatus: 'Active', toStatus: 'Inactive' },
     { eventType: 'reactivated', fromStatus: 'Inactive', toStatus: 'Active' },
     { eventType: 'archived', fromStatus: null, toStatus: 'Archived' },
+    { eventType: 'rejected', fromStatus: null, toStatus: 'Rejected' },
   ],
   project: [
     { eventType: 'created', fromStatus: null, toStatus: 'New' },

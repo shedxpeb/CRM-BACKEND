@@ -34,12 +34,10 @@ export class LeadController {
     @Query('search') search: string | undefined,
     @Query('priority') priority: string | undefined,
     @Query('city') city: string | undefined,
-    @Query('assignedTo') assignedTo: string | undefined,
-    @Query('assignedEmployeeId') assignedEmployeeId: string | undefined,
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.leadService.getKanban(
-      { search, priority, city, assignedTo, assignedEmployeeId },
+      { search, priority, city },
       organizationId,
     );
     return { message: 'Kanban data fetched.', data };

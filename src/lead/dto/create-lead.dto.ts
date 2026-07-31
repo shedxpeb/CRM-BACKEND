@@ -264,13 +264,13 @@ export class CreateLeadDto {
   source: LeadSource;
 
   @IsOptional()
+  @IsString()
+  currentDate?: string;
+
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   score?: number;
-
-  @IsOptional()
-  @IsString()
-  assignedToId?: string;
 
   @IsOptional()
   @IsString()

@@ -46,7 +46,6 @@ export class LeadService extends BaseQueryService {
         'industry',
         'businessType',
         'city',
-        'assignedToId',
       ],
       sortColumns: ['createdAt', 'companyName', 'customerName', 'priority', 'status', 'leadNumber'],
       orgScoped: true,
@@ -54,15 +53,10 @@ export class LeadService extends BaseQueryService {
   }
 
   async findAll(query: GetLeadsDto, organizationId?: string) {
-    const { statusMode, assignedEmployeeId, ...restQuery } = query as GetLeadsDto & {
-      assignedEmployeeId?: string;
+    const { statusMode, ...restQuery } = query as GetLeadsDto & {
+      statusMode?: string;
     };
-    // FE sends assignedEmployeeId; Prisma filter field is assignedToId
-    const normalizedQuery = {
-      ...restQuery,
-      ...(assignedEmployeeId ? { assignedToId: assignedEmployeeId } : {}),
-    };
-    const result = await super.findAll(normalizedQuery, organizationId);
+    const result = await super.findAll(restQuery, organizationId);
 
     const where: WhereClause = { isDeleted: false };
     if (!organizationId) {
@@ -94,11 +88,6 @@ export class LeadService extends BaseQueryService {
     if (query.projectType) filters.projectType = query.projectType;
     if (query.structureType) filters.structureType = query.structureType;
     if (query.city) filters.city = query.city;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (assignedEmployeeId || (query as any).assignedToId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      filters.assignedToId = assignedEmployeeId || (query as any).assignedToId;
-    }
 
     return {
       ...result,
@@ -118,8 +107,6 @@ export class LeadService extends BaseQueryService {
       search?: string;
       priority?: string;
       city?: string;
-      assignedTo?: string;
-      assignedEmployeeId?: string;
     } = {},
     organizationId?: string,
   ) {
@@ -138,8 +125,6 @@ export class LeadService extends BaseQueryService {
     }
     if (filters.priority) where.priority = filters.priority;
     if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
-    const assigneeId = filters.assignedEmployeeId || filters.assignedTo;
-    if (assigneeId) where.assignedToId = assigneeId;
 
     const KANBAN_MAX_TOTAL = 300;
     const KANBAN_MAX_PER_COLUMN = 50;
@@ -168,7 +153,6 @@ export class LeadService extends BaseQueryService {
         priority: true,
         status: true,
         score: true,
-        assignedTo: true,
         remarks: true,
         isConverted: true,
         tags: true,
@@ -280,6 +264,7 @@ export class LeadService extends BaseQueryService {
       source: data.source || 'Other',
       isConverted: false,
       attachments: [],
+      ...((data as any).currentDate ? { createdAt: new Date((data as any).currentDate) } : {}),
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
     };
 

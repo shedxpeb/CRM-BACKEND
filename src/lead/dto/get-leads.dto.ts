@@ -170,10 +170,6 @@ export class GetLeadsDto {
 
   @IsOptional()
   @IsString()
-  assignedEmployeeId?: string;
-
-  @IsOptional()
-  @IsString()
   dateFrom?: string;
 
   @IsOptional()

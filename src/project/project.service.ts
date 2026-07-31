@@ -324,11 +324,16 @@ export class ProjectService extends BaseQueryService {
     const where: any = { id, isDeleted: false };
     if (!organizationId) throw new NotFoundException('Organization context required');
     where.organizationId = organizationId;
-    const existing = await this.client.findFirst({ where });
+    const existing = await this.client.findFirst({
+      where,
+      select: { id: true, customerId: true, leadId: true, status: true },
+    });
     if (!existing) throw new NotFoundException(`Project with ID ${id} not found`);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
+
+    const isStatusChangeToCancelled = data.status === 'Cancelled' && existing.status !== 'Cancelled';
 
     const project = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.project.update({
@@ -376,6 +381,63 @@ export class ProjectService extends BaseQueryService {
         }
       }
 
+      // Cascade sync: Project Cancelled → Customer Rejected → Lead Rejected
+      if (isStatusChangeToCancelled && existing.customerId) {
+        // Update Customer to Rejected
+        const customer = await tx.customer.findFirst({
+          where: { id: existing.customerId, organizationId, isDeleted: false },
+          select: { id: true, status: true, leadId: true, convertedFromLeadId: true },
+        });
+
+        if (customer) {
+          await tx.customer.update({
+            where: { id: existing.customerId },
+            data: { status: 'Rejected' },
+          });
+
+          // Create status history for customer
+          await tx.statusHistory.create({
+            data: {
+              entityType: 'customer',
+              entityId: existing.customerId,
+              organizationId,
+              fromStatus: customer.status,
+              toStatus: 'Rejected',
+              changedById: updatedById,
+              reason: 'Project cancelled - synchronized',
+            },
+          });
+
+          // Update linked Lead to Rejected
+          const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
+          if (linkedLeadId) {
+            const lead = await tx.lead.findFirst({
+              where: { id: linkedLeadId, organizationId, isDeleted: false },
+            });
+
+            if (lead) {
+              await tx.lead.update({
+                where: { id: linkedLeadId },
+                data: { status: 'Rejected' },
+              });
+
+              // Create status history for lead
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'lead',
+                  entityId: linkedLeadId,
+                  organizationId,
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  changedById: updatedById,
+                  reason: 'Project cancelled - cascade synchronized',
+                },
+              });
+            }
+          }
+        }
+      }
+
       return updated;
     });
 
@@ -384,7 +446,7 @@ export class ProjectService extends BaseQueryService {
       userId: updatedById,
       resource: 'project',
       resourceId: id,
-      metadata: { changes: Object.keys(data) },
+      metadata: { changes: Object.keys(data), cascadeSynced: isStatusChangeToCancelled },
     });
 
     await this.workflowEngine.processEvent({
@@ -504,6 +566,93 @@ export class ProjectService extends BaseQueryService {
     updatedById?: string,
     organizationId?: string,
   ): Promise<{ count: number }> {
+    const isCancelled = status === 'Cancelled';
+
+    if (isCancelled && organizationId) {
+      // Get projects with linked customers
+      const projects = await this.client.findMany({
+        where: { id: { in: ids }, organizationId, isDeleted: false },
+        select: { id: true, customerId: true, status: true },
+      });
+
+      // Use transaction for atomic cascade updates
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updateResult = await tx.project.updateMany({
+          where: { id: { in: ids }, organizationId },
+          data: { status },
+        });
+
+        // Update linked customers and leads
+        for (const project of projects) {
+          if (project.customerId && project.status !== 'Cancelled') {
+            const customer = await tx.customer.findFirst({
+              where: { id: project.customerId, organizationId, isDeleted: false },
+              select: { id: true, status: true, leadId: true, convertedFromLeadId: true },
+            });
+
+            if (customer) {
+              await tx.customer.update({
+                where: { id: project.customerId },
+                data: { status: 'Rejected' },
+              });
+
+              await tx.statusHistory.create({
+                data: {
+                  entityType: 'customer',
+                  entityId: project.customerId,
+                  organizationId,
+                  fromStatus: customer.status,
+                  toStatus: 'Rejected',
+                  changedById: updatedById,
+                  reason: 'Project bulk status changed to Cancelled - synchronized',
+                },
+              });
+
+              // Update linked lead
+              const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
+              if (linkedLeadId) {
+                const lead = await tx.lead.findFirst({
+                  where: { id: linkedLeadId, organizationId, isDeleted: false },
+                });
+
+                if (lead) {
+                  await tx.lead.update({
+                    where: { id: linkedLeadId },
+                    data: { status: 'Rejected' },
+                  });
+
+                  await tx.statusHistory.create({
+                    data: {
+                      entityType: 'lead',
+                      entityId: linkedLeadId,
+                      organizationId,
+                      fromStatus: lead.status,
+                      toStatus: 'Rejected',
+                      changedById: updatedById,
+                      reason: 'Project bulk cancelled - cascade synchronized',
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        return updateResult;
+      });
+
+      await this.auditService.log({
+        action: 'project.bulk-status-updated',
+        userId: updatedById,
+        resource: 'project',
+        resourceId: ids.join(','),
+        metadata: { count: result.count, status, ids, cascadeSynced: true },
+      });
+
+      return result;
+    }
+
+    // Regular bulk update without cascade sync
     const result = await super.bulkStatusUpdate(ids, status, organizationId);
     await this.auditService.log({
       action: 'project.bulk-status-updated',

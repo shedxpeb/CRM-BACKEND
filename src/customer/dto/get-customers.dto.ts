@@ -7,6 +7,7 @@ export enum CustomerStatus {
   Prospect = 'Prospect',
   Converted = 'Converted',
   Churned = 'Churned',
+  Rejected = 'Rejected',
 }
 
 export class GetCustomersDto {
