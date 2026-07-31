@@ -107,6 +107,17 @@ export class CreateCustomerDto {
   leadId?: string;
 
   @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
+  projectTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  projectType?: string;
+
+  @IsOptional()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }

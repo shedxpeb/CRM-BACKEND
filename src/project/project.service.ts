@@ -235,19 +235,41 @@ export class ProjectService extends BaseQueryService {
       throw new BadRequestException('Organization context is required to create a project');
     }
 
+    // Check if projectCode already exists
+    const existingProject = await this.client.findFirst({
+      where: { 
+        projectCode: data.projectCode, 
+        organizationId,
+        isDeleted: false 
+      },
+    });
+
+    if (existingProject) {
+      throw new BadRequestException(`Project with code "${data.projectCode}" already exists`);
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
 
     let customerName = data.customerName;
+    let projectTitle = data.projectName;
+    let projectType = data.projectType;
     if (!customerName && data.customerId) {
       const customer = await this.prisma.customer.findFirst({
         where: { id: data.customerId, organizationId, isDeleted: false },
-        select: { customerName: true, companyName: true },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        select: { customerName: true, companyName: true, projectTitle: true, projectType: true } as any,
       });
       if (!customer) {
         throw new BadRequestException('Customer not found for this organization');
       }
       customerName = customer.customerName || customer.companyName || 'Unknown Customer';
+      if (!projectTitle) {
+        projectTitle = (customer as any).projectTitle;
+      }
+      if (!projectType) {
+        projectType = (customer as any).projectType;
+      }
     }
     if (!customerName) {
       throw new BadRequestException('customerName is required');
@@ -265,6 +287,9 @@ export class ProjectService extends BaseQueryService {
     const project = await this.client.create({
       data: {
         ...restData,
+        projectCode: data.projectCode,
+        projectName: projectTitle || data.projectName,
+        projectType: projectType || data.projectType,
         customerName,
         projectManager,
         organizationId,

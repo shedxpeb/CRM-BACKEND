@@ -237,6 +237,8 @@ model Customer {
   customerSince       DateTime       @default(now())
   leadId              String?
   convertedFromLeadId String?
+  projectTitle        String?
+  projectType         String?
   createdById         String?
   createdBy           String?
   updatedBy           String?
@@ -262,7 +264,7 @@ model Project {
   id                      String              @id @default(uuid())
   organizationId          String
   projectId               Int                 @unique @default(autoincrement())
-  projectCode             String?
+  projectCode             String              @unique
   projectName             String
   customerId              String
   customerName            String

@@ -70,7 +70,14 @@ export class CustomerService extends BaseQueryService {
           customer = await this.prisma.$transaction(async (tx) => {
             const created = await tx.customer.create({
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              data: { ...(data as any), email: data.email || '', organizationId, createdById },
+              data: {
+                ...(data as any),
+                email: data.email || '',
+                organizationId,
+                createdById,
+                projectTitle: data.projectTitle || lead.projectTitle,
+                projectType: data.projectType || lead.projectType,
+              },
             });
             await tx.lead.update({
               where: { id: lead.id },
@@ -297,6 +304,8 @@ export class CustomerService extends BaseQueryService {
         notes: true,
         customFields: true,
         leadId: true,
+        projectTitle: true,
+        projectType: true,
       },
     });
     if (!customer) {
