@@ -31,22 +31,22 @@ interface ColumnDef {
 }
 
 const COLUMNS: ColumnDef[] = [
-  { header: 'No.', key: 'sno', width: 30, align: 'center' },
-  { header: 'Product Description', key: 'itemName', width: 170, align: 'left' },
-  { header: 'HSN', key: 'hsnCode', width: 50, align: 'center' },
-  { header: 'Qty', key: 'quantity', width: 45, align: 'center' },
-  { header: 'Unit', key: 'unit', width: 35, align: 'center' },
-  { header: 'Unit Price', key: 'rate', width: 65, align: 'right' },
+  { header: 'No.', key: 'sno', width: 24, align: 'center' },
+  { header: 'Item & Description', key: 'itemName', width: 165, align: 'left' },
+  { header: 'HSN', key: 'hsnCode', width: 38, align: 'center' },
+  { header: 'Qty', key: 'quantity', width: 36, align: 'center' },
+  { header: 'Unit', key: 'unit', width: 30, align: 'center' },
+  { header: 'Rate', key: 'rate', width: 62, align: 'right' },
   { header: 'Disc.', key: 'discount', width: 50, align: 'right' },
-  { header: 'GST %', key: 'gstRate', width: 45, align: 'center' },
-  { header: 'Amount', key: 'total', width: 70, align: 'right' },
+  { header: 'GST %', key: 'gstRate', width: 38, align: 'center' },
+  { header: 'Amount', key: 'total', width: 82, align: 'right' },
 ];
 
-const ROW_PADDING = 6;
-const HEADER_HEIGHT = 24;
+const ROW_PADDING = 8;
+const HEADER_HEIGHT = 26;
 const MIN_ROW_HEIGHT = 26;
-const FONT_SIZE = 7.5;
-const HEADER_FONT_SIZE = 7;
+const FONT_SIZE = 8;
+const HEADER_FONT_SIZE = 8;
 
 function getTableWidth(): number {
   return COLUMNS.reduce((sum, c) => sum + c.width, 0);
@@ -86,21 +86,21 @@ function drawTableHeader(engine: PdfEngine, tableWidth: number, y: number): numb
   const margin = engine.getMargin();
 
   doc.save();
-  doc.rect(margin.left, y, tableWidth, HEADER_HEIGHT).fill(BRAND.sectionHeaderBg);
+  doc.rect(margin.left, y, tableWidth, HEADER_HEIGHT).fill(BRAND.primary);
   doc.restore();
 
-  doc.font(FONTS.bold).fontSize(HEADER_FONT_SIZE).fillColor(BRAND.sectionHeaderText);
+  doc.font(FONTS.bold).fontSize(HEADER_FONT_SIZE).fillColor(BRAND.white);
 
   let currentX = margin.left;
   for (const col of COLUMNS) {
     const textW = doc.widthOfString(col.header);
     const textX =
       col.align === 'right'
-        ? currentX + col.width - textW - 4
+        ? currentX + col.width - textW - 5
         : col.align === 'center'
           ? currentX + (col.width - textW) / 2
-          : currentX + 4;
-    doc.text(col.header, textX, y + 8, { width: col.width - 8, lineBreak: false });
+          : currentX + 5;
+    doc.text(col.header, textX, y + 9, { width: col.width - 10, lineBreak: false });
     currentX += col.width;
   }
 
@@ -133,17 +133,17 @@ function drawTableRow(
     for (const line of lines) {
       const textW = doc.widthOfString(line);
       if (col.align === 'right') {
-        doc.text(line, currentX + col.width - textW - 4, textY, {
-          width: col.width - 8,
+        doc.text(line, currentX + col.width - textW - 5, textY, {
+          width: col.width - 10,
           lineBreak: false,
         });
       } else if (col.align === 'center') {
         doc.text(line, currentX + (col.width - textW) / 2, textY, {
-          width: col.width - 8,
+          width: col.width - 10,
           lineBreak: false,
         });
       } else {
-        doc.text(line, currentX + 4, textY, { width: col.width - 8, lineBreak: false });
+        doc.text(line, currentX + 5, textY, { width: col.width - 10, lineBreak: false });
       }
       textY += FONT_SIZE + 3;
     }
@@ -152,82 +152,82 @@ function drawTableRow(
   }
 }
 
-function drawTableBorders(
-  engine: PdfEngine,
-  tableWidth: number,
-  tableStartY: number,
-  tableEndY: number,
-): void {
-  const doc = engine.doc;
+function closeTableSegment(engine: PdfEngine, tableWidth: number, startY: number, endY: number) {
   const margin = engine.getMargin();
+  const x0 = margin.left;
+  const x1 = x0 + tableWidth;
 
-  doc.save();
-  doc
-    .rect(margin.left, tableStartY, tableWidth, tableEndY - tableStartY)
-    .lineWidth(0.5)
-    .strokeColor(BRAND.darkBorder)
-    .stroke();
-  doc.restore();
+  engine.drawLine(x0, startY, x0, endY, { color: BRAND.tableBorder, width: 0.3 });
+  engine.drawLine(x1, startY, x1, endY, { color: BRAND.tableBorder, width: 0.3 });
+  engine.drawLine(x0, endY, x1, endY, { color: BRAND.tableBorder, width: 0.3 });
+}
+
+function drawColumnLines(engine: PdfEngine, tableWidth: number, startY: number, endY: number) {
+  const margin = engine.getMargin();
 
   let colX = margin.left;
   for (const col of COLUMNS) {
-    engine.drawLine(colX, tableStartY, colX, tableEndY, {
-      color: BRAND.tableBorder,
-      width: 0.3,
-    });
     colX += col.width;
+    if (colX < margin.left + tableWidth) {
+      engine.drawLine(colX, startY, colX, endY, {
+        color: BRAND.tableBorder,
+        width: 0.3,
+      });
+    }
   }
-  engine.drawLine(colX, tableStartY, colX, tableEndY, {
-    color: BRAND.tableBorder,
-    width: 0.3,
-  });
 }
 
 export function renderItemsTable(engine: PdfEngine, data: ItemsTableData) {
   const doc = engine.doc;
   const margin = engine.getMargin();
-  const cw = engine.getContentWidth();
   const tableWidth = getTableWidth();
   let y = engine.getY();
 
-  doc.save();
-  doc.rect(margin.left, y, cw, 22).fill(BRAND.sectionHeaderBg);
-  doc.restore();
-
-  doc.font(FONTS.bold).fontSize(9).fillColor(BRAND.sectionHeaderText);
-  doc.text('ITEM DETAILS', margin.left + 8, y + 7, { lineBreak: false });
-  y += 28;
-
-  engine.ensureSpace(HEADER_HEIGHT + MIN_ROW_HEIGHT + 20);
+  engine.ensureSpace(HEADER_HEIGHT + MIN_ROW_HEIGHT + 16);
   y = engine.getY();
 
-  const tableStartY = y;
+  if (data.items.length === 0) {
+    y = drawTableHeader(engine, tableWidth, y);
+    const emptyRowHeight = 30;
+    doc.rect(margin.left, y, tableWidth, emptyRowHeight).fill(BRAND.tableAltRow);
+    doc.font(FONTS.regular).fontSize(FONT_SIZE).fillColor(BRAND.muted);
+    doc.text('No items listed', margin.left + 8, y + 11, {
+      width: tableWidth - 16,
+      lineBreak: false,
+    });
+    closeTableSegment(engine, tableWidth, y - HEADER_HEIGHT, y + emptyRowHeight);
+    drawColumnLines(engine, tableWidth, y - HEADER_HEIGHT, y + emptyRowHeight);
+    y += emptyRowHeight + 12;
+    engine.setY(y);
+    return;
+  }
+
+  let tableStartY = y;
   y = drawTableHeader(engine, tableWidth, y);
 
-  let rowNumber = 0;
-
-  for (const item of data.items) {
+  data.items.forEach((item, index) => {
     const rowData = getRowData(item, data.currency);
     const rowHeight = measureRowHeight(engine, rowData);
 
-    engine.ensureSpace(rowHeight + 4);
-    y = engine.getY();
-
     if (y + rowHeight > PAGE.height - engine.getMargin().bottom) {
+      closeTableSegment(engine, tableWidth, tableStartY, y);
+      engine.ensureSpace(HEADER_HEIGHT + MIN_ROW_HEIGHT);
+      y = engine.getY();
+      tableStartY = y;
       y = drawTableHeader(engine, tableWidth, y);
     }
 
-    drawTableRow(engine, rowData, margin.left, y, rowHeight, rowNumber % 2 === 1, tableWidth);
+    drawTableRow(engine, rowData, margin.left, y, rowHeight, index % 2 === 1, tableWidth);
     engine.drawLine(margin.left, y + rowHeight, margin.left + tableWidth, y + rowHeight, {
       color: BRAND.tableBorder,
       width: 0.3,
     });
 
     y += rowHeight;
-    engine.setY(y);
-    rowNumber++;
-  }
+  });
 
-  drawTableBorders(engine, tableWidth, tableStartY, y);
-  engine.moveY(8);
+  closeTableSegment(engine, tableWidth, tableStartY, y);
+  drawColumnLines(engine, tableWidth, tableStartY, y);
+
+  engine.setY(y + 12);
 }

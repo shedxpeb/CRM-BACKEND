@@ -13,15 +13,9 @@ export interface AddressData {
   shipTo?: AddressBlock;
 }
 
-function measureBlockHeight(engine: PdfEngine, block: AddressBlock, width: number): number {
-  const doc = engine.doc;
-  let height = 20;
-  for (const line of block.lines) {
-    const lines = wrapText(doc, line, FONTS.regular, 8, width - 20);
-    height += lines.length * 12;
-  }
-  return height + 10;
-}
+const BLOCK_HEADER_HEIGHT = 24;
+const BLOCK_PADDING = 10;
+const LINE_HEIGHT = 12.5;
 
 function renderAddressBlock(
   engine: PdfEngine,
@@ -32,30 +26,39 @@ function renderAddressBlock(
   height: number,
 ): void {
   const doc = engine.doc;
-  const padding = 10;
 
+  // Panel body
   doc.save();
-  doc.rect(x, y, width, height).lineWidth(0.5).fillAndStroke(BRAND.panelBg, BRAND.panelBorder);
+  doc
+    .rect(x, y, width, height)
+    .lineWidth(0.5)
+    .fillAndStroke('#ffffff', BRAND.darkBorder);
   doc.restore();
 
+  // Header strip
   doc.save();
-  doc.rect(x, y, width, 20).fill(BRAND.panelHeaderBg);
+  doc.rect(x, y, width, BLOCK_HEADER_HEIGHT).fill(BRAND.primary);
   doc.restore();
 
-  doc.font(FONTS.bold).fontSize(9).fillColor(BRAND.panelHeaderText);
-  doc.text(block.title, x + padding, y + 6, { width: width - padding * 2, lineBreak: false });
+  doc.font(FONTS.bold).fontSize(9.5).fillColor(BRAND.white);
+  doc.text(block.title, x + BLOCK_PADDING, y + BLOCK_HEADER_HEIGHT / 2 - 4, {
+    width: width - BLOCK_PADDING * 2,
+    lineBreak: false,
+  });
 
-  let currentY = y + 25;
+  const contentLines = block.lines.length ? block.lines : [''];
+  let currentY = y + BLOCK_HEADER_HEIGHT + 9;
 
-  for (const line of block.lines) {
-    doc.font(FONTS.regular).fontSize(8).fillColor(BRAND.black);
-    const lines = wrapText(doc, line, FONTS.regular, 8, width - padding * 2);
-    for (const wrappedLine of lines) {
-      doc.text(wrappedLine, x + padding, currentY, {
-        width: width - padding * 2,
+  for (const line of contentLines) {
+    const wrapped = wrapText(doc, line, FONTS.regular, 8.5, width - BLOCK_PADDING * 2);
+    for (const wrappedLine of wrapped) {
+      if (!wrappedLine) continue;
+      doc.font(FONTS.regular).fontSize(8.5).fillColor(BRAND.black);
+      doc.text(wrappedLine, x + BLOCK_PADDING, currentY, {
+        width: width - BLOCK_PADDING * 2,
         lineBreak: false,
       });
-      currentY += 12;
+      currentY += LINE_HEIGHT;
     }
   }
 }
@@ -67,19 +70,16 @@ export function renderAddresses(engine: PdfEngine, data: AddressData) {
 
   const GAP = 15;
   const colWidth = (cw - GAP) / 2;
+  const blockHeight = 105; // Fixed height for equal blocks
 
   const col1 = margin.left;
   const col2 = margin.left + colWidth + GAP;
 
-  const h1 = measureBlockHeight(engine, data.buyer, colWidth);
-  const h2 = measureBlockHeight(engine, data.supplier, colWidth);
-  const maxH = Math.max(h1, h2);
-
-  engine.ensureSpace(maxH + 10);
+  engine.ensureSpace(blockHeight + 15);
   y = engine.getY();
 
-  renderAddressBlock(engine, data.buyer, col1, y, colWidth, maxH);
-  renderAddressBlock(engine, data.supplier, col2, y, colWidth, maxH);
+  renderAddressBlock(engine, data.buyer, col1, y, colWidth, blockHeight);
+  renderAddressBlock(engine, data.supplier, col2, y, colWidth, blockHeight);
 
-  engine.setY(y + maxH + 10);
+  engine.setY(y + blockHeight + 15);
 }

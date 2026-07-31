@@ -345,35 +345,91 @@ export class TrackingService {
   }
 
   private async ensurePipeline(entityType: string, organizationId: string) {
-    const existing = await this.prisma.statusPipeline.findMany({
-      where: { entityType, organizationId, isActive: true },
-      orderBy: { order: 'asc' },
-    });
-    if (existing.length > 0) return existing;
-
     const defaults = DEFAULT_PIPELINES[entityType];
-    if (!defaults?.length) return [];
+    if (!defaults?.length) {
+      return this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
 
-    await this.prisma.statusPipeline.createMany({
-      data: defaults.map((d) => ({
-        organizationId,
-        entityType,
-        status: d.status,
-        label: d.label,
-        order: d.order,
-        color: d.color,
-        isInitial: !!d.isInitial,
-        isFinal: !!d.isFinal,
-        isActive: true,
-        allowedTransitions: d.allowedTransitions || [],
-      })),
-      skipDuplicates: true,
-    });
-
-    return this.prisma.statusPipeline.findMany({
+    let pipeline = await this.prisma.statusPipeline.findMany({
       where: { entityType, organizationId, isActive: true },
       orderBy: { order: 'asc' },
     });
+
+    if (pipeline.length === 0) {
+      await this.prisma.statusPipeline.createMany({
+        data: defaults.map((d) => ({
+          organizationId,
+          entityType,
+          status: d.status,
+          label: d.label,
+          order: d.order,
+          color: d.color,
+          isInitial: !!d.isInitial,
+          isFinal: !!d.isFinal,
+          isActive: true,
+          allowedTransitions: d.allowedTransitions || [],
+        })),
+        skipDuplicates: true,
+      });
+      return this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
+
+    // Keep existing pipelines in sync with the canonical defaults.
+    // Org pipelines seeded before a stage was introduced will never show it otherwise.
+    const existingStatuses = new Set(pipeline.map((s) => s.status));
+    const missing = defaults.filter((d) => !existingStatuses.has(d.status));
+
+    if (missing.length > 0) {
+      const maxOrder = pipeline.reduce((max, s) => Math.max(max, s.order), 0);
+      await this.prisma.statusPipeline.createMany({
+        data: missing.map((d, i) => ({
+          organizationId,
+          entityType,
+          status: d.status,
+          label: d.label,
+          order: maxOrder + i + 1,
+          color: d.color,
+          isInitial: !!d.isInitial,
+          isFinal: !!d.isFinal,
+          isActive: true,
+          allowedTransitions: d.allowedTransitions || [],
+        })),
+        skipDuplicates: true,
+      });
+
+      // Extend existing stages' transitions so records can move into the newly added stage.
+      const defaultByStatus = new Map(defaults.map((d) => [d.status, d]));
+      const updates: Array<Promise<unknown>> = [];
+      for (const stage of pipeline) {
+        const def = defaultByStatus.get(stage.status);
+        if (!def) continue;
+        const merged = [
+          ...new Set([...(stage.allowedTransitions || []), ...(def.allowedTransitions || [])]),
+        ];
+        if (merged.join(',') !== (stage.allowedTransitions || []).join(',')) {
+          updates.push(
+            this.prisma.statusPipeline.update({
+              where: { id: stage.id },
+              data: { allowedTransitions: merged },
+            }),
+          );
+        }
+      }
+      if (updates.length > 0) await Promise.all(updates);
+
+      pipeline = await this.prisma.statusPipeline.findMany({
+        where: { entityType, organizationId, isActive: true },
+        orderBy: { order: 'asc' },
+      });
+    }
+
+    return pipeline;
   }
 
   private async getCurrentStatus(entityType: string, entityId: string, organizationId: string) {

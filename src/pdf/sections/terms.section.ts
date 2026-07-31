@@ -1,5 +1,5 @@
 import { PdfEngine } from '../engine/pdf-engine';
-import { BRAND, FONTS } from '../helpers/colors';
+import { BRAND, FONTS, PAGE } from '../helpers/colors';
 
 export interface TermsData {
   terms?: string;
@@ -17,51 +17,56 @@ const DEFAULT_TERMS = [
   '7. GST will be charged as applicable and must be clearly mentioned on the invoice.',
 ];
 
-export function renderTerms(engine: PdfEngine, data: TermsData) {
+const PANEL_HEADER_HEIGHT = 26;
+const PANEL_PADDING = 12;
+
+function renderPanel(engine: PdfEngine, title: string, body: string): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
+  const bodyWidth = cw - PANEL_PADDING * 2;
+
+  engine.ensureSpace(PANEL_HEADER_HEIGHT + 24);
   let y = engine.getY();
 
-  const termsText = data.terms || DEFAULT_TERMS.join('\n');
-
-  engine.ensureSpace(60);
-  y = engine.getY();
-
+  // Header strip
   doc.save();
-  doc.rect(margin.left, y, cw, 22).fill(BRAND.sectionHeaderBg);
+  doc.rect(margin.left, y, cw, PANEL_HEADER_HEIGHT).fill(BRAND.primary);
   doc.restore();
 
-  doc.font(FONTS.bold).fontSize(9).fillColor(BRAND.sectionHeaderText);
-  doc.text('TERMS & CONDITIONS', margin.left + 8, y + 7, { lineBreak: false });
-  y += 30;
+  doc.font(FONTS.bold).fontSize(9.5).fillColor(BRAND.white);
+  doc.text(title, margin.left + PANEL_PADDING, y + 9, { lineBreak: false });
+  y += PANEL_HEADER_HEIGHT;
 
-  doc.font(FONTS.regular).fontSize(7).fillColor(BRAND.black);
-  const lines = termsText.split('\n');
-  for (const line of lines) {
-    if (line.trim()) {
-      const trimmed = line.trim();
-      const lineHeight = doc.heightOfString(trimmed, { width: cw - 16 });
-      doc.text(trimmed, margin.left + 8, y, { width: cw - 16, lineBreak: false });
-      y += lineHeight + 3;
+  const lines = body.split('\n');
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const lineHeight = doc.heightOfString(line, { width: bodyWidth });
+    if (y + lineHeight > PAGE.height - margin.bottom) {
+      engine.ensureSpace(lineHeight + 4);
+      y = engine.getY();
     }
+
+    doc.font(FONTS.regular).fontSize(8.5).fillColor(BRAND.black);
+    doc.text(line, margin.left + PANEL_PADDING, y, { width: bodyWidth });
+    y += lineHeight + 3;
   }
+
+  return y + 10;
+}
+
+export function renderTerms(engine: PdfEngine, data: TermsData) {
+  let y = engine.getY();
 
   if (data.notes) {
-    y += 6;
-    doc.save();
-    doc.rect(margin.left, y, cw, 18).fill(BRAND.sectionHeaderBg);
-    doc.restore();
-
-    doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.sectionHeaderText);
-    doc.text('NOTES', margin.left + 8, y + 5, { lineBreak: false });
-    y += 24;
-
-    doc.font(FONTS.regular).fontSize(7).fillColor(BRAND.black);
-    const notesHeight = doc.heightOfString(data.notes, { width: cw - 16 });
-    doc.text(data.notes, margin.left + 8, y, { width: cw - 16, lineBreak: false });
-    y += notesHeight + 4;
+    y = renderPanel(engine, 'NOTES', data.notes);
+    engine.setY(y);
   }
 
-  engine.setY(y + 8);
+  const termsText = data.terms || DEFAULT_TERMS.join('\n');
+  y = renderPanel(engine, 'TERMS & CONDITIONS', termsText);
+
+  engine.setY(y);
 }

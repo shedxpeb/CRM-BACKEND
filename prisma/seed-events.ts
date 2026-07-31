@@ -25,6 +25,7 @@ const eventRules = {
     { eventType: 'deactivated', fromStatus: 'Active', toStatus: 'Inactive' },
     { eventType: 'reactivated', fromStatus: 'Inactive', toStatus: 'Active' },
     { eventType: 'archived',   fromStatus: null,   toStatus: 'Archived' },
+    { eventType: 'rejected',   fromStatus: null,   toStatus: 'Rejected' },
   ],
   project: [
     { eventType: 'created',               fromStatus: null,           toStatus: 'New' },

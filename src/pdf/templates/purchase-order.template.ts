@@ -6,6 +6,7 @@ import { renderItemsTable, ItemsTableData } from '../sections/items-table.sectio
 import { renderSummary, SummaryData } from '../sections/summary.section';
 import { renderTerms, TermsData } from '../sections/terms.section';
 import { renderFooter, FooterData } from '../sections/footer.section';
+import { BRAND, FONTS } from '../helpers/colors';
 
 export interface PurchaseOrderPdfData {
   poNumber: string;
@@ -133,7 +134,7 @@ export async function generatePurchaseOrderPdf(
 
   const addressData: AddressData = {
     buyer: {
-      title: 'SHIP TO ADDRESS',
+      title: 'SHIP TO',
       lines: buildAddressLines({
         name: data.shipTo?.name || data.buyer.name,
         companyName: data.buyer.companyName,
@@ -210,8 +211,25 @@ export async function generatePurchaseOrderPdf(
     address: data.company?.address,
   };
 
-  engine.setFooterCallback((_doc, _pageNum, _totalPages) => {
-    renderFooter(engine, footerData);
+  engine.setHeaderCallback((doc, pageNum) => {
+    if (pageNum <= 1) return;
+    const margin = engine.getMargin();
+    const cw = engine.getContentWidth();
+    doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.primary);
+    doc.text(`PURCHASE ORDER  ·  ${data.poNumber}`, margin.left, 20, { lineBreak: false });
+    doc.text(`Page ${pageNum}`, margin.left + cw - 80, 20, {
+      width: 80,
+      align: 'right',
+      lineBreak: false,
+    });
+    engine.drawLine(margin.left, 28, margin.left + cw, 28, {
+      color: BRAND.primary,
+      width: 1,
+    });
+  });
+
+  engine.setFooterCallback((_doc, pageNum, totalPages) => {
+    renderFooter(engine, footerData, pageNum, totalPages);
   });
 
   return engine.finalize();

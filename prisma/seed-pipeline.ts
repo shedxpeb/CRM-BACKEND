@@ -19,6 +19,7 @@ const customerPipeline = [
   { status: 'Active',     label: 'Active',     order: 1, isInitial: true,  isFinal: false, allowedTransitions: ['Inactive', 'Archived'],  color: '#22c55e' },
   { status: 'Inactive',   label: 'Inactive',   order: 2, isInitial: false, isFinal: false, allowedTransitions: ['Active', 'Archived'],    color: '#f59e0b' },
   { status: 'Archived',   label: 'Archived',   order: 3, isInitial: false, isFinal: true,  allowedTransitions: [],                       color: '#6b7280' },
+  { status: 'Rejected',   label: 'Rejected',   order: 4, isInitial: false, isFinal: false, allowedTransitions: ['Active'],                color: '#ef4444' },
 ];
 
 const projectPipeline = [

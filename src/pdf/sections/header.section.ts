@@ -13,111 +13,106 @@ export interface HeaderData {
   companyGstin?: string;
 }
 
+const BAND_HEIGHT = 82;
+const META_HEIGHT = 34;
+
 export function renderHeader(engine: PdfEngine, data: HeaderData) {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
+  const x0 = margin.left;
   let y = margin.top;
 
-  const leftColWidth = cw * 0.55;
-  const rightColWidth = cw * 0.45;
+  // ─── Masthead band ──────────────────────────────────────
+  doc.save();
+  doc.rect(x0, y, cw, BAND_HEIGHT).fill(BRAND.primary);
+  doc.restore();
 
   const logo = engine.loadLogo();
-  let logoHeight = 0;
+  let textX = x0 + 18;
   if (logo) {
     try {
-      doc.image(logo, margin.left, y, { width: 60, height: 50 });
-      logoHeight = 50;
+      doc.image(logo, x0 + 14, y + 14, { width: 56, height: 54 });
+      textX = x0 + 86;
     } catch {
       // Ignore logo loading errors
     }
   }
 
-  const titleY = y + (logoHeight > 0 ? 5 : 0);
-  doc.font(FONTS.bold).fontSize(22).fillColor(BRAND.primary);
-  doc.text('PURCHASE ORDER', margin.left + leftColWidth - 50, titleY, {
-    width: rightColWidth + 50,
+  // Company identity (left)
+  let infoY = y + 14;
+  doc.font(FONTS.bold).fontSize(16).fillColor(BRAND.white);
+  doc.text(data.companyName || 'PEB Systems', textX, infoY, {
+    width: cw * 0.52,
+    lineBreak: false,
+  });
+  infoY += 20;
+
+  const contact: string[] = [];
+  if (data.companyAddress) contact.push(data.companyAddress);
+  if (data.companyPhone) contact.push(`Ph: ${data.companyPhone}`);
+  if (data.companyEmail) contact.push(`Email: ${data.companyEmail}`);
+  if (data.companyGstin) contact.push(`GSTIN: ${data.companyGstin}`);
+
+  doc.font(FONTS.regular).fontSize(8.5).fillColor(BRAND.lightBlue);
+  for (const line of contact.slice(0, 3)) {
+    doc.text(line, textX, infoY, { width: cw * 0.52, lineBreak: false });
+    infoY += 13;
+  }
+
+  // Document title (right)
+  doc.font(FONTS.bold).fontSize(24).fillColor(BRAND.white);
+  doc.text('PURCHASE ORDER', x0 + cw - 230, y + 20, {
+    width: 230,
     align: 'right',
+    lineBreak: false,
   });
 
-  y += Math.max(logoHeight, 30) + 10;
+  doc.font(FONTS.regular).fontSize(9).fillColor(BRAND.lightBlue);
+  doc.text(`${data.poNumber}   |   ${data.poDate}`, x0 + cw - 230, y + 52, {
+    width: 230,
+    align: 'right',
+    lineBreak: false,
+  });
 
-  let infoY = margin.top + 2;
-  if (data.companyName) {
-    doc.font(FONTS.bold).fontSize(10).fillColor(BRAND.primary);
-    doc.text(data.companyName, margin.left, infoY, { width: leftColWidth, lineBreak: false });
-    infoY += 14;
-  }
+  y += BAND_HEIGHT + 14;
 
-  doc.font(FONTS.regular).fontSize(8).fillColor(BRAND.black);
-  if (data.companyAddress) {
-    doc.text(data.companyAddress, margin.left, infoY, { width: leftColWidth, lineBreak: false });
-    infoY += 11;
-  }
-  if (data.companyPhone) {
-    doc.text(`Phone: ${data.companyPhone}`, margin.left, infoY, {
-      width: leftColWidth,
+  // ─── PO meta strip ──────────────────────────────────────
+  const cells: { label: string; value: string }[] = [
+    { label: 'PO Number', value: data.poNumber },
+    { label: 'Date', value: data.poDate },
+    { label: 'Payment Terms', value: data.paymentTerms || '-' },
+    { label: 'Expected Delivery', value: data.expectedDelivery || '-' },
+  ];
+
+  const cellW = cw / cells.length;
+
+  doc.save();
+  doc
+    .rect(x0, y, cw, META_HEIGHT)
+    .lineWidth(0.6)
+    .strokeColor(BRAND.darkBorder)
+    .stroke();
+  doc.restore();
+
+  cells.forEach((cell, i) => {
+    const cx = x0 + i * cellW;
+    if (i > 0) {
+      engine.drawLine(cx, y + 5, cx, y + META_HEIGHT - 5, {
+        color: BRAND.border,
+        width: 0.5,
+      });
+    }
+    doc.font(FONTS.bold).fontSize(6.5).fillColor(BRAND.muted);
+    doc.text(cell.label.toUpperCase(), cx + 8, y + 5, {
+      width: cellW - 16,
       lineBreak: false,
     });
-    infoY += 11;
-  }
-  if (data.companyEmail) {
-    doc.text(`Email: ${data.companyEmail}`, margin.left, infoY, {
-      width: leftColWidth,
-      lineBreak: false,
-    });
-    infoY += 11;
-  }
-  if (data.companyGstin) {
-    doc.text(`GSTIN: ${data.companyGstin}`, margin.left, infoY, {
-      width: leftColWidth,
-      lineBreak: false,
-    });
-    infoY += 11;
-  }
+    doc.font(FONTS.bold).fontSize(9.5).fillColor(BRAND.black);
+    doc.text(cell.value, cx + 8, y + 17, { width: cellW - 16, lineBreak: false });
+  });
 
-  y = Math.max(y, infoY) + 8;
-
-  engine.drawLine(margin.left, y, margin.left + cw, y, { color: BRAND.primary, width: 1.5 });
-  y += 10;
-
-  const labelW = 80;
-  const valueW = cw * 0.5 - labelW;
-
-  doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.muted);
-  doc.text('PO Number:', margin.left, y, { width: labelW, lineBreak: false });
-  doc.font(FONTS.regular).fontSize(9).fillColor(BRAND.black);
-  doc.text(data.poNumber, margin.left + labelW, y, { width: valueW, lineBreak: false });
-
-  doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.muted);
-  doc.text('Date:', margin.left + cw * 0.5, y, { width: labelW, lineBreak: false });
-  doc.font(FONTS.regular).fontSize(9).fillColor(BRAND.black);
-  doc.text(data.poDate, margin.left + cw * 0.5 + labelW, y, { width: valueW, lineBreak: false });
-
-  y += 16;
-
-  if (data.paymentTerms) {
-    doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.muted);
-    doc.text('Payment Terms:', margin.left, y, { width: labelW, lineBreak: false });
-    doc.font(FONTS.regular).fontSize(9).fillColor(BRAND.black);
-    doc.text(data.paymentTerms, margin.left + labelW, y, { width: cw - labelW, lineBreak: false });
-    y += 14;
-  }
-
-  if (data.expectedDelivery) {
-    doc.font(FONTS.bold).fontSize(8).fillColor(BRAND.muted);
-    doc.text('Expected Delivery:', margin.left, y, { width: labelW, lineBreak: false });
-    doc.font(FONTS.regular).fontSize(9).fillColor(BRAND.black);
-    doc.text(data.expectedDelivery, margin.left + labelW, y, {
-      width: cw - labelW,
-      lineBreak: false,
-    });
-    y += 14;
-  }
-
-  y += 4;
-  engine.drawLine(margin.left, y, margin.left + cw, y, { color: BRAND.border, width: 0.5 });
-  y += 8;
+  y += META_HEIGHT + 14;
 
   engine.setY(y);
 }
