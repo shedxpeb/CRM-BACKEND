@@ -84,7 +84,7 @@ const DEFAULT_PIPELINES: Record<
       order: 9,
       isFinal: false,
       color: '#ef4444',
-      allowedTransitions: ['New'],
+      allowedTransitions: ['New', 'Active', 'Inactive'],
     },
     {
       status: 'Converted',
@@ -200,7 +200,7 @@ const DEFAULT_PIPELINES: Record<
       order: 10,
       isFinal: false,
       color: '#ef4444',
-      allowedTransitions: ['New'],
+      allowedTransitions: ['New', 'DesignInProgress', 'Fabrication', 'Installation'],
     },
   ],
   'purchase-order': [
@@ -502,20 +502,46 @@ export class TrackingService {
       for (const stage of pipeline) {
         const def = defaultByStatus.get(stage.status);
         if (!def) continue;
-        const merged = [
-          ...new Set([...(stage.allowedTransitions || []), ...(def.allowedTransitions || [])]),
-        ];
-        if (merged.join(',') !== (stage.allowedTransitions || []).join(',')) {
+        const currentTransitions = new Set(stage.allowedTransitions || []);
+        const defaultTransitions = new Set(def.allowedTransitions || []);
+        const hasNewTransitions = [...defaultTransitions].some((t) => !currentTransitions.has(t));
+        if (hasNewTransitions) {
           updates.push(
             this.prisma.statusPipeline.update({
               where: { id: stage.id },
-              data: { allowedTransitions: merged },
+              data: { allowedTransitions: def.allowedTransitions || [] },
             }),
           );
         }
       }
-      if (updates.length > 0) await Promise.all(updates);
+      await Promise.all(updates);
+    }
 
+    // Update existing pipeline records to match latest default configuration
+    const defaultByStatus = new Map(defaults.map((d) => [d.status, d]));
+    const syncUpdates: Array<Promise<unknown>> = [];
+    for (const stage of pipeline) {
+      const def = defaultByStatus.get(stage.status);
+      if (!def) continue;
+      const currentTransitions = JSON.stringify(stage.allowedTransitions || []);
+      const defaultTransitions = JSON.stringify(def.allowedTransitions || []);
+      if (currentTransitions !== defaultTransitions) {
+        syncUpdates.push(
+          this.prisma.statusPipeline.update({
+            where: { id: stage.id },
+            data: {
+              allowedTransitions: def.allowedTransitions || [],
+              label: def.label,
+              color: def.color,
+              isInitial: !!def.isInitial,
+              isFinal: !!def.isFinal,
+            },
+          }),
+        );
+      }
+    }
+    if (syncUpdates.length > 0) {
+      await Promise.all(syncUpdates);
       pipeline = await this.prisma.statusPipeline.findMany({
         where: { entityType, organizationId, isActive: true },
         orderBy: { order: 'asc' },
