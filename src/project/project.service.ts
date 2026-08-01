@@ -237,10 +237,10 @@ export class ProjectService extends BaseQueryService {
 
     // Check if projectCode already exists
     const existingProject = await this.client.findFirst({
-      where: { 
-        projectCode: data.projectCode, 
+      where: {
+        projectCode: data.projectCode,
         organizationId,
-        isDeleted: false 
+        isDeleted: false,
       },
     });
 
@@ -257,8 +257,13 @@ export class ProjectService extends BaseQueryService {
     if (!customerName && data.customerId) {
       const customer = await this.prisma.customer.findFirst({
         where: { id: data.customerId, organizationId, isDeleted: false },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        select: { customerName: true, companyName: true, projectTitle: true, projectType: true } as any,
+
+        select: {
+          customerName: true,
+          companyName: true,
+          projectTitle: true,
+          projectType: true,
+        } as any,
       });
       if (!customer) {
         throw new BadRequestException('Customer not found for this organization');
@@ -358,7 +363,8 @@ export class ProjectService extends BaseQueryService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { milestones, team, customFields, ...restData } = data as any;
 
-    const isStatusChangeToCancelled = data.status === 'Cancelled' && existing.status !== 'Cancelled';
+    const isStatusChangeToCancelled =
+      data.status === 'Cancelled' && existing.status !== 'Cancelled';
 
     const project = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.project.update({

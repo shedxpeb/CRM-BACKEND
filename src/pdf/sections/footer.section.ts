@@ -10,12 +10,7 @@ export interface FooterData {
   address?: string;
 }
 
-export function renderFooter(
-  engine: PdfEngine,
-  data?: FooterData,
-  pageNum = 1,
-  totalPages = 1,
-) {
+export function renderFooter(engine: PdfEngine, data?: FooterData, pageNum = 1, totalPages = 1) {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();

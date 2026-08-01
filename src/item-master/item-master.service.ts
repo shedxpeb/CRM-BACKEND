@@ -65,10 +65,10 @@ export class ItemMasterService extends BaseQueryService {
       select: { itemNumber: true },
     });
     const nextNumber = (lastItem?.itemNumber || 0) + 1;
-    
+
     // Generate unique SKU - check for conflicts
     let sku = dto.sku || `ITM-${String(nextNumber).padStart(4, '0')}`;
-    
+
     // If user provided SKU, check if it already exists
     if (dto.sku) {
       const existingSku = await this.client.findFirst({
@@ -82,9 +82,9 @@ export class ItemMasterService extends BaseQueryService {
       // Auto-generate unique SKU with conflict resolution
       let skuExists = true;
       let attemptNumber = nextNumber;
-      let maxAttempts = 100; // Prevent infinite loop
+      const maxAttempts = 100; // Prevent infinite loop
       let attempts = 0;
-      
+
       while (skuExists && attempts < maxAttempts) {
         const existingSku = await this.client.findFirst({
           where: { organizationId, sku, isDeleted: false },
@@ -98,12 +98,12 @@ export class ItemMasterService extends BaseQueryService {
         }
         attempts++;
       }
-      
+
       if (skuExists) {
         throw new Error('Unable to generate unique SKU after multiple attempts');
       }
     }
-    
+
     const itemCode = dto.itemCode || sku;
 
     const item = await this.client.create({

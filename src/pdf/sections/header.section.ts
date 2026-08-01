@@ -88,11 +88,7 @@ export function renderHeader(engine: PdfEngine, data: HeaderData) {
   const cellW = cw / cells.length;
 
   doc.save();
-  doc
-    .rect(x0, y, cw, META_HEIGHT)
-    .lineWidth(0.6)
-    .strokeColor(BRAND.darkBorder)
-    .stroke();
+  doc.rect(x0, y, cw, META_HEIGHT).lineWidth(0.6).strokeColor(BRAND.darkBorder).stroke();
   doc.restore();
 
   cells.forEach((cell, i) => {

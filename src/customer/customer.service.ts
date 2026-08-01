@@ -69,7 +69,6 @@ export class CustomerService extends BaseQueryService {
         if (lead && !lead.isConverted) {
           customer = await this.prisma.$transaction(async (tx) => {
             const created = await tx.customer.create({
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               data: {
                 ...(data as any),
                 email: data.email || '',
@@ -187,7 +186,11 @@ export class CustomerService extends BaseQueryService {
                 entityType: 'lead',
                 entityId: linkedLeadId,
                 eventType: 'status.changed',
-                data: { fromStatus: lead.status, toStatus: 'Rejected', reason: 'Customer rejected' },
+                data: {
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  reason: 'Customer rejected',
+                },
                 createdById: updatedById,
               });
             } else if (isStatusChangeToActive) {
@@ -237,7 +240,10 @@ export class CustomerService extends BaseQueryService {
         userId: updatedById,
         resource: 'customer',
         resourceId: id,
-        metadata: { changes: Object.keys(data), leadSynced: (isStatusChangeToRejected || isStatusChangeToActive) && !!linkedLeadId },
+        metadata: {
+          changes: Object.keys(data),
+          leadSynced: (isStatusChangeToRejected || isStatusChangeToActive) && !!linkedLeadId,
+        },
       });
       await this.workflowEngine.processEvent({
         organizationId,
@@ -494,7 +500,11 @@ export class CustomerService extends BaseQueryService {
                 entityType: 'lead',
                 entityId: linkedLeadId,
                 eventType: 'status.changed',
-                data: { fromStatus: lead.status, toStatus: 'Rejected', reason: 'Customer bulk rejected' },
+                data: {
+                  fromStatus: lead.status,
+                  toStatus: 'Rejected',
+                  reason: 'Customer bulk rejected',
+                },
                 createdById: updatedById,
               });
             }
@@ -655,11 +665,7 @@ export class CustomerService extends BaseQueryService {
           pincode: pick(data.pincode, lead.pincode || undefined, transfer.address),
           country: pick(data.country, lead.country || 'India', transfer.address) || 'India',
           source: data.source || lead.source,
-          assignedEmployeeId: pick(
-            data.assignedEmployeeId,
-            undefined,
-            transfer.standard,
-          ),
+          assignedEmployeeId: pick(data.assignedEmployeeId, undefined, transfer.standard),
           assignedEmployee: undefined,
           notes: pick(data.notes, lead.remarks || undefined, transfer.notes),
           leadId: lead.id,

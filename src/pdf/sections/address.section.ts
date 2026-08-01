@@ -29,10 +29,7 @@ function renderAddressBlock(
 
   // Panel body
   doc.save();
-  doc
-    .rect(x, y, width, height)
-    .lineWidth(0.5)
-    .fillAndStroke('#ffffff', BRAND.darkBorder);
+  doc.rect(x, y, width, height).lineWidth(0.5).fillAndStroke('#ffffff', BRAND.darkBorder);
   doc.restore();
 
   // Header strip

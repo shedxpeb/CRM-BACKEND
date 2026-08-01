@@ -96,22 +96,112 @@ const DEFAULT_PIPELINES: Record<
     },
   ],
   customer: [
-    { status: 'Active', label: 'Active', order: 1, isInitial: true, color: '#22c55e', allowedTransitions: ['Inactive', 'Archived', 'Rejected'] },
-    { status: 'Inactive', label: 'Inactive', order: 2, color: '#94a3b8', allowedTransitions: ['Active', 'Archived', 'Rejected'] },
-    { status: 'Archived', label: 'Archived', order: 3, isFinal: false, color: '#6b7280', allowedTransitions: ['Active', 'Inactive', 'Rejected'] },
-    { status: 'Rejected', label: 'Rejected', order: 4, isFinal: false, color: '#ef4444', allowedTransitions: ['Active'] },
+    {
+      status: 'Active',
+      label: 'Active',
+      order: 1,
+      isInitial: true,
+      color: '#22c55e',
+      allowedTransitions: ['Inactive', 'Archived', 'Rejected'],
+    },
+    {
+      status: 'Inactive',
+      label: 'Inactive',
+      order: 2,
+      color: '#94a3b8',
+      allowedTransitions: ['Active', 'Archived', 'Rejected'],
+    },
+    {
+      status: 'Archived',
+      label: 'Archived',
+      order: 3,
+      isFinal: false,
+      color: '#6b7280',
+      allowedTransitions: ['Active', 'Inactive', 'Rejected'],
+    },
+    {
+      status: 'Rejected',
+      label: 'Rejected',
+      order: 4,
+      isFinal: false,
+      color: '#ef4444',
+      allowedTransitions: ['Active'],
+    },
   ],
   project: [
-    { status: 'New', label: 'New', order: 1, isInitial: true, color: '#6b7280', allowedTransitions: ['DesignInProgress', 'OnHold', 'Cancelled'] },
-    { status: 'DesignInProgress', label: 'Design In Progress', order: 2, color: '#3b82f6', allowedTransitions: ['DesignApproved', 'OnHold', 'Cancelled'] },
-    { status: 'DesignApproved', label: 'Design Approved', order: 3, color: '#8b5cf6', allowedTransitions: ['Fabrication', 'OnHold', 'Cancelled'] },
-    { status: 'Fabrication', label: 'Fabrication', order: 4, color: '#f59e0b', allowedTransitions: ['DispatchReady', 'OnHold', 'Cancelled'] },
-    { status: 'DispatchReady', label: 'Dispatch Ready', order: 5, color: '#f97316', allowedTransitions: ['Dispatched', 'OnHold'] },
-    { status: 'Dispatched', label: 'Dispatched', order: 6, color: '#10b981', allowedTransitions: ['Installation', 'Cancelled'] },
-    { status: 'Installation', label: 'Installation', order: 7, color: '#14b8a6', allowedTransitions: ['Completed', 'OnHold', 'Cancelled'] },
-    { status: 'Completed', label: 'Completed', order: 8, isFinal: true, color: '#22c55e', allowedTransitions: [] },
-    { status: 'OnHold', label: 'On Hold', order: 9, color: '#f59e0b', allowedTransitions: ['DesignInProgress', 'Fabrication', 'Installation', 'Cancelled'] },
-    { status: 'Cancelled', label: 'Cancelled', order: 10, isFinal: false, color: '#ef4444', allowedTransitions: ['New'] },
+    {
+      status: 'New',
+      label: 'New',
+      order: 1,
+      isInitial: true,
+      color: '#6b7280',
+      allowedTransitions: ['DesignInProgress', 'OnHold', 'Cancelled'],
+    },
+    {
+      status: 'DesignInProgress',
+      label: 'Design In Progress',
+      order: 2,
+      color: '#3b82f6',
+      allowedTransitions: ['DesignApproved', 'OnHold', 'Cancelled'],
+    },
+    {
+      status: 'DesignApproved',
+      label: 'Design Approved',
+      order: 3,
+      color: '#8b5cf6',
+      allowedTransitions: ['Fabrication', 'OnHold', 'Cancelled'],
+    },
+    {
+      status: 'Fabrication',
+      label: 'Fabrication',
+      order: 4,
+      color: '#f59e0b',
+      allowedTransitions: ['DispatchReady', 'OnHold', 'Cancelled'],
+    },
+    {
+      status: 'DispatchReady',
+      label: 'Dispatch Ready',
+      order: 5,
+      color: '#f97316',
+      allowedTransitions: ['Dispatched', 'OnHold'],
+    },
+    {
+      status: 'Dispatched',
+      label: 'Dispatched',
+      order: 6,
+      color: '#10b981',
+      allowedTransitions: ['Installation', 'Cancelled'],
+    },
+    {
+      status: 'Installation',
+      label: 'Installation',
+      order: 7,
+      color: '#14b8a6',
+      allowedTransitions: ['Completed', 'OnHold', 'Cancelled'],
+    },
+    {
+      status: 'Completed',
+      label: 'Completed',
+      order: 8,
+      isFinal: true,
+      color: '#22c55e',
+      allowedTransitions: [],
+    },
+    {
+      status: 'OnHold',
+      label: 'On Hold',
+      order: 9,
+      color: '#f59e0b',
+      allowedTransitions: ['DesignInProgress', 'Fabrication', 'Installation', 'Cancelled'],
+    },
+    {
+      status: 'Cancelled',
+      label: 'Cancelled',
+      order: 10,
+      isFinal: false,
+      color: '#ef4444',
+      allowedTransitions: ['New'],
+    },
   ],
   'purchase-order': [
     { status: 'Draft', label: 'Draft', order: 1, isInitial: true, color: '#6366f1' },
@@ -290,7 +380,10 @@ export class TrackingService {
     const allowed = this.resolveTransitions(currentStep, pipeline);
 
     // Terminal stages have empty allowedTransitions — block ALL transitions
-    if (Array.isArray(currentStep?.allowedTransitions) && currentStep.allowedTransitions.length === 0) {
+    if (
+      Array.isArray(currentStep?.allowedTransitions) &&
+      currentStep.allowedTransitions.length === 0
+    ) {
       throw new BadRequestException(
         `"${fromStatus || 'unset'}" is a terminal status. No further transitions are allowed.`,
       );
@@ -446,7 +539,11 @@ export class TrackingService {
     // If both exist but differ, the live entity status is the source of truth
     // (statusHistory can be stale when entities are updated outside the tracking pipeline,
     // e.g. convert-lead endpoint updates Lead.status directly)
-    if (entityStatus && historyStatus && normalizeStatus(entityStatus) !== normalizeStatus(historyStatus)) {
+    if (
+      entityStatus &&
+      historyStatus &&
+      normalizeStatus(entityStatus) !== normalizeStatus(historyStatus)
+    ) {
       return entityStatus;
     }
 
@@ -517,7 +614,8 @@ export class TrackingService {
         });
         if (!customer) throw new NotFoundException('Customer not found');
 
-        const isStatusChangeToRejected = normalizeStatus(status) === 'rejected' && normalizeStatus(customer.status) !== 'rejected';
+        const isStatusChangeToRejected =
+          normalizeStatus(status) === 'rejected' && normalizeStatus(customer.status) !== 'rejected';
         const linkedLeadId = customer.leadId || customer.convertedFromLeadId;
 
         if (isStatusChangeToRejected && linkedLeadId) {
@@ -571,7 +669,9 @@ export class TrackingService {
         });
         if (!project) throw new NotFoundException('Project not found');
 
-        const isStatusChangeToCancelled = normalizeStatus(status) === 'cancelled' && normalizeStatus(project.status) !== 'cancelled';
+        const isStatusChangeToCancelled =
+          normalizeStatus(status) === 'cancelled' &&
+          normalizeStatus(project.status) !== 'cancelled';
 
         if (isStatusChangeToCancelled && project.customerId) {
           // Use transaction for cascade sync: Project → Customer → Lead

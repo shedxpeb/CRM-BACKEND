@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DocumentDashboardDto, RecentDocumentDto, DocumentActivityDto } from './dto/document-dashboard.dto';
+import { DocumentDashboardDto, RecentDocumentDto } from './dto/document-dashboard.dto';
 
 @Injectable()
 export class DocumentService {
@@ -8,7 +8,7 @@ export class DocumentService {
 
   async getAll(organizationId: string, page: number = 1, pageSize: number = 25) {
     const skip = (page - 1) * pageSize;
-    
+
     const [attachments, total] = await Promise.all([
       this.prisma.attachment.findMany({
         where: { organizationId, isDeleted: false },
@@ -76,7 +76,13 @@ export class DocumentService {
       else if (docType === 'Invoice' || docType === 'invoice') invoices++;
 
       if (docStatus === 'Draft' || docStatus === 'draft') draft++;
-      else if (docStatus === 'Approved' || docStatus === 'approved' || docStatus === 'Accepted' || docStatus === 'accepted') approved++;
+      else if (
+        docStatus === 'Approved' ||
+        docStatus === 'approved' ||
+        docStatus === 'Accepted' ||
+        docStatus === 'accepted'
+      )
+        approved++;
       else if (docStatus === 'Sent' || docStatus === 'sent') sent++;
     }
 
