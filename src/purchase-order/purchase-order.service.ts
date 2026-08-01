@@ -178,7 +178,7 @@ export class PurchaseOrderService extends BaseQueryService {
         createdById,
         createdBy,
         organizationId,
-      } as any,
+      } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     });
 
     await this.prisma.purchaseOrderItem.createMany({
