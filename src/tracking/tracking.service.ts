@@ -98,7 +98,7 @@ const DEFAULT_PIPELINES: Record<
   customer: [
     { status: 'Active', label: 'Active', order: 1, isInitial: true, color: '#22c55e', allowedTransitions: ['Inactive', 'Archived', 'Rejected'] },
     { status: 'Inactive', label: 'Inactive', order: 2, color: '#94a3b8', allowedTransitions: ['Active', 'Archived', 'Rejected'] },
-    { status: 'Archived', label: 'Archived', order: 3, isFinal: true, color: '#6b7280', allowedTransitions: [] },
+    { status: 'Archived', label: 'Archived', order: 3, isFinal: false, color: '#6b7280', allowedTransitions: ['Active', 'Inactive', 'Rejected'] },
     { status: 'Rejected', label: 'Rejected', order: 4, isFinal: false, color: '#ef4444', allowedTransitions: ['Active'] },
   ],
   project: [
