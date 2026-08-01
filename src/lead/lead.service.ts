@@ -264,6 +264,7 @@ export class LeadService extends BaseQueryService {
       source: data.source || 'Other',
       isConverted: false,
       attachments: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...((data as any).currentDate ? { createdAt: new Date((data as any).currentDate) } : {}),
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
     };

@@ -263,16 +263,18 @@ export class ProjectService extends BaseQueryService {
           companyName: true,
           projectTitle: true,
           projectType: true,
-        } as any,
+        } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       });
       if (!customer) {
         throw new BadRequestException('Customer not found for this organization');
       }
       customerName = customer.customerName || customer.companyName || 'Unknown Customer';
       if (!projectTitle) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projectTitle = (customer as any).projectTitle;
       }
       if (!projectType) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projectType = (customer as any).projectType;
       }
     }
