@@ -50,6 +50,9 @@ export class CreateInventoryItemDto {
   @IsString()
   warehouseId?: string;
 
+  @IsString()
+  warehouseName: string;
+
   @IsOptional()
   @IsString()
   binLocation?: string;
