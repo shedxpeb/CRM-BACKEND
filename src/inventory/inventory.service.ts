@@ -68,7 +68,29 @@ export class InventoryService extends BaseQueryService {
       select: { itemNumber: true },
     });
     const nextNumber = (lastItem?.itemNumber || 0) + 1;
-    const itemCode = dto.itemCode || `INV-${String(nextNumber).padStart(4, '0')}`;
+    
+    // Generate unique itemCode - if provided itemCode exists, append suffix
+    let itemCode = dto.itemCode || `INV-${String(nextNumber).padStart(4, '0')}`;
+    
+    // Check if itemCode already exists in the organization
+    const existingItem = await this.client.findFirst({
+      where: { organizationId, itemCode, isDeleted: false },
+      select: { itemCode: true },
+    });
+    
+    if (existingItem) {
+      // Append suffix to make it unique
+      let suffix = 1;
+      let uniqueItemCode = `${itemCode}-${suffix}`;
+      while (await this.client.findFirst({
+        where: { organizationId, itemCode: uniqueItemCode, isDeleted: false },
+        select: { itemCode: true },
+      })) {
+        suffix++;
+        uniqueItemCode = `${itemCode}-${suffix}`;
+      }
+      itemCode = uniqueItemCode;
+    }
 
     const currentStock = dto.currentStock || 0;
     const purchaseRate = dto.purchaseRate || 0;
@@ -94,7 +116,7 @@ export class InventoryService extends BaseQueryService {
         purchaseRate,
         totalValue: currentStock * purchaseRate,
         warehouseId: dto.warehouseId || null,
-        warehouseName: warehouse?.name || null,
+        warehouseName: dto.warehouseName || warehouse?.name || null,
         binLocation: dto.binLocation,
         supplierId: dto.supplierId || null,
         reorderQuantity: dto.reorderQuantity,
@@ -140,6 +162,16 @@ export class InventoryService extends BaseQueryService {
     const currentStock = dto.currentStock ?? Number(existing.currentStock);
     const purchaseRate = dto.purchaseRate ?? Number(existing.purchaseRate || 0);
 
+    let warehouseName = existing.warehouseName;
+    if (dto.warehouseName !== undefined) {
+      warehouseName = dto.warehouseName;
+    } else if (dto.warehouseId !== undefined && dto.warehouseId !== existing.warehouseId) {
+      const warehouse = await this.prisma.warehouse.findFirst({ 
+        where: { id: dto.warehouseId, organizationId } 
+      });
+      warehouseName = warehouse?.name || null;
+    }
+
     const item = await this.client.update({
       where: { id },
       data: {
@@ -151,6 +183,7 @@ export class InventoryService extends BaseQueryService {
         ...(dto.safetyStock !== undefined && { safetyStock: dto.safetyStock }),
         ...(dto.purchaseRate !== undefined && { purchaseRate: dto.purchaseRate }),
         ...(dto.warehouseId !== undefined && { warehouseId: dto.warehouseId }),
+        ...(dto.warehouseName !== undefined && { warehouseName: dto.warehouseName }),
         ...(dto.binLocation !== undefined && { binLocation: dto.binLocation }),
         ...(dto.supplierId !== undefined && { supplierId: dto.supplierId }),
         ...(dto.category !== undefined && { category: dto.category }),
@@ -160,6 +193,7 @@ export class InventoryService extends BaseQueryService {
         ...(dto.tags !== undefined && { tags: dto.tags }),
         ...(dto.reorderQuantity !== undefined && { reorderQuantity: dto.reorderQuantity }),
         ...(dto.customFields !== undefined && { customFields: dto.customFields }),
+        ...(warehouseName !== undefined && { warehouseName }),
         totalValue: currentStock * purchaseRate,
         lastUpdated: new Date(),
         status: this.deriveStatus(

@@ -28,8 +28,15 @@ export class InventoryController {
     @Query() query: GetInventoryDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.inventoryService.findAll(query, organizationId);
-    return { message: 'Inventory fetched.', data };
+    const result = await this.inventoryService.findAll(query, organizationId);
+    return { 
+      success: true, 
+      message: 'Inventory fetched.', 
+      data: {
+        data: result.rows,
+        meta: result.pagination
+      }
+    };
   }
 
   @Get('export')
@@ -38,8 +45,15 @@ export class InventoryController {
     @Query() query: GetInventoryDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.inventoryService.findAllForExport(query, organizationId);
-    return { message: 'Export data fetched.', data };
+    const result = await this.inventoryService.findAllForExport(query, organizationId);
+    return { 
+      success: true, 
+      message: 'Export data fetched.', 
+      data: {
+        data: result.rows,
+        meta: result.pagination
+      }
+    };
   }
 
   @Get('stats')
@@ -47,7 +61,7 @@ export class InventoryController {
   @ApiOperation({ summary: 'Get inventory statistics' })
   async getStats(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getStats(organizationId);
-    return { message: 'Stats fetched.', data };
+    return { success: true, message: 'Stats fetched.', data };
   }
 
   @Get('alerts')
@@ -55,7 +69,7 @@ export class InventoryController {
   @ApiOperation({ summary: 'Get low stock alerts' })
   async getAlerts(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getAlerts(organizationId);
-    return { message: 'Alerts fetched.', data };
+    return { success: true, message: 'Alerts fetched.', data };
   }
 
   @Patch('bulk/status')
@@ -69,7 +83,7 @@ export class InventoryController {
       body.status,
       organizationId,
     );
-    return { message: 'Items updated.', data };
+    return { success: true, message: 'Items updated.', data };
   }
 
   @Delete('bulk')
@@ -80,7 +94,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.bulkDelete(body.ids, deletedById, organizationId);
-    return { message: 'Items deleted.', data };
+    return { success: true, message: 'Items deleted.', data };
   }
 
   // ─── WAREHOUSES ──────────────────────────────────────
@@ -89,7 +103,7 @@ export class InventoryController {
   @RequirePermissions('inventory:list')
   async getWarehouses(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getWarehouses(organizationId);
-    return { message: 'Warehouses fetched.', data };
+    return { success: true, message: 'Warehouses fetched.', data };
   }
 
   @Post('warehouses')
@@ -99,7 +113,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.createWarehouse(dto, organizationId);
-    return { message: 'Warehouse created.', data };
+    return { success: true, message: 'Warehouse created.', data };
   }
 
   @Patch('warehouses/:id')
@@ -111,7 +125,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.updateWarehouse(id, dto, organizationId);
-    return { message: 'Warehouse updated.', data };
+    return { success: true, message: 'Warehouse updated.', data };
   }
 
   @Delete('warehouses/:id')
@@ -121,7 +135,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.deleteWarehouse(id, organizationId);
-    return { message: 'Warehouse deleted.', data };
+    return { success: true, message: 'Warehouse deleted.', data };
   }
 
   // ─── SUPPLIERS ──────────────────────────────────────
@@ -130,7 +144,7 @@ export class InventoryController {
   @RequirePermissions('inventory:list')
   async getSuppliers(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getSuppliers(organizationId);
-    return { message: 'Suppliers fetched.', data };
+    return { success: true, message: 'Suppliers fetched.', data };
   }
 
   @Post('suppliers')
@@ -140,7 +154,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.createSupplier(dto, organizationId);
-    return { message: 'Supplier created.', data };
+    return { success: true, message: 'Supplier created.', data };
   }
 
   @Patch('suppliers/:id')
@@ -152,7 +166,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.updateSupplier(id, dto, organizationId);
-    return { message: 'Supplier updated.', data };
+    return { success: true, message: 'Supplier updated.', data };
   }
 
   @Delete('suppliers/:id')
@@ -162,7 +176,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.deleteSupplier(id, organizationId);
-    return { message: 'Supplier deleted.', data };
+    return { success: true, message: 'Supplier deleted.', data };
   }
 
   // ─── CATEGORIES ──────────────────────────────────────
@@ -171,7 +185,7 @@ export class InventoryController {
   @RequirePermissions('inventory:list')
   async getCategories(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getCategories(organizationId);
-    return { message: 'Categories fetched.', data };
+    return { success: true, message: 'Categories fetched.', data };
   }
 
   @Post('categories')
@@ -181,7 +195,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.createCategory(dto, organizationId);
-    return { message: 'Category created.', data };
+    return { success: true, message: 'Category created.', data };
   }
 
   // ─── STOCK MOVEMENTS ─────────────────────────────────
@@ -192,7 +206,7 @@ export class InventoryController {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getMovements(@Query() query: any, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.getMovements(organizationId, query);
-    return { message: 'Movements fetched.', data };
+    return { success: true, message: 'Movements fetched.', data };
   }
 
   @Post('movements')
@@ -204,7 +218,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.createMovement(dto, organizationId, userId);
-    return { message: 'Movement created.', data };
+    return { success: true, message: 'Movement created.', data };
   }
 
   // ─── CRUD ────────────────────────────────────────────
@@ -214,7 +228,7 @@ export class InventoryController {
   @ApiOperation({ summary: 'Get inventory item by ID' })
   async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.findById(id, organizationId);
-    return { message: 'Item fetched.', data };
+    return { success: true, message: 'Item fetched.', data };
   }
 
   @Post()
@@ -226,7 +240,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.create(dto, createdById, organizationId);
-    return { message: 'Item created.', data };
+    return { success: true, message: 'Item created.', data };
   }
 
   @Patch(':id')
@@ -239,7 +253,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.update(id, dto, updatedById, organizationId);
-    return { message: 'Item updated.', data };
+    return { success: true, message: 'Item updated.', data };
   }
 
   @Delete(':id')
@@ -251,14 +265,14 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.softDelete(id, deletedById, organizationId);
-    return { message: 'Item deleted.', data };
+    return { success: true, message: 'Item deleted.', data };
   }
 
   @Post(':id/restore')
   @RequirePermissions('inventory:update')
   async restore(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.inventoryService.restore(id, organizationId);
-    return { message: 'Item restored.', data };
+    return { success: true, message: 'Item restored.', data };
   }
 
   @Get(':id/movements')
@@ -268,7 +282,7 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.getMovementHistory(id, organizationId);
-    return { message: 'Movement history fetched.', data };
+    return { success: true, message: 'Movement history fetched.', data };
   }
 
   @Get(':id/activities')
@@ -278,6 +292,6 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.inventoryService.getActivities(id, organizationId);
-    return { message: 'Activities fetched.', data };
+    return { success: true, message: 'Activities fetched.', data };
   }
 }
