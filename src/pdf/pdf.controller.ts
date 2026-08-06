@@ -185,7 +185,7 @@ export class PdfController {
 
     // Try to load logo from Company Profile settings
     if (org?.settings && typeof org.settings === 'object') {
-      const settings = org.settings as any;
+      const settings = org.settings as Record<string, unknown>;
       if (settings.logo) {
         try {
           const logoPath = path.join(process.cwd(), 'public', settings.logo);
@@ -252,27 +252,33 @@ export class PdfController {
       },
 
       buyer: {
-        name: (po as any).shipToName || undefined,
-        company: (po as any).shipToCompanyName || undefined,
-        address: (po as any).shipToAddress || undefined,
-        city: (po as any).shipToCity || undefined,
-        state: (po as any).shipToState || undefined,
-        pincode: (po as any).shipToPincode || undefined,
-        phone: (po as any).shipToPhone || undefined,
-        email: (po as any).shipToEmail || undefined,
-        gstin: (po as any).shipToGstNumber || undefined,
+        name: ((po as unknown as Record<string, unknown>).shipToName as string) || undefined,
+        company:
+          ((po as unknown as Record<string, unknown>).shipToCompanyName as string) || undefined,
+        address: ((po as unknown as Record<string, unknown>).shipToAddress as string) || undefined,
+        city: ((po as unknown as Record<string, unknown>).shipToCity as string) || undefined,
+        state: ((po as unknown as Record<string, unknown>).shipToState as string) || undefined,
+        pincode: ((po as unknown as Record<string, unknown>).shipToPincode as string) || undefined,
+        phone: ((po as unknown as Record<string, unknown>).shipToPhone as string) || undefined,
+        email: ((po as unknown as Record<string, unknown>).shipToEmail as string) || undefined,
+        gstin: ((po as unknown as Record<string, unknown>).shipToGstNumber as string) || undefined,
       },
 
       supplier: {
-        name: (po as any).supplierName || undefined,
-        company: (po as any).supplierCompanyName || po.vendorName,
-        address: (po as any).supplierAddress || undefined,
-        city: (po as any).supplierCity || undefined,
-        state: (po as any).supplierState || undefined,
-        pincode: (po as any).supplierPincode || undefined,
-        phone: (po as any).supplierPhone || undefined,
-        email: (po as any).supplierEmail || undefined,
-        gstin: (po as any).supplierGstNumber || undefined,
+        name: ((po as unknown as Record<string, unknown>).supplierName as string) || undefined,
+        company:
+          ((po as unknown as Record<string, unknown>).supplierCompanyName as string) ||
+          po.vendorName,
+        address:
+          ((po as unknown as Record<string, unknown>).supplierAddress as string) || undefined,
+        city: ((po as unknown as Record<string, unknown>).supplierCity as string) || undefined,
+        state: ((po as unknown as Record<string, unknown>).supplierState as string) || undefined,
+        pincode:
+          ((po as unknown as Record<string, unknown>).supplierPincode as string) || undefined,
+        phone: ((po as unknown as Record<string, unknown>).supplierPhone as string) || undefined,
+        email: ((po as unknown as Record<string, unknown>).supplierEmail as string) || undefined,
+        gstin:
+          ((po as unknown as Record<string, unknown>).supplierGstNumber as string) || undefined,
       },
 
       items: po.items.map((item) => ({

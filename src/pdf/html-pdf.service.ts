@@ -30,7 +30,7 @@ export class HtmlPdfService {
       return formatter.format(num);
     });
 
-    Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
+    Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b);
     Handlebars.registerHelper('gt', (a: number, b: number) => a > b);
     Handlebars.registerHelper('lt', (a: number, b: number) => a < b);
     Handlebars.registerHelper('abs', (value: number) => Math.abs(value));
@@ -61,7 +61,7 @@ export class HtmlPdfService {
     }
   }
 
-  async generatePdf(templateName: string, data: any): Promise<Buffer> {
+  async generatePdf(templateName: string, data: Record<string, unknown>): Promise<Buffer> {
     const template = this.templates.get(templateName);
 
     if (!template) {
@@ -115,7 +115,7 @@ export class HtmlPdfService {
     }
   }
 
-  async generatePurchaseOrderPdf(data: any): Promise<Buffer> {
+  async generatePurchaseOrderPdf(data: Record<string, unknown>): Promise<Buffer> {
     this.logger.log('=== GENERATE PURCHASE ORDER PDF START ===');
     this.logger.log(`Working directory: ${process.cwd()}`);
     this.logger.log(`Templates directory: ${path.join(process.cwd(), 'templates')}`);

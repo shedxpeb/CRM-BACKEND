@@ -3,6 +3,7 @@ import { BRAND, FONTS, PAGE } from '../helpers/colors';
 import { SectionDimensions } from './layout-engine';
 import { wrapText } from '../helpers/text';
 import { formatCurrency, numberToWords } from '../helpers/currency';
+import * as PDFKit from 'pdfkit';
 
 export interface HeaderData {
   companyName: string;
@@ -412,7 +413,11 @@ export class SectionRenderer {
     return currentY;
   }
 
-  private measureRowHeight(doc: any, item: any, cw: number): number {
+  private measureRowHeight(
+    doc: PDFKit.PDFDocument,
+    item: TableData['items'][0],
+    cw: number,
+  ): number {
     const itemColWidth = Math.max(110, cw - 318);
     const nameLines = wrapText(doc, item.name, FONTS.regular, 6.8, itemColWidth - 10);
     const descLines = item.description
@@ -442,7 +447,13 @@ export class SectionRenderer {
     }
   }
 
-  private renderTableRow(item: any, y: number, cw: number, currency: string, alt: boolean): number {
+  private renderTableRow(
+    item: TableData['items'][0],
+    y: number,
+    cw: number,
+    currency: string,
+    alt: boolean,
+  ): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
 
@@ -512,7 +523,7 @@ export class SectionRenderer {
     ];
   }
 
-  private getRowValues(item: any, currency: string): string[] {
+  private getRowValues(item: TableData['items'][0], currency: string): string[] {
     return [
       String(item.sno),
       item.name,
@@ -654,7 +665,10 @@ export class SectionRenderer {
     if (_data.freight && _data.freight !== 0)
       rows.push({ label: 'Freight', value: formatCurrency(_data.freight, _data.currency) });
     if (_data.transport && _data.transport !== 0)
-      rows.push({ label: 'Shipping Charges', value: formatCurrency(_data.transport, _data.currency) });
+      rows.push({
+        label: 'Shipping Charges',
+        value: formatCurrency(_data.transport, _data.currency),
+      });
     if (_data.other && _data.other !== 0)
       rows.push({ label: 'Other Charges', value: formatCurrency(_data.other, _data.currency) });
     if (_data.roundOff && Math.abs(_data.roundOff) > 0.001) {
