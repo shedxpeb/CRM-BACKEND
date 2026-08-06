@@ -188,7 +188,7 @@ export class PdfController {
       const settings = org.settings as Record<string, unknown>;
       if (settings.logo) {
         try {
-          const logoPath = path.join(process.cwd(), 'public', settings.logo);
+          const logoPath = path.join(process.cwd(), 'public', settings.logo as string);
           if (fs.existsSync(logoPath)) {
             const logoBuffer = fs.readFileSync(logoPath);
             const ext = path.extname(logoPath).slice(1);
@@ -348,7 +348,7 @@ export class PdfController {
     this.logger.log(`Item Total vs Subtotal Diff: ${sumOfItemTotals - Number(po.subtotal)}`);
     this.logger.log(`Generating PDF for PO ${po.poNumber} using HTML template`);
 
-    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(pdfData);
+    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(pdfData as unknown as Record<string, unknown>);
 
     return new StreamableFile(Buffer.from(pdfBuffer), {
       type: 'application/pdf',

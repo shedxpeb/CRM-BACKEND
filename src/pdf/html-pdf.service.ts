@@ -128,7 +128,7 @@ export class HtmlPdfService {
         month: 'short',
         year: 'numeric',
       }),
-      amountInWords: this.numberToWords(data.grandTotal),
+      amountInWords: this.numberToWords(Number(data.grandTotal)),
     };
 
     this.logger.log('=== CALLING GENERATE PDF ===');
