@@ -56,10 +56,7 @@ export function buildSummaryRows(data: SummaryData): SummaryRow[] {
   ];
 
   if (data.discount && data.discount !== 0) {
-    const label =
-      data.discountType === 'Percentage'
-        ? `Discount (${data.discount}%)`
-        : 'Discount';
+    const label = data.discountType === 'Percentage' ? `Discount (${data.discount}%)` : 'Discount';
     const value =
       data.discountType === 'Percentage'
         ? formatCurrency((data.subtotal * data.discount) / 100, data.currency)
@@ -99,11 +96,7 @@ export function buildSummaryRows(data: SummaryData): SummaryRow[] {
   return rows;
 }
 
-export function measureSummary(
-  engine: PdfEngine,
-  data: SummaryData,
-  cfg: SummaryConfig,
-): number {
+export function measureSummary(engine: PdfEngine, data: SummaryData, cfg: SummaryConfig): number {
   const rows = buildSummaryRows(data);
   const words = numberToWords(data.grandTotal);
   const wordsLines = Math.max(1, Math.ceil(words.length / 100));
@@ -112,11 +105,7 @@ export function measureSummary(
   return cfg.headerH + rows.length * cfg.rowH + cfg.totalH + 5 + labelH + wordsHeight + 3;
 }
 
-export function renderSummary(
-  engine: PdfEngine,
-  data: SummaryData,
-  cfg: SummaryConfig,
-): number {
+export function renderSummary(engine: PdfEngine, data: SummaryData, cfg: SummaryConfig): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
@@ -145,7 +134,11 @@ export function renderSummary(
   doc.font(FONTS.regular).fontSize(cfg.fontSize).fillColor(BRAND.black);
   for (const row of rows) {
     doc.text(row.label, labelX, cursor + 3.5, { width: 118, lineBreak: false });
-    doc.text(row.value, valueX, cursor + 3.5, { width: valueWidth, align: 'right', lineBreak: false });
+    doc.text(row.value, valueX, cursor + 3.5, {
+      width: valueWidth,
+      align: 'right',
+      lineBreak: false,
+    });
     engine.drawLine(x, cursor + cfg.rowH - 1, x + cfg.panelWidth, cursor + cfg.rowH - 1, {
       color: BRAND.tableBorder,
       width: 0.3,
@@ -157,7 +150,10 @@ export function renderSummary(
   engine.drawRect(x, cursor, cfg.panelWidth, cfg.totalH, { fillColor: BRAND.grandTotalBg });
   doc.font(FONTS.bold).fontSize(cfg.fontSize).fillColor(BRAND.grandTotalText);
   doc.text('GRAND TOTAL', labelX, cursor + cfg.totalH / 2 - 3, { lineBreak: false });
-  doc.font(FONTS.bold).fontSize(cfg.fontSize + 1.2).fillColor(BRAND.grandTotalText);
+  doc
+    .font(FONTS.bold)
+    .fontSize(cfg.fontSize + 1.2)
+    .fillColor(BRAND.grandTotalText);
   doc.text(formatCurrency(data.grandTotal, data.currency), valueX, cursor + cfg.totalH / 2 - 3.5, {
     width: valueWidth,
     align: 'right',
@@ -168,7 +164,10 @@ export function renderSummary(
   // Amount in words — full width
   const words = numberToWords(data.grandTotal);
   cursor += 5;
-  doc.font(FONTS.bold).fontSize(cfg.wordsFont - 0.5).fillColor(BRAND.muted);
+  doc
+    .font(FONTS.bold)
+    .fontSize(cfg.wordsFont - 0.5)
+    .fillColor(BRAND.muted);
   doc.text('AMOUNT IN WORDS:', margin.left, cursor, { lineBreak: false });
   cursor += cfg.wordsFont + 1;
   const wordsWidth = cw;

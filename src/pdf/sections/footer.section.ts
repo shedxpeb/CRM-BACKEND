@@ -24,11 +24,13 @@ export function renderFooter(
     width: 1,
   });
 
-  const dateStr = generatedAt || new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  const dateStr =
+    generatedAt ||
+    new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   doc.font(FONTS.italic).fontSize(5.6).fillColor(BRAND.muted);
   doc.text(`Computer Generated Document  ·  Generated on ${dateStr}`, margin.left, infoY, {
     width: cw * 0.62,
@@ -69,11 +71,13 @@ export function renderSimpleFooter(
     width: 0.5,
   });
 
-  const dateStr = generatedAt || new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  const dateStr =
+    generatedAt ||
+    new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   doc.font(FONTS.italic).fontSize(5.6).fillColor(BRAND.muted);
   doc.text(`Computer Generated Document  ·  Generated on ${dateStr}`, margin.left, infoY, {
     width: cw * 0.62,

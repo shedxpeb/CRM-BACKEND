@@ -41,14 +41,14 @@ export function calculateItemTotals(item: PoItemInput): PoItemCalculated {
   const quantity = Number(item.quantity) || 0;
   const rate = Number(item.rate) || 0;
   const itemTotal = roundTo2(quantity * rate);
-  
+
   const discountValue = Number(item.discount) || 0;
   const discountAmount =
     item.discountType === 'Percentage'
       ? roundTo2((itemTotal * discountValue) / 100)
       : discountValue;
   const afterDiscount = roundTo2(itemTotal - discountAmount);
-  
+
   const gstRate = Number(item.gstRate) || 0;
   const gstAmount = gstRate ? roundTo2((afterDiscount * gstRate) / 100) : 0;
   const total = roundTo2(afterDiscount + gstAmount);
@@ -66,21 +66,21 @@ export function calculatePoFinancials(input: PoFinancialInput): PoFinancialResul
 
   const itemDetails = input.items.map((item) => {
     const result = calculateItemTotals(item);
-    
+
     const quantity = Number(item.quantity) || 0;
     const rate = Number(item.rate) || 0;
     const itemTotal = roundTo2(quantity * rate);
-    
+
     const discountValue = Number(item.discount) || 0;
     const discountAmount =
       item.discountType === 'Percentage'
         ? roundTo2((itemTotal * discountValue) / 100)
         : discountValue;
     const afterDiscount = roundTo2(itemTotal - discountAmount);
-    
+
     subtotal = roundTo2(subtotal + afterDiscount);
     totalTax = roundTo2(totalTax + result.gstAmount);
-    
+
     return result;
   });
 
@@ -90,19 +90,14 @@ export function calculatePoFinancials(input: PoFinancialInput): PoFinancialResul
       ? roundTo2((subtotal * discountValue) / 100)
       : discountValue;
   const afterDiscount = roundTo2(subtotal - discountAmount);
-  
+
   const freightValue = Number(input.freight) || 0;
   const packingValue = Number(input.packingCharges) || 0;
   const shippingValue = Number(input.shippingCharges) || 0;
   const otherValue = Number(input.otherCharges) || 0;
-  
+
   const grandTotalBeforeRound = roundTo2(
-    afterDiscount +
-    totalTax +
-    freightValue +
-    packingValue +
-    shippingValue +
-    otherValue
+    afterDiscount + totalTax + freightValue + packingValue + shippingValue + otherValue,
   );
   const roundOff = roundTo2(Math.round(grandTotalBeforeRound) - grandTotalBeforeRound);
   const grandTotal = roundTo2(grandTotalBeforeRound + roundOff);

@@ -92,16 +92,16 @@ export class SectionRenderer {
   }
 
   measureHeader(data: HeaderData): SectionDimensions {
-    const doc = this.engine.doc;
-    const cw = this.engine.getContentWidth();
-    
+    const _doc = this.engine.doc;
+    const _cw = this.engine.getContentWidth();
+
     const logoHeight = 35;
     const companyLines = this.buildCompanyLines(data);
     const companyHeight = 14 + companyLines.length * 9;
-    
+
     const metaBoxHeight = 44;
     const totalHeight = Math.max(logoHeight, companyHeight) + 4 + 14 + metaBoxHeight + 4;
-    
+
     return {
       height: totalHeight,
       minHeight: totalHeight,
@@ -110,57 +110,63 @@ export class SectionRenderer {
     };
   }
 
-  renderHeader(data: HeaderData, y: number): number {
+  renderHeader(_data: HeaderData, _y: number): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
     const x0 = margin.left;
-    
+
     const rightColWidth = 200;
     const rightX = x0 + cw - rightColWidth;
-    
+
     let textX = x0;
     const logo = this.engine.loadLogo();
     if (logo) {
       try {
-        doc.image(logo, x0, y + 2, { height: 35 });
+        doc.image(logo, x0, _y + 2, { height: 35 });
         textX = x0 + 42;
-      } catch {}
+      } catch {
+        // Logo loading failed, continue without logo
+      }
     }
-    
+
     const leftWidth = rightX - textX - 14;
-    
+
     doc.font(FONTS.bold).fontSize(12).fillColor(BRAND.primary);
-    doc.text(data.companyName || 'PEB Systems', textX, y + 2, {
+    doc.text(_data.companyName || 'PEB Systems', textX, _y + 2, {
       width: leftWidth,
       lineBreak: false,
     });
-    
-    const companyLines = this.buildCompanyLines(data);
-    let cy = y + 16;
+
+    const companyLines = this.buildCompanyLines(_data);
+    let cy = _y + 16;
     doc.font(FONTS.regular).fontSize(6.4).fillColor(BRAND.muted);
     for (const line of companyLines) {
       doc.text(line, textX, cy, { width: leftWidth, lineBreak: false });
       cy += 8.2;
     }
-    
+
     doc.font(FONTS.bold).fontSize(12).fillColor(BRAND.primary);
-    doc.text('PURCHASE ORDER', rightX, y, { width: rightColWidth, align: 'right', lineBreak: false });
-    
+    doc.text('PURCHASE ORDER', rightX, _y, {
+      width: rightColWidth,
+      align: 'right',
+      lineBreak: false,
+    });
+
     const metaRows = [
-      { label: 'PO Number', value: data.poNumber },
-      { label: 'Date', value: data.poDate },
-      { label: 'Revision', value: data.revision !== undefined ? String(data.revision) : '-' },
-      { label: 'Status', value: data.status || '-' },
+      { label: 'PO Number', value: _data.poNumber },
+      { label: 'Date', value: _data.poDate },
+      { label: 'Revision', value: _data.revision !== undefined ? String(_data.revision) : '-' },
+      { label: 'Status', value: _data.status || '-' },
     ];
-    
-    const boxY = y + 18;
+
+    const boxY = _y + 18;
     const boxH = 44;
     this.engine.drawRect(rightX, boxY, rightColWidth, boxH, {
       strokeColor: BRAND.darkBorder,
       strokeWidth: 0.5,
     });
-    
+
     metaRows.forEach((row, i) => {
       const rowY = boxY + i * (boxH / metaRows.length);
       if (i > 0) {
@@ -180,38 +186,38 @@ export class SectionRenderer {
         lineBreak: false,
       });
     });
-    
-    this.engine.drawLine(x0, y + 66, x0 + cw, y + 66, {
+
+    this.engine.drawLine(x0, _y + 66, x0 + cw, _y + 66, {
       color: BRAND.primary,
       width: 1.2,
     });
-    
-    return y + 70;
+
+    return _y + 70;
   }
 
-  private buildCompanyLines(data: HeaderData): string[] {
+  private buildCompanyLines(_data: HeaderData): string[] {
     const lines: string[] = [];
-    if (data.companyAddress) lines.push(data.companyAddress);
+    if (_data.companyAddress) lines.push(_data.companyAddress);
     const contact: string[] = [];
-    if (data.companyPhone) contact.push(data.companyPhone);
-    if (data.companyEmail) contact.push(data.companyEmail);
+    if (_data.companyPhone) contact.push(_data.companyPhone);
+    if (_data.companyEmail) contact.push(_data.companyEmail);
     if (contact.length) lines.push(contact.join('  ·  '));
-    if (data.companyWebsite) lines.push(data.companyWebsite);
-    if (data.companyGstin) lines.push(`GSTIN: ${data.companyGstin}`);
+    if (_data.companyWebsite) lines.push(_data.companyWebsite);
+    if (_data.companyGstin) lines.push(`GSTIN: ${_data.companyGstin}`);
     return lines;
   }
 
-  measureOrderInfo(data: OrderInfoData): SectionDimensions {
+  measureOrderInfo(_data: OrderInfoData): SectionDimensions {
     const fields = [
-      data.paymentTerms,
-      data.expectedDelivery,
-      data.currency,
-      data.projectName,
-      data.warehouseName,
+      _data.paymentTerms,
+      _data.expectedDelivery,
+      _data.currency,
+      _data.projectName,
+      _data.warehouseName,
     ].filter(Boolean);
-    
+
     const height = fields.length > 0 ? 18 : 0;
-    
+
     return {
       height,
       minHeight: 0,
@@ -220,28 +226,28 @@ export class SectionRenderer {
     };
   }
 
-  renderOrderInfo(data: OrderInfoData, y: number): number {
+  renderOrderInfo(_data: OrderInfoData, y: number): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
-    
+
     const fields = [
-      { label: 'Payment Terms', value: data.paymentTerms },
-      { label: 'Expected Delivery', value: data.expectedDelivery },
-      { label: 'Currency', value: data.currency },
-      { label: 'Project', value: data.projectName },
-      { label: 'Warehouse', value: data.warehouseName },
-    ].filter(f => f.value);
-    
+      { label: 'Payment Terms', value: _data.paymentTerms },
+      { label: 'Expected Delivery', value: _data.expectedDelivery },
+      { label: 'Currency', value: _data.currency },
+      { label: 'Project', value: _data.projectName },
+      { label: 'Warehouse', value: _data.warehouseName },
+    ].filter((f) => f.value);
+
     if (fields.length === 0) return y;
-    
+
     const stripH = 18;
     this.engine.drawRect(margin.left, y, cw, stripH, {
       fillColor: BRAND.faint,
       strokeColor: BRAND.border,
       strokeWidth: 0.5,
     });
-    
+
     const cellW = cw / fields.length;
     fields.forEach((cell, i) => {
       const cx = margin.left + i * cellW;
@@ -261,23 +267,23 @@ export class SectionRenderer {
       const value = raw.length > 52 ? raw.slice(0, 52) + '…' : raw;
       doc.text(value, cx + 8, y + 9, { width: cellW - 16, lineBreak: false });
     });
-    
+
     return y + stripH;
   }
 
   measureAddress(left: AddressData, right: AddressData): SectionDimensions {
-    const doc = this.engine.doc;
+    const _doc = this.engine.doc;
     const cw = this.engine.getContentWidth();
-    const colWidth = (cw - 10) / 2;
-    
+    const _colWidth = (cw - 10) / 2;
+
     const leftLines = this.buildAddressLines(left);
     const rightLines = this.buildAddressLines(right);
-    
+
     const leftHeight = 16 + 6 + leftLines.length * 8.2;
     const rightHeight = 16 + 6 + rightLines.length * 8.2;
-    
+
     const height = Math.max(leftHeight, rightHeight, 72);
-    
+
     return {
       height,
       minHeight: 72,
@@ -287,22 +293,29 @@ export class SectionRenderer {
   }
 
   renderAddress(left: AddressData, right: AddressData, y: number): number {
-    const doc = this.engine.doc;
+    const _doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
     const GAP = 10;
     const colWidth = (cw - GAP) / 2;
-    
+
     const leftLines = this.buildAddressLines(left);
     const rightLines = this.buildAddressLines(right);
-    
+
     const leftHeight = 16 + 6 + leftLines.length * 8.2;
     const rightHeight = 16 + 6 + rightLines.length * 8.2;
     const blockHeight = Math.max(leftHeight, rightHeight, 72);
-    
+
     this.renderAddressBlock(left, leftLines, margin.left, y, colWidth, blockHeight);
-    this.renderAddressBlock(right, rightLines, margin.left + colWidth + GAP, y, colWidth, blockHeight);
-    
+    this.renderAddressBlock(
+      right,
+      rightLines,
+      margin.left + colWidth + GAP,
+      y,
+      colWidth,
+      blockHeight,
+    );
+
     return y + blockHeight;
   }
 
@@ -334,19 +347,19 @@ export class SectionRenderer {
     const PADDING_TOP = 6;
     const BODY_FONT = 6.4;
     const BODY_LINE_H = 8.2;
-    
+
     this.engine.drawRect(x, y, width, height, {
       strokeColor: BRAND.darkBorder,
       strokeWidth: 0.5,
     });
     this.engine.drawRect(x, y, width, TITLE_HEIGHT, { fillColor: BRAND.primary });
-    
+
     doc.font(FONTS.bold).fontSize(7).fillColor(BRAND.white);
     doc.text(data.title, x + PADDING_X, y + TITLE_HEIGHT / 2 - 2.5, {
       width: width - PADDING_X * 2,
       lineBreak: false,
     });
-    
+
     let cursor = y + TITLE_HEIGHT + PADDING_TOP;
     doc.font(FONTS.regular).fontSize(BODY_FONT).fillColor(BRAND.black);
     for (const line of lines) {
@@ -363,14 +376,14 @@ export class SectionRenderer {
     const doc = this.engine.doc;
     const cw = this.engine.getContentWidth();
     const headerHeight = 18;
-    
+
     let totalHeight = headerHeight;
     for (let i = startIndex; i < endIndex && i < data.items.length; i++) {
       const item = data.items[i];
       const rowHeight = this.measureRowHeight(doc, item, cw);
       totalHeight += rowHeight;
     }
-    
+
     return {
       height: totalHeight,
       minHeight: headerHeight + 18,
@@ -380,22 +393,22 @@ export class SectionRenderer {
   }
 
   renderTable(data: TableData, y: number, startIndex: number, endIndex: number): number {
-    const doc = this.engine.doc;
-    const margin = this.engine.getMargin();
+    const _doc = this.engine.doc;
+    const _margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
-    
+
     const headerHeight = 18;
     this.renderTableHeader(data.currency, y, cw);
-    
+
     let currentY = y + headerHeight;
     for (let i = startIndex; i < endIndex && i < data.items.length; i++) {
       const item = data.items[i];
       const rowHeight = this.renderTableRow(item, currentY, cw, data.currency, i % 2 === 1);
       currentY += rowHeight;
     }
-    
+
     this.renderTableBorders(y, currentY, cw);
-    
+
     return currentY;
   }
 
@@ -412,12 +425,12 @@ export class SectionRenderer {
   private renderTableHeader(currency: string, y: number, cw: number) {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
-    
+
     this.engine.drawRect(margin.left, y, cw, 18, { fillColor: BRAND.primary });
-    
+
     const cols = this.getTableColumns(cw);
     doc.font(FONTS.bold).fontSize(6.7).fillColor(BRAND.white);
-    
+
     let currentX = margin.left;
     for (const col of cols) {
       const textWidth = doc.widthOfString(col.header);
@@ -432,20 +445,20 @@ export class SectionRenderer {
   private renderTableRow(item: any, y: number, cw: number, currency: string, alt: boolean): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
-    
+
     const rowHeight = this.measureRowHeight(doc, item, cw);
     if (alt) {
       this.engine.drawRect(margin.left, y, cw, rowHeight, { fillColor: BRAND.rowAlt });
     }
-    
+
     const cols = this.getTableColumns(cw);
     const values = this.getRowValues(item, currency);
-    
+
     let currentX = margin.left;
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       let cursor = y + 3.5;
-      
+
       if (i === 1) {
         const textWidth = col.width - 10;
         doc.font(FONTS.regular).fontSize(6.8).fillColor(BRAND.black);
@@ -475,12 +488,12 @@ export class SectionRenderer {
       }
       currentX += col.width;
     }
-    
+
     this.engine.drawLine(margin.left, y + rowHeight, margin.left + cw, y + rowHeight, {
       color: BRAND.tableBorder,
       width: 0.3,
     });
-    
+
     return rowHeight;
   }
 
@@ -519,11 +532,11 @@ export class SectionRenderer {
     const margin = this.engine.getMargin();
     const x0 = margin.left;
     const x1 = x0 + cw;
-    
+
     this.engine.drawLine(x0, startY, x0, endY, { color: BRAND.tableBorder, width: 0.3 });
     this.engine.drawLine(x1, startY, x1, endY, { color: BRAND.tableBorder, width: 0.3 });
     this.engine.drawLine(x0, endY, x1, endY, { color: BRAND.tableBorder, width: 0.4 });
-    
+
     let colX = x0;
     for (const col of this.getTableColumns(cw)) {
       colX += col.width;
@@ -533,15 +546,15 @@ export class SectionRenderer {
     }
   }
 
-  measureSummary(data: SummaryData): SectionDimensions {
-    const rows = this.buildSummaryRows(data);
+  measureSummary(_data: SummaryData): SectionDimensions {
+    const rows = this.buildSummaryRows(_data);
     const panelHeight = 18 + rows.length * 13 + 20;
-    const words = numberToWords(data.grandTotal);
+    const words = numberToWords(_data.grandTotal);
     const wordsLines = Math.ceil(words.length / 100);
     const wordsHeight = wordsLines * 9.5 + 8;
-    
+
     const height = panelHeight + 5 + wordsHeight + 3;
-    
+
     return {
       height,
       minHeight: height,
@@ -550,53 +563,57 @@ export class SectionRenderer {
     };
   }
 
-  renderSummary(data: SummaryData, y: number): number {
+  renderSummary(_data: SummaryData, y: number): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
-    
+
     const panelWidth = 240;
     const x = margin.left + cw - panelWidth;
-    const rows = this.buildSummaryRows(data);
+    const rows = this.buildSummaryRows(_data);
     const panelHeight = 18 + rows.length * 13 + 20;
-    
+
     this.engine.drawRect(x - 2, y - 2, panelWidth + 4, panelHeight + 4, {
       strokeColor: BRAND.darkBorder,
       strokeWidth: 0.5,
     });
-    
+
     this.engine.drawRect(x, y, panelWidth, 18, { fillColor: BRAND.primary });
     doc.font(FONTS.bold).fontSize(7.5).fillColor(BRAND.white);
     doc.text('SUMMARY', x + 10, y + 6, { lineBreak: false });
-    
+
     const labelX = x + 10;
     const valueX = x + 10 + 120;
     const valueWidth = panelWidth - 20 - 120;
-    
+
     let cursor = y + 18;
     doc.font(FONTS.regular).fontSize(7.5).fillColor(BRAND.black);
     for (const row of rows) {
       doc.text(row.label, labelX, cursor + 3.5, { width: 118, lineBreak: false });
-      doc.text(row.value, valueX, cursor + 3.5, { width: valueWidth, align: 'right', lineBreak: false });
+      doc.text(row.value, valueX, cursor + 3.5, {
+        width: valueWidth,
+        align: 'right',
+        lineBreak: false,
+      });
       this.engine.drawLine(x, cursor + 12, x + panelWidth, cursor + 12, {
         color: BRAND.tableBorder,
         width: 0.3,
       });
       cursor += 13;
     }
-    
+
     this.engine.drawRect(x, cursor, panelWidth, 20, { fillColor: BRAND.grandTotalBg });
     doc.font(FONTS.bold).fontSize(7.5).fillColor(BRAND.grandTotalText);
     doc.text('GRAND TOTAL', labelX, cursor + 7, { lineBreak: false });
     doc.font(FONTS.bold).fontSize(8.7).fillColor(BRAND.grandTotalText);
-    doc.text(formatCurrency(data.grandTotal, data.currency), valueX, cursor + 6.5, {
+    doc.text(formatCurrency(_data.grandTotal, _data.currency), valueX, cursor + 6.5, {
       width: valueWidth,
       align: 'right',
       lineBreak: false,
     });
     cursor += 20;
-    
-    const words = numberToWords(data.grandTotal);
+
+    const words = numberToWords(_data.grandTotal);
     cursor += 5;
     doc.font(FONTS.bold).fontSize(6.5).fillColor(BRAND.muted);
     doc.text('AMOUNT IN WORDS:', margin.left, cursor, { lineBreak: false });
@@ -607,46 +624,58 @@ export class SectionRenderer {
       doc.text(line, margin.left, cursor, { width: cw, lineBreak: false });
       cursor += 9.5;
     }
-    
+
     return cursor + 3;
   }
 
-  private buildSummaryRows(data: SummaryData): { label: string; value: string }[] {
+  private buildSummaryRows(_data: SummaryData): { label: string; value: string }[] {
     const rows: { label: string; value: string }[] = [
-      { label: 'Subtotal', value: formatCurrency(data.subtotal, data.currency) },
+      { label: 'Subtotal', value: formatCurrency(_data.subtotal, _data.currency) },
     ];
-    
-    if (data.discount && data.discount !== 0) {
-      const label = data.discountType === 'Percentage' ? `Discount (${data.discount}%)` : 'Discount';
-      const value = data.discountType === 'Percentage'
-        ? formatCurrency((data.subtotal * data.discount) / 100, data.currency)
-        : formatCurrency(data.discount, data.currency);
+
+    if (_data.discount && _data.discount !== 0) {
+      const label =
+        _data.discountType === 'Percentage' ? `Discount (${_data.discount}%)` : 'Discount';
+      const value =
+        _data.discountType === 'Percentage'
+          ? formatCurrency((_data.subtotal * _data.discount) / 100, _data.currency)
+          : formatCurrency(_data.discount, _data.currency);
       rows.push({ label, value: '-' + value });
     }
-    
-    if (data.cgst && data.cgst !== 0) rows.push({ label: 'CGST', value: formatCurrency(data.cgst, data.currency) });
-    if (data.sgst && data.sgst !== 0) rows.push({ label: 'SGST', value: formatCurrency(data.sgst, data.currency) });
-    if (data.igst && data.igst !== 0) rows.push({ label: 'IGST', value: formatCurrency(data.igst, data.currency) });
-    if (data.packing && data.packing !== 0) rows.push({ label: 'Packing', value: formatCurrency(data.packing, data.currency) });
-    if (data.freight && data.freight !== 0) rows.push({ label: 'Freight', value: formatCurrency(data.freight, data.currency) });
-    if (data.transport && data.transport !== 0) rows.push({ label: 'Transport', value: formatCurrency(data.transport, data.currency) });
-    if (data.other && data.other !== 0) rows.push({ label: 'Other Charges', value: formatCurrency(data.other, data.currency) });
-    if (data.roundOff && Math.abs(data.roundOff) > 0.001) {
-      const sign = data.roundOff > 0 ? '+' : '-';
-      rows.push({ label: 'Round Off', value: sign + formatCurrency(Math.abs(data.roundOff), data.currency) });
+
+    if (_data.cgst && _data.cgst !== 0)
+      rows.push({ label: 'CGST', value: formatCurrency(_data.cgst, _data.currency) });
+    if (_data.sgst && _data.sgst !== 0)
+      rows.push({ label: 'SGST', value: formatCurrency(_data.sgst, _data.currency) });
+    if (_data.igst && _data.igst !== 0)
+      rows.push({ label: 'IGST', value: formatCurrency(_data.igst, _data.currency) });
+    if (_data.packing && _data.packing !== 0)
+      rows.push({ label: 'Packing Charges', value: formatCurrency(_data.packing, _data.currency) });
+    if (_data.freight && _data.freight !== 0)
+      rows.push({ label: 'Freight', value: formatCurrency(_data.freight, _data.currency) });
+    if (_data.transport && _data.transport !== 0)
+      rows.push({ label: 'Shipping Charges', value: formatCurrency(_data.transport, _data.currency) });
+    if (_data.other && _data.other !== 0)
+      rows.push({ label: 'Other Charges', value: formatCurrency(_data.other, _data.currency) });
+    if (_data.roundOff && Math.abs(_data.roundOff) > 0.001) {
+      const sign = _data.roundOff > 0 ? '+' : '-';
+      rows.push({
+        label: 'Round Off',
+        value: sign + formatCurrency(Math.abs(_data.roundOff), _data.currency),
+      });
     }
-    
+
     return rows;
   }
 
-  measureTerms(data: TermsData): SectionDimensions {
+  measureTerms(_data: TermsData): SectionDimensions {
     const doc = this.engine.doc;
     const cw = this.engine.getContentWidth();
-    const terms = data.terms || this.getDefaultTerms();
+    const terms = _data.terms || this.getDefaultTerms();
     const lines = wrapText(doc, terms, FONTS.regular, 6.5, cw - 24);
     const count = Math.min(lines.length, 7);
     const height = 16 + count * 8.2 + 5;
-    
+
     return {
       height,
       minHeight: 30,
@@ -655,16 +684,16 @@ export class SectionRenderer {
     };
   }
 
-  renderTerms(data: TermsData, y: number): number {
+  renderTerms(_data: TermsData, y: number): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
-    
+
     this.engine.drawRect(margin.left, y, cw, 16, { fillColor: BRAND.primary });
     doc.font(FONTS.bold).fontSize(7).fillColor(BRAND.white);
     doc.text('TERMS & CONDITIONS', margin.left + 10, y + 5, { lineBreak: false });
-    
-    const terms = data.terms || this.getDefaultTerms();
+
+    const terms = _data.terms || this.getDefaultTerms();
     const lines = wrapText(doc, terms, FONTS.regular, 6.5, cw - 24);
     let cursor = y + 19;
     doc.font(FONTS.regular).fontSize(6.5).fillColor(BRAND.black);
@@ -672,7 +701,7 @@ export class SectionRenderer {
       doc.text(lines[i], margin.left + 10, cursor, { width: cw - 20, lineBreak: false });
       cursor += 8.2;
     }
-    
+
     return cursor + 2;
   }
 
@@ -687,7 +716,7 @@ export class SectionRenderer {
     ].join('\n');
   }
 
-  measureSignatures(data: SignatureData): SectionDimensions {
+  measureSignatures(_data: SignatureData): SectionDimensions {
     return {
       height: 0,
       minHeight: 0,
@@ -696,11 +725,11 @@ export class SectionRenderer {
     };
   }
 
-  renderSignatures(data: SignatureData, y: number): number {
+  renderSignatures(_data: SignatureData, y: number): number {
     return y;
   }
 
-  measureFooter(data: FooterData): SectionDimensions {
+  measureFooter(_data: FooterData): SectionDimensions {
     return {
       height: 34,
       minHeight: 34,
@@ -709,38 +738,43 @@ export class SectionRenderer {
     };
   }
 
-  renderFooter(data: FooterData, y: number): number {
+  renderFooter(_data: FooterData, _y: number): number {
     const doc = this.engine.doc;
     const margin = this.engine.getMargin();
     const cw = this.engine.getContentWidth();
-    
+
     const ruleY = PAGE.height - 34;
     this.engine.drawLine(margin.left, ruleY, margin.left + cw, ruleY, {
       color: BRAND.primary,
       width: 1,
     });
-    
+
     const infoY = ruleY + 8;
     doc.font(FONTS.italic).fontSize(5.6).fillColor(BRAND.muted);
-    doc.text(`Computer Generated Document  ·  Generated on ${data.generatedAt}`, margin.left, infoY, {
-      width: cw * 0.62,
-      lineBreak: false,
-    });
+    doc.text(
+      `Computer Generated Document  ·  Generated on ${_data.generatedAt}`,
+      margin.left,
+      infoY,
+      {
+        width: cw * 0.62,
+        lineBreak: false,
+      },
+    );
     doc.font(FONTS.regular).fontSize(5.6).fillColor(BRAND.muted);
-    doc.text(`Page ${data.pageNum} of ${data.totalPages}`, margin.left + cw * 0.62, infoY, {
+    doc.text(`Page ${_data.pageNum} of ${_data.totalPages}`, margin.left + cw * 0.62, infoY, {
       width: cw * 0.38,
       align: 'right',
       lineBreak: false,
     });
-    
+
     const bottomY = infoY + 11;
     doc.font(FONTS.bold).fontSize(5.6).fillColor(BRAND.muted);
-    doc.text(data.companyName || 'PEB Systems', margin.left, bottomY, {
+    doc.text(_data.companyName || 'PEB Systems', margin.left, bottomY, {
       width: cw,
       align: 'center',
       lineBreak: false,
     });
-    
+
     return PAGE.height;
   }
 }

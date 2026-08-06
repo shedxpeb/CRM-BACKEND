@@ -172,8 +172,8 @@ export class PdfController {
       ? await this.prisma.warehouse.findUnique({ where: { id: po.warehouseId } })
       : null;
 
-    const shipToCompany = warehouse?.name || org?.name;
-    const shipToAddress =
+    const _shipToCompany = warehouse?.name || org?.name;
+    const _shipToAddress =
       warehouse?.address ||
       warehouse?.location ||
       [org?.address, [org?.city, org?.state, org?.pincode].filter(Boolean).join(', ')]
@@ -182,7 +182,7 @@ export class PdfController {
 
     // Convert logo to Base64 if available
     let companyLogoBase64: string | undefined;
-    
+
     // Try to load logo from Company Profile settings
     if (org?.settings && typeof org.settings === 'object') {
       const settings = org.settings as any;
@@ -199,13 +199,13 @@ export class PdfController {
         }
       }
     }
-    
+
     // Fallback to default logo if company logo is not available
     if (!companyLogoBase64) {
       try {
         const publicDir = path.join(process.cwd(), '..', 'frontend', 'public');
         const logoExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
-        
+
         for (const ext of logoExtensions) {
           const logoPath = path.join(publicDir, `logo.${ext}`);
           if (fs.existsSync(logoPath)) {
@@ -216,9 +216,11 @@ export class PdfController {
             break;
           }
         }
-        
+
         if (!companyLogoBase64) {
-          this.logger.warn('No logo file found in frontend/public folder (checked: logo.png, logo.jpg, logo.jpeg, logo.svg, logo.webp)');
+          this.logger.warn(
+            'No logo file found in frontend/public folder (checked: logo.png, logo.jpg, logo.jpeg, logo.svg, logo.webp)',
+          );
         }
       } catch (error) {
         this.logger.warn(`Failed to load default logo: ${error.message}`);
@@ -306,7 +308,7 @@ export class PdfController {
     };
 
     // Calculate expected grand total from individual components
-    const expectedTotal = 
+    const expectedTotal =
       Number(po.subtotal) +
       (po.discount ? Number(po.discount) : 0) +
       cgst +

@@ -1,5 +1,5 @@
 import { PdfEngine } from '../engine/pdf-engine';
-import { LayoutCalculator, LayoutPlan } from '../layout/layout-engine';
+import { LayoutCalculator } from '../layout/layout-engine';
 import { SectionRenderer } from '../layout/section-renderer';
 
 export interface PurchaseOrderPdfData {
@@ -221,7 +221,12 @@ export async function generatePurchaseOrderPdf(
       header: headerDims,
       orderInfo: orderInfoDims,
       address: addressDims,
-      table: { height: 18 + rowHeights.reduce((a, b) => a + b, 0), minHeight: 36, preferredHeight: 18 + rowHeights.reduce((a, b) => a + b, 0), maxHeight: 18 + rowHeights.reduce((a, b) => a + b, 0) },
+      table: {
+        height: 18 + rowHeights.reduce((a, b) => a + b, 0),
+        minHeight: 36,
+        preferredHeight: 18 + rowHeights.reduce((a, b) => a + b, 0),
+        maxHeight: 18 + rowHeights.reduce((a, b) => a + b, 0),
+      },
       summary: summaryDims,
       amountInWords: { height: 0, minHeight: 0, preferredHeight: 0, maxHeight: 0 },
       terms: termsDims,
@@ -255,19 +260,24 @@ export async function generatePurchaseOrderPdf(
     const page = plan.continuationPages[i];
     engine.addPage();
     currentY = engine.getMargin().top + 20;
-    
+
     engine.doc.font('Calibri-Bold').fontSize(10).fillColor('#1e3a8a');
-    engine.doc.text(`PURCHASE ORDER  ·  ${data.poNumber}  (continued)`, engine.getMargin().left, currentY, {
-      lineBreak: false,
-    });
+    engine.doc.text(
+      `PURCHASE ORDER  ·  ${data.poNumber}  (continued)`,
+      engine.getMargin().left,
+      currentY,
+      {
+        lineBreak: false,
+      },
+    );
     currentY += 15;
-    
+
     const endIndex = startIndex + page.tableRows;
     currentY = renderer.renderTable(tableData, currentY, startIndex, endIndex);
-    
+
     footerData.pageNum = i + 2;
     renderer.renderFooter(footerData, footerY);
-    
+
     startIndex = endIndex;
   }
 

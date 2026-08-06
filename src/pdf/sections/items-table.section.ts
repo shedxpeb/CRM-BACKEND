@@ -101,7 +101,13 @@ export function measureRowHeight(engine: PdfEngine, row: TableRowItem, cfg: Tabl
 
   for (let i = 0; i < cols.length; i++) {
     if (i === 1) continue;
-    const lines = wrapText(doc, rowStrings(row, 'INR')[i], FONTS.regular, cfg.rowFont, cols[i].width - 8);
+    const lines = wrapText(
+      doc,
+      rowStrings(row, 'INR')[i],
+      FONTS.regular,
+      cfg.rowFont,
+      cols[i].width - 8,
+    );
     if (lines.length > maxLines) maxLines = lines.length;
   }
 
@@ -109,7 +115,7 @@ export function measureRowHeight(engine: PdfEngine, row: TableRowItem, cfg: Tabl
   return Math.max(maxLines * lineH + cfg.rowPad * 2, cfg.minRowHeight);
 }
 
-export function drawTableHeader(engine: PdfEngine, cfg: TableConfig, currency: string): number {
+export function drawTableHeader(engine: PdfEngine, cfg: TableConfig, _currency: string): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
@@ -196,11 +202,7 @@ export function drawTableRow(
   return y + rowHeight;
 }
 
-export function drawTableEmpty(
-  engine: PdfEngine,
-  cfg: TableConfig,
-  y: number,
-): number {
+export function drawTableEmpty(engine: PdfEngine, cfg: TableConfig, y: number): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();

@@ -296,12 +296,12 @@ export class PurchaseOrderService extends BaseQueryService {
     this.poLogger.log(`Update DTO: ${JSON.stringify(dto, null, 2)}`);
     this.poLogger.log(`Updated By ID: ${updatedById}`);
     this.poLogger.log(`Updated By: ${updatedBy}`);
-    
+
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, organizationId, isDeleted: false },
     });
     if (!po) throw new NotFoundException('Purchase Order not found');
-    
+
     this.poLogger.log(`Existing PO found: ${JSON.stringify(po, null, 2)}`);
 
     if (
@@ -359,7 +359,8 @@ export class PurchaseOrderService extends BaseQueryService {
     if (dto.shipTo) {
       this.poLogger.log(`Processing Ship To updates: ${JSON.stringify(dto.shipTo, null, 2)}`);
       if (dto.shipTo.name !== undefined) updateData.shipToName = dto.shipTo.name;
-      if (dto.shipTo.companyName !== undefined) updateData.shipToCompanyName = dto.shipTo.companyName;
+      if (dto.shipTo.companyName !== undefined)
+        updateData.shipToCompanyName = dto.shipTo.companyName;
       if (dto.shipTo.address !== undefined) updateData.shipToAddress = dto.shipTo.address;
       if (dto.shipTo.city !== undefined) updateData.shipToCity = dto.shipTo.city;
       if (dto.shipTo.state !== undefined) updateData.shipToState = dto.shipTo.state;
@@ -374,7 +375,8 @@ export class PurchaseOrderService extends BaseQueryService {
     if (dto.supplier) {
       this.poLogger.log(`Processing Supplier updates: ${JSON.stringify(dto.supplier, null, 2)}`);
       if (dto.supplier.name !== undefined) updateData.supplierName = dto.supplier.name;
-      if (dto.supplier.companyName !== undefined) updateData.supplierCompanyName = dto.supplier.companyName;
+      if (dto.supplier.companyName !== undefined)
+        updateData.supplierCompanyName = dto.supplier.companyName;
       if (dto.supplier.address !== undefined) updateData.supplierAddress = dto.supplier.address;
       if (dto.supplier.city !== undefined) updateData.supplierCity = dto.supplier.city;
       if (dto.supplier.state !== undefined) updateData.supplierState = dto.supplier.state;
@@ -382,10 +384,13 @@ export class PurchaseOrderService extends BaseQueryService {
       if (dto.supplier.country !== undefined) updateData.supplierCountry = dto.supplier.country;
       if (dto.supplier.phone !== undefined) updateData.supplierPhone = dto.supplier.phone;
       if (dto.supplier.email !== undefined) updateData.supplierEmail = dto.supplier.email;
-      if (dto.supplier.gstNumber !== undefined) updateData.supplierGstNumber = dto.supplier.gstNumber;
+      if (dto.supplier.gstNumber !== undefined)
+        updateData.supplierGstNumber = dto.supplier.gstNumber;
     }
 
-    this.poLogger.log(`Final updateData before vendor/project/warehouse: ${JSON.stringify(updateData, null, 2)}`);
+    this.poLogger.log(
+      `Final updateData before vendor/project/warehouse: ${JSON.stringify(updateData, null, 2)}`,
+    );
 
     if (dto.vendorId && dto.vendorId !== po.vendorId) {
       const vendor = await this.prisma.vendor.findUnique({ where: { id: dto.vendorId } });

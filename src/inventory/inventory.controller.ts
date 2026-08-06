@@ -29,13 +29,13 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const result = await this.inventoryService.findAll(query, organizationId);
-    return { 
-      success: true, 
-      message: 'Inventory fetched.', 
+    return {
+      success: true,
+      message: 'Inventory fetched.',
       data: {
         data: result.rows,
-        meta: result.pagination
-      }
+        meta: result.pagination,
+      },
     };
   }
 
@@ -46,13 +46,13 @@ export class InventoryController {
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const result = await this.inventoryService.findAllForExport(query, organizationId);
-    return { 
-      success: true, 
-      message: 'Export data fetched.', 
+    return {
+      success: true,
+      message: 'Export data fetched.',
       data: {
         data: result.rows,
-        meta: result.pagination
-      }
+        meta: result.pagination,
+      },
     };
   }
 

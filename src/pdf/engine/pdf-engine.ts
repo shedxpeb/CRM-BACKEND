@@ -128,16 +128,12 @@ export class PdfEngine {
 
   // ─── Callbacks ──────────────────────────────────────────
 
-  setHeaderCallback(
-    cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void,
-  ) {
+  setHeaderCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
     this.headerCallback = cb;
     return this;
   }
 
-  setFooterCallback(
-    cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void,
-  ) {
+  setFooterCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
     this.footerCallback = cb;
     return this;
   }
