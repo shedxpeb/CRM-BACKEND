@@ -153,6 +153,7 @@ export class PurchaseOrderService extends BaseQueryService {
     });
 
     // Prepare Ship To data (use provided values or default from organization)
+    // Note: Email and GST Number are truly optional - not auto-filled from organization
     const shipToData = {
       shipToName: dto.shipTo?.name || null,
       shipToCompanyName: dto.shipTo?.companyName || organization?.name || null,
@@ -162,11 +163,12 @@ export class PurchaseOrderService extends BaseQueryService {
       shipToPincode: dto.shipTo?.pincode || organization?.pincode || null,
       shipToCountry: dto.shipTo?.country || organization?.country || 'India',
       shipToPhone: dto.shipTo?.phone || organization?.mobile || null,
-      shipToEmail: dto.shipTo?.email || organization?.email || null,
-      shipToGstNumber: dto.shipTo?.gstNumber || organization?.gstNumber || null,
+      shipToEmail: dto.shipTo?.email || null,
+      shipToGstNumber: dto.shipTo?.gstNumber || null,
     };
 
     // Prepare Supplier data (use provided values or default from vendor)
+    // Note: Email and GST Number are truly optional - not auto-filled from vendor
     const supplierData = {
       supplierName: dto.supplier?.name || vendor.contactPerson || null,
       supplierCompanyName: dto.supplier?.companyName || vendor.companyName || null,
@@ -176,8 +178,8 @@ export class PurchaseOrderService extends BaseQueryService {
       supplierPincode: dto.supplier?.pincode || vendor.pincode || null,
       supplierCountry: dto.supplier?.country || vendor.country || 'India',
       supplierPhone: dto.supplier?.phone || vendor.phone || null,
-      supplierEmail: dto.supplier?.email || vendor.email || null,
-      supplierGstNumber: dto.supplier?.gstNumber || vendor.gstNumber || null,
+      supplierEmail: dto.supplier?.email || null,
+      supplierGstNumber: dto.supplier?.gstNumber || null,
     };
 
     const purchaseOrder = await this.prisma.purchaseOrder.create({

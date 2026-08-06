@@ -33,8 +33,20 @@ export function formatNumber(num: number, decimals = 2): string {
 }
 
 export function formatQuantity(num: number): string {
-  if (Number.isInteger(num)) return num.toString();
-  return parseFloat(num.toFixed(2)).toString();
+  // Preserve up to 3 decimal places for quantity (matches Prisma schema Decimal(12, 3))
+  // Remove trailing zeros after decimal point, but keep at least 2 decimal places if not integer
+  const fixed = num.toFixed(3);
+  const parts = fixed.split('.');
+  const intPart = parts[0];
+  const decPart = parts[1];
+  
+  // Remove trailing zeros from decimal part
+  const trimmedDec = decPart.replace(/0+$/, '');
+  
+  if (trimmedDec === '000' || trimmedDec === '') {
+    return intPart;
+  }
+  return `${intPart}.${trimmedDec}`;
 }
 
 const ones = [

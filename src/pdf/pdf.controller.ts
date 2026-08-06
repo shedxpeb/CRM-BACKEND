@@ -305,6 +305,39 @@ export class PdfController {
       terms: po.terms || undefined,
     };
 
+    // Calculate expected grand total from individual components
+    const expectedTotal = 
+      Number(po.subtotal) +
+      (po.discount ? Number(po.discount) : 0) +
+      cgst +
+      sgst +
+      igst +
+      (po.packingCharges ? Number(po.packingCharges) : 0) +
+      (po.freight ? Number(po.freight) : 0) +
+      (po.shippingCharges ? Number(po.shippingCharges) : 0) +
+      (po.otherCharges ? Number(po.otherCharges) : 0) +
+      (po.roundOff ? Number(po.roundOff) : 0);
+
+    // Calculate sum of item totals
+    const sumOfItemTotals = po.items.reduce((sum, item) => sum + Number(item.total), 0);
+
+    this.logger.log(`=== PDF DATA VALIDATION ===`);
+    this.logger.log(`PO: ${po.poNumber}`);
+    this.logger.log(`Sum of Item Totals: ${sumOfItemTotals}`);
+    this.logger.log(`Subtotal: ${po.subtotal}`);
+    this.logger.log(`Discount: ${po.discount || 0}`);
+    this.logger.log(`CGST: ${cgst}`);
+    this.logger.log(`SGST: ${sgst}`);
+    this.logger.log(`IGST: ${igst}`);
+    this.logger.log(`Packing: ${po.packingCharges || 0}`);
+    this.logger.log(`Freight: ${po.freight || 0}`);
+    this.logger.log(`Shipping Charges (transport): ${po.shippingCharges || 0}`);
+    this.logger.log(`Other Charges: ${po.otherCharges || 0}`);
+    this.logger.log(`Round Off: ${po.roundOff || 0}`);
+    this.logger.log(`Expected Total (calculated): ${expectedTotal}`);
+    this.logger.log(`Actual Grand Total (from DB): ${po.grandTotal}`);
+    this.logger.log(`Difference: ${Number(po.grandTotal) - expectedTotal}`);
+    this.logger.log(`Item Total vs Subtotal Diff: ${sumOfItemTotals - Number(po.subtotal)}`);
     this.logger.log(`Generating PDF for PO ${po.poNumber} using HTML template`);
 
     const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(pdfData);
