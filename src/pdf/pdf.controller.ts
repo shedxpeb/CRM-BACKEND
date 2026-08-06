@@ -348,7 +348,9 @@ export class PdfController {
     this.logger.log(`Item Total vs Subtotal Diff: ${sumOfItemTotals - Number(po.subtotal)}`);
     this.logger.log(`Generating PDF for PO ${po.poNumber} using HTML template`);
 
-    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(pdfData as unknown as Record<string, unknown>);
+    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(
+      pdfData as unknown as Record<string, unknown>,
+    );
 
     return new StreamableFile(Buffer.from(pdfBuffer), {
       type: 'application/pdf',
