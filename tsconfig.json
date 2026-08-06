@@ -26,5 +26,8 @@
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist", "prisma"]
+  "exclude": ["node_modules", "dist", "prisma"],
+  "watchOptions": {
+    "excludeDirectories": ["**/node_modules", "**/dist"]
+  }
 }

@@ -1,0 +1,14 @@
+{
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.tsserver.disableAutomaticTypeAcquisition": true,
+  "js/ts.tsserver.useSyntaxServer": "never",
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  "typescript.tsserver.excludeFolders": [
+    "**/node_modules"
+  ]
+}
