@@ -9,8 +9,7 @@ export function formatCurrency(amount: number, currency = 'INR'): string {
   if (currency === 'INR') {
     return `${sign}\u20B9 ${formatIndianNumber(absAmount)}`;
   }
-  const symbol =
-    currency === 'USD' ? '$ ' : currency === 'EUR' ? '\u20AC ' : currency + ' ';
+  const symbol = currency === 'USD' ? '$ ' : currency === 'EUR' ? '\u20AC ' : currency + ' ';
   return `${sign}${symbol}${absAmount.toFixed(2)}`;
 }
 
@@ -33,8 +32,20 @@ export function formatNumber(num: number, decimals = 2): string {
 }
 
 export function formatQuantity(num: number): string {
-  if (Number.isInteger(num)) return num.toString();
-  return parseFloat(num.toFixed(2)).toString();
+  // Preserve up to 3 decimal places for quantity (matches Prisma schema Decimal(12, 3))
+  // Remove trailing zeros after decimal point, but keep at least 2 decimal places if not integer
+  const fixed = num.toFixed(3);
+  const parts = fixed.split('.');
+  const intPart = parts[0];
+  const decPart = parts[1];
+
+  // Remove trailing zeros from decimal part
+  const trimmedDec = decPart.replace(/0+$/, '');
+
+  if (trimmedDec === '000' || trimmedDec === '') {
+    return intPart;
+  }
+  return `${intPart}.${trimmedDec}`;
 }
 
 const ones = [
@@ -65,7 +76,9 @@ function convertBelow1000(n: number): string {
   if (n === 0) return '';
   if (n < 20) return ones[n];
   if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-  return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convertBelow1000(n % 100) : '');
+  return (
+    ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convertBelow1000(n % 100) : '')
+  );
 }
 
 function convertInt(n: number): string {

@@ -23,7 +23,7 @@ export const COMPACT_TERMS_CONFIG: TermsConfig = {
   maxLines: 7,
 };
 
-const DEFAULT_TERMS = [
+const _DEFAULT_TERMS = [
   '1. All goods must conform to the specifications and quality standards as agreed upon.',
   '2. Delivery must be made on or before the agreed delivery date.',
   '3. Invoice must be submitted along with delivery challan and quality certificates.',
@@ -32,11 +32,7 @@ const DEFAULT_TERMS = [
   '6. Any disputes arising shall be subject to the jurisdiction of local courts.',
 ];
 
-export function measureTerms(
-  engine: PdfEngine,
-  terms: string,
-  cfg: TermsConfig,
-): number {
+export function measureTerms(engine: PdfEngine, terms: string, cfg: TermsConfig): number {
   const doc = engine.doc;
   const cw = engine.getContentWidth();
   const lines = wrapText(doc, terms, FONTS.regular, cfg.font, cw - 24);

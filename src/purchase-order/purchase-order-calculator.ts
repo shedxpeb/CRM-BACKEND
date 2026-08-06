@@ -34,20 +34,29 @@ export interface PoFinancialResult {
   amountInWords: string;
 }
 
+// Helper function to round to 2 decimal places for currency calculations
+const roundTo2 = (value: number): number => Math.round(value * 100) / 100;
+
 export function calculateItemTotals(item: PoItemInput): PoItemCalculated {
-  const itemTotal = item.quantity * item.rate;
+  const quantity = Number(item.quantity) || 0;
+  const rate = Number(item.rate) || 0;
+  const itemTotal = roundTo2(quantity * rate);
+
+  const discountValue = Number(item.discount) || 0;
   const discountAmount =
     item.discountType === 'Percentage'
-      ? (itemTotal * (item.discount || 0)) / 100
-      : item.discount || 0;
-  const afterDiscount = itemTotal - discountAmount;
-  const gstAmount = item.gstRate ? (afterDiscount * item.gstRate) / 100 : 0;
-  const total = afterDiscount + gstAmount;
+      ? roundTo2((itemTotal * discountValue) / 100)
+      : discountValue;
+  const afterDiscount = roundTo2(itemTotal - discountAmount);
+
+  const gstRate = Number(item.gstRate) || 0;
+  const gstAmount = gstRate ? roundTo2((afterDiscount * gstRate) / 100) : 0;
+  const total = roundTo2(afterDiscount + gstAmount);
 
   return {
-    gstAmount: Math.round(gstAmount * 100) / 100,
-    total: Math.round(total * 100) / 100,
-    pendingQuantity: item.quantity,
+    gstAmount,
+    total,
+    pendingQuantity: quantity,
   };
 }
 
@@ -57,41 +66,51 @@ export function calculatePoFinancials(input: PoFinancialInput): PoFinancialResul
 
   const itemDetails = input.items.map((item) => {
     const result = calculateItemTotals(item);
-    const itemTotal = item.quantity * item.rate;
+
+    const quantity = Number(item.quantity) || 0;
+    const rate = Number(item.rate) || 0;
+    const itemTotal = roundTo2(quantity * rate);
+
+    const discountValue = Number(item.discount) || 0;
     const discountAmount =
       item.discountType === 'Percentage'
-        ? (itemTotal * (item.discount || 0)) / 100
-        : item.discount || 0;
-    const afterDiscount = itemTotal - discountAmount;
-    subtotal += afterDiscount;
-    totalTax += result.gstAmount;
+        ? roundTo2((itemTotal * discountValue) / 100)
+        : discountValue;
+    const afterDiscount = roundTo2(itemTotal - discountAmount);
+
+    subtotal = roundTo2(subtotal + afterDiscount);
+    totalTax = roundTo2(totalTax + result.gstAmount);
+
     return result;
   });
 
+  const discountValue = Number(input.discount) || 0;
   const discountAmount =
     input.discountType === 'Percentage'
-      ? (subtotal * (input.discount || 0)) / 100
-      : input.discount || 0;
-  const afterDiscount = subtotal - discountAmount;
-  const grandTotalBeforeRound =
-    afterDiscount +
-    totalTax +
-    (input.freight || 0) +
-    (input.packingCharges || 0) +
-    (input.shippingCharges || 0) +
-    (input.otherCharges || 0);
-  const roundOff = Math.round(grandTotalBeforeRound) - grandTotalBeforeRound;
-  const grandTotal = grandTotalBeforeRound + roundOff;
+      ? roundTo2((subtotal * discountValue) / 100)
+      : discountValue;
+  const afterDiscount = roundTo2(subtotal - discountAmount);
+
+  const freightValue = Number(input.freight) || 0;
+  const packingValue = Number(input.packingCharges) || 0;
+  const shippingValue = Number(input.shippingCharges) || 0;
+  const otherValue = Number(input.otherCharges) || 0;
+
+  const grandTotalBeforeRound = roundTo2(
+    afterDiscount + totalTax + freightValue + packingValue + shippingValue + otherValue,
+  );
+  const roundOff = roundTo2(Math.round(grandTotalBeforeRound) - grandTotalBeforeRound);
+  const grandTotal = roundTo2(grandTotalBeforeRound + roundOff);
 
   return {
     itemDetails,
-    subtotal: Math.round(afterDiscount * 100) / 100,
-    totalTax: Math.round(totalTax * 100) / 100,
-    discountAmount: Math.round(discountAmount * 100) / 100,
-    afterDiscount: Math.round(afterDiscount * 100) / 100,
-    grandTotalBeforeRound: Math.round(grandTotalBeforeRound * 100) / 100,
-    roundOff: Math.round(roundOff * 100) / 100,
-    grandTotal: Math.round(grandTotal * 100) / 100,
+    subtotal,
+    totalTax,
+    discountAmount,
+    afterDiscount,
+    grandTotalBeforeRound,
+    roundOff,
+    grandTotal,
     amountInWords: numberToWords(Math.round(grandTotal)),
   };
 }

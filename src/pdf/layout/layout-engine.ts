@@ -46,11 +46,7 @@ export class LayoutCalculator {
     this.engine = engine;
   }
 
-  calculateLayout(
-    layout: PageLayout,
-    totalTableRows: number,
-    rowHeights: number[],
-  ): LayoutPlan {
+  calculateLayout(layout: PageLayout, totalTableRows: number, rowHeights: number[]): LayoutPlan {
     const margin = this.engine.getMargin();
     const pageHeight = PAGE.height;
     const availableHeight = pageHeight - margin.top - margin.bottom;

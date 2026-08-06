@@ -68,24 +68,26 @@ export class InventoryService extends BaseQueryService {
       select: { itemNumber: true },
     });
     const nextNumber = (lastItem?.itemNumber || 0) + 1;
-    
+
     // Generate unique itemCode - if provided itemCode exists, append suffix
     let itemCode = dto.itemCode || `INV-${String(nextNumber).padStart(4, '0')}`;
-    
+
     // Check if itemCode already exists in the organization
     const existingItem = await this.client.findFirst({
       where: { organizationId, itemCode, isDeleted: false },
       select: { itemCode: true },
     });
-    
+
     if (existingItem) {
       // Append suffix to make it unique
       let suffix = 1;
       let uniqueItemCode = `${itemCode}-${suffix}`;
-      while (await this.client.findFirst({
-        where: { organizationId, itemCode: uniqueItemCode, isDeleted: false },
-        select: { itemCode: true },
-      })) {
+      while (
+        await this.client.findFirst({
+          where: { organizationId, itemCode: uniqueItemCode, isDeleted: false },
+          select: { itemCode: true },
+        })
+      ) {
         suffix++;
         uniqueItemCode = `${itemCode}-${suffix}`;
       }
@@ -166,8 +168,8 @@ export class InventoryService extends BaseQueryService {
     if (dto.warehouseName !== undefined) {
       warehouseName = dto.warehouseName;
     } else if (dto.warehouseId !== undefined && dto.warehouseId !== existing.warehouseId) {
-      const warehouse = await this.prisma.warehouse.findFirst({ 
-        where: { id: dto.warehouseId, organizationId } 
+      const warehouse = await this.prisma.warehouse.findFirst({
+        where: { id: dto.warehouseId, organizationId },
       });
       warehouseName = warehouse?.name || null;
     }

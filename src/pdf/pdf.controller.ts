@@ -172,8 +172,8 @@ export class PdfController {
       ? await this.prisma.warehouse.findUnique({ where: { id: po.warehouseId } })
       : null;
 
-    const shipToCompany = warehouse?.name || org?.name;
-    const shipToAddress =
+    const _shipToCompany = warehouse?.name || org?.name;
+    const _shipToAddress =
       warehouse?.address ||
       warehouse?.location ||
       [org?.address, [org?.city, org?.state, org?.pincode].filter(Boolean).join(', ')]
@@ -182,13 +182,13 @@ export class PdfController {
 
     // Convert logo to Base64 if available
     let companyLogoBase64: string | undefined;
-    
+
     // Try to load logo from Company Profile settings
     if (org?.settings && typeof org.settings === 'object') {
-      const settings = org.settings as any;
+      const settings = org.settings as Record<string, unknown>;
       if (settings.logo) {
         try {
-          const logoPath = path.join(process.cwd(), 'public', settings.logo);
+          const logoPath = path.join(process.cwd(), 'public', settings.logo as string);
           if (fs.existsSync(logoPath)) {
             const logoBuffer = fs.readFileSync(logoPath);
             const ext = path.extname(logoPath).slice(1);
@@ -199,13 +199,13 @@ export class PdfController {
         }
       }
     }
-    
+
     // Fallback to default logo if company logo is not available
     if (!companyLogoBase64) {
       try {
         const publicDir = path.join(process.cwd(), '..', 'frontend', 'public');
         const logoExtensions = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
-        
+
         for (const ext of logoExtensions) {
           const logoPath = path.join(publicDir, `logo.${ext}`);
           if (fs.existsSync(logoPath)) {
@@ -216,9 +216,11 @@ export class PdfController {
             break;
           }
         }
-        
+
         if (!companyLogoBase64) {
-          this.logger.warn('No logo file found in frontend/public folder (checked: logo.png, logo.jpg, logo.jpeg, logo.svg, logo.webp)');
+          this.logger.warn(
+            'No logo file found in frontend/public folder (checked: logo.png, logo.jpg, logo.jpeg, logo.svg, logo.webp)',
+          );
         }
       } catch (error) {
         this.logger.warn(`Failed to load default logo: ${error.message}`);
@@ -250,27 +252,33 @@ export class PdfController {
       },
 
       buyer: {
-        name: (po as any).shipToName || undefined,
-        company: (po as any).shipToCompanyName || undefined,
-        address: (po as any).shipToAddress || undefined,
-        city: (po as any).shipToCity || undefined,
-        state: (po as any).shipToState || undefined,
-        pincode: (po as any).shipToPincode || undefined,
-        phone: (po as any).shipToPhone || undefined,
-        email: (po as any).shipToEmail || undefined,
-        gstin: (po as any).shipToGstNumber || undefined,
+        name: ((po as unknown as Record<string, unknown>).shipToName as string) || undefined,
+        company:
+          ((po as unknown as Record<string, unknown>).shipToCompanyName as string) || undefined,
+        address: ((po as unknown as Record<string, unknown>).shipToAddress as string) || undefined,
+        city: ((po as unknown as Record<string, unknown>).shipToCity as string) || undefined,
+        state: ((po as unknown as Record<string, unknown>).shipToState as string) || undefined,
+        pincode: ((po as unknown as Record<string, unknown>).shipToPincode as string) || undefined,
+        phone: ((po as unknown as Record<string, unknown>).shipToPhone as string) || undefined,
+        email: ((po as unknown as Record<string, unknown>).shipToEmail as string) || undefined,
+        gstin: ((po as unknown as Record<string, unknown>).shipToGstNumber as string) || undefined,
       },
 
       supplier: {
-        name: (po as any).supplierName || undefined,
-        company: (po as any).supplierCompanyName || po.vendorName,
-        address: (po as any).supplierAddress || undefined,
-        city: (po as any).supplierCity || undefined,
-        state: (po as any).supplierState || undefined,
-        pincode: (po as any).supplierPincode || undefined,
-        phone: (po as any).supplierPhone || undefined,
-        email: (po as any).supplierEmail || undefined,
-        gstin: (po as any).supplierGstNumber || undefined,
+        name: ((po as unknown as Record<string, unknown>).supplierName as string) || undefined,
+        company:
+          ((po as unknown as Record<string, unknown>).supplierCompanyName as string) ||
+          po.vendorName,
+        address:
+          ((po as unknown as Record<string, unknown>).supplierAddress as string) || undefined,
+        city: ((po as unknown as Record<string, unknown>).supplierCity as string) || undefined,
+        state: ((po as unknown as Record<string, unknown>).supplierState as string) || undefined,
+        pincode:
+          ((po as unknown as Record<string, unknown>).supplierPincode as string) || undefined,
+        phone: ((po as unknown as Record<string, unknown>).supplierPhone as string) || undefined,
+        email: ((po as unknown as Record<string, unknown>).supplierEmail as string) || undefined,
+        gstin:
+          ((po as unknown as Record<string, unknown>).supplierGstNumber as string) || undefined,
       },
 
       items: po.items.map((item) => ({
@@ -305,9 +313,44 @@ export class PdfController {
       terms: po.terms || undefined,
     };
 
+    // Calculate expected grand total from individual components
+    const expectedTotal =
+      Number(po.subtotal) +
+      (po.discount ? Number(po.discount) : 0) +
+      cgst +
+      sgst +
+      igst +
+      (po.packingCharges ? Number(po.packingCharges) : 0) +
+      (po.freight ? Number(po.freight) : 0) +
+      (po.shippingCharges ? Number(po.shippingCharges) : 0) +
+      (po.otherCharges ? Number(po.otherCharges) : 0) +
+      (po.roundOff ? Number(po.roundOff) : 0);
+
+    // Calculate sum of item totals
+    const sumOfItemTotals = po.items.reduce((sum, item) => sum + Number(item.total), 0);
+
+    this.logger.log(`=== PDF DATA VALIDATION ===`);
+    this.logger.log(`PO: ${po.poNumber}`);
+    this.logger.log(`Sum of Item Totals: ${sumOfItemTotals}`);
+    this.logger.log(`Subtotal: ${po.subtotal}`);
+    this.logger.log(`Discount: ${po.discount || 0}`);
+    this.logger.log(`CGST: ${cgst}`);
+    this.logger.log(`SGST: ${sgst}`);
+    this.logger.log(`IGST: ${igst}`);
+    this.logger.log(`Packing: ${po.packingCharges || 0}`);
+    this.logger.log(`Freight: ${po.freight || 0}`);
+    this.logger.log(`Shipping Charges (transport): ${po.shippingCharges || 0}`);
+    this.logger.log(`Other Charges: ${po.otherCharges || 0}`);
+    this.logger.log(`Round Off: ${po.roundOff || 0}`);
+    this.logger.log(`Expected Total (calculated): ${expectedTotal}`);
+    this.logger.log(`Actual Grand Total (from DB): ${po.grandTotal}`);
+    this.logger.log(`Difference: ${Number(po.grandTotal) - expectedTotal}`);
+    this.logger.log(`Item Total vs Subtotal Diff: ${sumOfItemTotals - Number(po.subtotal)}`);
     this.logger.log(`Generating PDF for PO ${po.poNumber} using HTML template`);
 
-    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(pdfData);
+    const pdfBuffer = await this.htmlPdfService.generatePurchaseOrderPdf(
+      pdfData as unknown as Record<string, unknown>,
+    );
 
     return new StreamableFile(Buffer.from(pdfBuffer), {
       type: 'application/pdf',

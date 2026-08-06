@@ -333,10 +333,11 @@
             {{#if cgst}}<div class="flex justify-between"><span>CGST</span><span>{{formatCurrency cgst currency}}</span></div>{{/if}}
             {{#if sgst}}<div class="flex justify-between"><span>SGST</span><span>{{formatCurrency sgst currency}}</span></div>{{/if}}
             {{#if igst}}<div class="flex justify-between"><span>IGST</span><span>{{formatCurrency igst currency}}</span></div>{{/if}}
-            {{#if packing}}<div class="flex justify-between"><span>Packing</span><span>{{formatCurrency packing currency}}</span></div>{{/if}}
+            {{#if packing}}<div class="flex justify-between"><span>Packing Charges</span><span>{{formatCurrency packing currency}}</span></div>{{/if}}
             {{#if freight}}<div class="flex justify-between"><span>Freight</span><span>{{formatCurrency freight currency}}</span></div>{{/if}}
-            {{#if other}}<div class="flex justify-between"><span>Other</span><span>{{formatCurrency other currency}}</span></div>{{/if}}
-            {{#if roundOff}}<div class="flex justify-between"><span>Round Off</span><span>{{#if (gt roundOff 0)}}+{{else}}{{/if}}{{formatCurrency (abs roundOff) currency}}</span></div>{{/if}}
+            {{#if transport}}<div class="flex justify-between"><span>Shipping Charges</span><span>{{formatCurrency transport currency}}</span></div>{{/if}}
+            {{#if other}}<div class="flex justify-between"><span>Other Charges</span><span>{{formatCurrency other currency}}</span></div>{{/if}}
+            {{#if roundOff}}<div class="flex justify-between"><span>Round Off</span><span>{{#if (lt roundOff 0)}}-{{formatCurrency (abs roundOff) currency}}{{else}}+{{formatCurrency roundOff currency}}{{/if}}</span></div>{{/if}}
             <div class="border-t border-gray pt-1 mt-1 flex justify-between font-bold" style="color: #1e3a8a;">
               <span>GRAND TOTAL</span><span>{{formatCurrency grandTotal currency}}</span>
             </div>

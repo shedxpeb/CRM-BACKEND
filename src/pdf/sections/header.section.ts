@@ -71,17 +71,18 @@ export function renderHeader(engine: PdfEngine, data: HeaderData): number {
 
   // ── Right: document title + PO meta box ─────────────────
   doc.font(FONTS.bold).fontSize(13).fillColor(BRAND.primary);
-  doc.text('PURCHASE ORDER', rightX, y, { width: RIGHT_COL_WIDTH, align: 'right', lineBreak: false });
+  doc.text('PURCHASE ORDER', rightX, y, {
+    width: RIGHT_COL_WIDTH,
+    align: 'right',
+    lineBreak: false,
+  });
 
   const metaRows: { label: string; value: string }[] = [
     { label: 'PO Number', value: data.poNumber },
     { label: 'Date', value: data.poDate },
     {
       label: 'Revision',
-      value:
-        data.revision !== undefined && data.revision !== null
-          ? String(data.revision)
-          : '-',
+      value: data.revision !== undefined && data.revision !== null ? String(data.revision) : '-',
     },
     { label: 'Status', value: data.status || '-' },
   ];
