@@ -1,233 +1,232 @@
 import { PdfEngine } from '../engine/pdf-engine';
-import { BRAND, FONTS, PAGE } from '../helpers/colors';
+import { BRAND, FONTS } from '../helpers/colors';
 import { wrapText } from '../helpers/text';
 import { formatCurrency, formatQuantity } from '../helpers/currency';
 
-export interface TableItem {
+export interface TableRowItem {
   sno: number;
-  itemName: string;
+  name: string;
   description?: string;
-  hsnCode?: string;
+  hsn: string;
   quantity: number;
   unit: string;
   rate: number;
-  discount?: number;
+  discount: number;
   discountType?: string;
-  gstRate?: number;
-  gstAmount?: number;
-  total: number;
+  gstRate: number;
+  amount: number;
 }
 
-export interface ItemsTableData {
-  items: TableItem[];
-  currency?: string;
+export interface TableConfig {
+  rowFont: number;
+  descFont: number;
+  headerFont: number;
+  rowPad: number;
+  lineGap: number;
+  headerHeight: number;
+  minRowHeight: number;
 }
+
+export const DEFAULT_TABLE_CONFIG: TableConfig = {
+  rowFont: 6.8,
+  descFont: 6.2,
+  headerFont: 6.7,
+  rowPad: 3.5,
+  lineGap: 2.5,
+  headerHeight: 18,
+  minRowHeight: 18,
+};
+
+export const COMPACT_TABLE_CONFIG: TableConfig = {
+  rowFont: 6.4,
+  descFont: 5.8,
+  headerFont: 6.3,
+  rowPad: 3,
+  lineGap: 2,
+  headerHeight: 16,
+  minRowHeight: 15,
+};
 
 interface ColumnDef {
   header: string;
-  key: string;
+  key: keyof TableRowItem | 'description';
   width: number;
   align: 'left' | 'center' | 'right';
 }
 
-const COLUMNS: ColumnDef[] = [
-  { header: 'No.', key: 'sno', width: 24, align: 'center' },
-  { header: 'Item & Description', key: 'itemName', width: 165, align: 'left' },
-  { header: 'HSN', key: 'hsnCode', width: 38, align: 'center' },
-  { header: 'Qty', key: 'quantity', width: 36, align: 'center' },
-  { header: 'Unit', key: 'unit', width: 30, align: 'center' },
-  { header: 'Rate', key: 'rate', width: 62, align: 'right' },
-  { header: 'Disc.', key: 'discount', width: 50, align: 'right' },
-  { header: 'GST %', key: 'gstRate', width: 38, align: 'center' },
-  { header: 'Amount', key: 'total', width: 82, align: 'right' },
-];
+const BASE_FIXED_WIDTH = 20 + 38 + 34 + 28 + 56 + 44 + 30 + 68; // No/HSN/Qty/Unit/Rate/Disc/GST/Amount
 
-const ROW_PADDING = 8;
-const HEADER_HEIGHT = 26;
-const MIN_ROW_HEIGHT = 26;
-const FONT_SIZE = 8;
-const HEADER_FONT_SIZE = 8;
-
-function getTableWidth(): number {
-  return COLUMNS.reduce((sum, c) => sum + c.width, 0);
-}
-
-function getRowData(item: TableItem, currency?: string): string[] {
+function getColumns(cw: number): ColumnDef[] {
+  const itemWidth = Math.max(110, cw - BASE_FIXED_WIDTH);
   return [
-    String(item.sno),
-    item.description ? `${item.itemName}\n${item.description}` : item.itemName,
-    item.hsnCode || '-',
-    formatQuantity(item.quantity),
-    item.unit,
-    formatCurrency(item.rate, currency),
-    item.discount
-      ? `${item.discountType === 'Percentage' ? item.discount + '%' : formatCurrency(item.discount, currency)}`
-      : '-',
-    item.gstRate ? item.gstRate + '%' : '-',
-    formatCurrency(item.total, currency),
+    { header: 'No.', key: 'sno', width: 20, align: 'center' },
+    { header: 'Item & Description', key: 'description', width: itemWidth, align: 'left' },
+    { header: 'HSN', key: 'hsn', width: 38, align: 'center' },
+    { header: 'Qty', key: 'quantity', width: 34, align: 'right' },
+    { header: 'Unit', key: 'unit', width: 28, align: 'left' },
+    { header: 'Rate', key: 'rate', width: 56, align: 'right' },
+    { header: 'Disc.', key: 'discount', width: 44, align: 'right' },
+    { header: 'GST', key: 'gstRate', width: 30, align: 'center' },
+    { header: 'Amount', key: 'amount', width: 68, align: 'right' },
   ];
 }
 
-function measureRowHeight(engine: PdfEngine, rowData: string[]): number {
-  const doc = engine.doc;
-  let maxHeight = 0;
-
-  for (let i = 0; i < COLUMNS.length; i++) {
-    const lines = wrapText(doc, rowData[i], FONTS.regular, FONT_SIZE, COLUMNS[i].width - 8);
-    const h = lines.length * (FONT_SIZE + 3) + ROW_PADDING * 2;
-    if (h > maxHeight) maxHeight = h;
-  }
-
-  return Math.max(maxHeight, MIN_ROW_HEIGHT);
+function rowStrings(row: TableRowItem, currency: string): string[] {
+  return [
+    String(row.sno),
+    row.name,
+    row.hsn || '-',
+    formatQuantity(row.quantity),
+    row.unit,
+    formatCurrency(row.rate, currency),
+    row.discount
+      ? `${row.discountType === 'Percentage' ? row.discount + '%' : formatCurrency(row.discount, currency)}`
+      : '-',
+    row.gstRate ? row.gstRate + '%' : '-',
+    formatCurrency(row.amount, currency),
+  ];
 }
 
-function drawTableHeader(engine: PdfEngine, tableWidth: number, y: number): number {
+export function measureRowHeight(engine: PdfEngine, row: TableRowItem, cfg: TableConfig): number {
+  const doc = engine.doc;
+  const cw = engine.getContentWidth();
+  const cols = getColumns(cw);
+  const itemCol = cols[1];
+
+  const nameLines = wrapText(doc, row.name, FONTS.regular, cfg.rowFont, itemCol.width - 10);
+  const descLines = row.description
+    ? wrapText(doc, row.description, FONTS.regular, cfg.descFont, itemCol.width - 10)
+    : [];
+  let maxLines = nameLines.length + descLines.length;
+
+  for (let i = 0; i < cols.length; i++) {
+    if (i === 1) continue;
+    const lines = wrapText(doc, rowStrings(row, 'INR')[i], FONTS.regular, cfg.rowFont, cols[i].width - 8);
+    if (lines.length > maxLines) maxLines = lines.length;
+  }
+
+  const lineH = cfg.rowFont + cfg.lineGap;
+  return Math.max(maxLines * lineH + cfg.rowPad * 2, cfg.minRowHeight);
+}
+
+export function drawTableHeader(engine: PdfEngine, cfg: TableConfig, currency: string): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
+  const cw = engine.getContentWidth();
+  const cols = getColumns(cw);
+  const y = engine.getY();
 
-  doc.save();
-  doc.rect(margin.left, y, tableWidth, HEADER_HEIGHT).fill(BRAND.primary);
-  doc.restore();
-
-  doc.font(FONTS.bold).fontSize(HEADER_FONT_SIZE).fillColor(BRAND.white);
+  engine.drawRect(margin.left, y, cw, cfg.headerHeight, { fillColor: BRAND.primary });
 
   let currentX = margin.left;
-  for (const col of COLUMNS) {
-    const textW = doc.widthOfString(col.header);
-    const textX =
-      col.align === 'right'
-        ? currentX + col.width - textW - 5
-        : col.align === 'center'
-          ? currentX + (col.width - textW) / 2
-          : currentX + 5;
-    doc.text(col.header, textX, y + 9, { width: col.width - 10, lineBreak: false });
+  doc.font(FONTS.bold).fontSize(cfg.headerFont).fillColor(BRAND.white);
+  for (const col of cols) {
+    const textWidth = doc.widthOfString(col.header);
+    let tx = currentX + 5;
+    if (col.align === 'center') tx = currentX + (col.width - textWidth) / 2;
+    if (col.align === 'right') tx = currentX + col.width - textWidth - 5;
+    doc.text(col.header, tx, y + cfg.headerHeight / 2 - 3, { lineBreak: false });
     currentX += col.width;
   }
 
-  return y + HEADER_HEIGHT;
+  return y + cfg.headerHeight;
 }
 
-function drawTableRow(
+export function drawTableRow(
   engine: PdfEngine,
-  rowData: string[],
-  x: number,
+  row: TableRowItem,
   y: number,
-  rowHeight: number,
-  isAlt: boolean,
-  tableWidth: number,
-): void {
+  cfg: TableConfig,
+  alt: boolean,
+  currency: string,
+): number {
   const doc = engine.doc;
+  const margin = engine.getMargin();
+  const cw = engine.getContentWidth();
+  const cols = getColumns(cw);
 
-  if (isAlt) {
-    doc.rect(x, y, tableWidth, rowHeight).fill(BRAND.tableAltRow);
+  const rowHeight = measureRowHeight(engine, row, cfg);
+  if (alt) {
+    engine.drawRect(margin.left, y, cw, rowHeight, { fillColor: BRAND.rowAlt });
   }
 
-  let currentX = x;
-  for (let i = 0; i < COLUMNS.length; i++) {
-    const col = COLUMNS[i];
-    const lines = wrapText(doc, rowData[i], FONTS.regular, FONT_SIZE, col.width - 8);
-    let textY = y + ROW_PADDING;
+  const lineH = cfg.rowFont + cfg.lineGap;
+  const values = rowStrings(row, currency);
 
-    doc.font(FONTS.regular).fontSize(FONT_SIZE).fillColor(BRAND.black);
+  let currentX = margin.left;
+  for (let i = 0; i < cols.length; i++) {
+    const col = cols[i];
+    let cursor = y + cfg.rowPad;
 
-    for (const line of lines) {
-      const textW = doc.widthOfString(line);
-      if (col.align === 'right') {
-        doc.text(line, currentX + col.width - textW - 5, textY, {
-          width: col.width - 10,
-          lineBreak: false,
-        });
-      } else if (col.align === 'center') {
-        doc.text(line, currentX + (col.width - textW) / 2, textY, {
-          width: col.width - 10,
-          lineBreak: false,
-        });
-      } else {
-        doc.text(line, currentX + 5, textY, { width: col.width - 10, lineBreak: false });
+    if (i === 1) {
+      // Item name + description (special two-tone block)
+      const textWidth = col.width - 10;
+      doc.font(FONTS.regular).fontSize(cfg.rowFont).fillColor(BRAND.black);
+      for (const line of wrapText(doc, row.name, FONTS.regular, cfg.rowFont, textWidth)) {
+        doc.text(line, currentX + 5, cursor, { width: textWidth, lineBreak: false });
+        cursor += lineH;
       }
-      textY += FONT_SIZE + 3;
+      if (row.description) {
+        doc.font(FONTS.regular).fontSize(cfg.descFont).fillColor(BRAND.muted);
+        for (const line of wrapText(doc, row.description, FONTS.regular, cfg.descFont, textWidth)) {
+          doc.text(line, currentX + 5, cursor, { width: textWidth, lineBreak: false });
+          cursor += lineH;
+        }
+      }
+    } else {
+      const text = values[i];
+      const lines = wrapText(doc, text, FONTS.regular, cfg.rowFont, col.width - 8);
+      doc.font(FONTS.regular).fontSize(cfg.rowFont).fillColor(BRAND.black);
+      for (const line of lines) {
+        const textWidth = doc.widthOfString(line);
+        let tx = currentX + 5;
+        if (col.align === 'center') tx = currentX + (col.width - textWidth) / 2;
+        if (col.align === 'right') tx = currentX + col.width - textWidth - 5;
+        doc.text(line, tx, cursor, { lineBreak: false });
+        cursor += lineH;
+      }
     }
-
     currentX += col.width;
   }
+
+  engine.drawLine(margin.left, y + rowHeight, margin.left + cw, y + rowHeight, {
+    color: BRAND.tableBorder,
+    width: 0.3,
+  });
+  return y + rowHeight;
 }
 
-function closeTableSegment(engine: PdfEngine, tableWidth: number, startY: number, endY: number) {
+export function drawTableEmpty(
+  engine: PdfEngine,
+  cfg: TableConfig,
+  y: number,
+): number {
+  const doc = engine.doc;
   const margin = engine.getMargin();
+  const cw = engine.getContentWidth();
+  const emptyHeight = 26;
+
+  engine.drawRect(margin.left, y, cw, emptyHeight, { fillColor: BRAND.rowAlt });
+  doc.font(FONTS.regular).fontSize(cfg.rowFont).fillColor(BRAND.muted);
+  doc.text('No items listed', margin.left + 8, y + 9, { width: cw - 16, lineBreak: false });
+  return y + emptyHeight;
+}
+
+export function closeTable(engine: PdfEngine, startY: number, endY: number): void {
+  const margin = engine.getMargin();
+  const cw = engine.getContentWidth();
   const x0 = margin.left;
-  const x1 = x0 + tableWidth;
+  const x1 = x0 + cw;
 
   engine.drawLine(x0, startY, x0, endY, { color: BRAND.tableBorder, width: 0.3 });
   engine.drawLine(x1, startY, x1, endY, { color: BRAND.tableBorder, width: 0.3 });
-  engine.drawLine(x0, endY, x1, endY, { color: BRAND.tableBorder, width: 0.3 });
-}
+  engine.drawLine(x0, endY, x1, endY, { color: BRAND.tableBorder, width: 0.4 });
 
-function drawColumnLines(engine: PdfEngine, tableWidth: number, startY: number, endY: number) {
-  const margin = engine.getMargin();
-
-  let colX = margin.left;
-  for (const col of COLUMNS) {
+  let colX = x0;
+  for (const col of getColumns(cw)) {
     colX += col.width;
-    if (colX < margin.left + tableWidth) {
-      engine.drawLine(colX, startY, colX, endY, {
-        color: BRAND.tableBorder,
-        width: 0.3,
-      });
+    if (colX < x1) {
+      engine.drawLine(colX, startY, colX, endY, { color: BRAND.tableBorder, width: 0.3 });
     }
   }
-}
-
-export function renderItemsTable(engine: PdfEngine, data: ItemsTableData) {
-  const doc = engine.doc;
-  const margin = engine.getMargin();
-  const tableWidth = getTableWidth();
-  let y = engine.getY();
-
-  engine.ensureSpace(HEADER_HEIGHT + MIN_ROW_HEIGHT + 16);
-  y = engine.getY();
-
-  if (data.items.length === 0) {
-    y = drawTableHeader(engine, tableWidth, y);
-    const emptyRowHeight = 30;
-    doc.rect(margin.left, y, tableWidth, emptyRowHeight).fill(BRAND.tableAltRow);
-    doc.font(FONTS.regular).fontSize(FONT_SIZE).fillColor(BRAND.muted);
-    doc.text('No items listed', margin.left + 8, y + 11, {
-      width: tableWidth - 16,
-      lineBreak: false,
-    });
-    closeTableSegment(engine, tableWidth, y - HEADER_HEIGHT, y + emptyRowHeight);
-    drawColumnLines(engine, tableWidth, y - HEADER_HEIGHT, y + emptyRowHeight);
-    y += emptyRowHeight + 12;
-    engine.setY(y);
-    return;
-  }
-
-  let tableStartY = y;
-  y = drawTableHeader(engine, tableWidth, y);
-
-  data.items.forEach((item, index) => {
-    const rowData = getRowData(item, data.currency);
-    const rowHeight = measureRowHeight(engine, rowData);
-
-    if (y + rowHeight > PAGE.height - engine.getMargin().bottom) {
-      closeTableSegment(engine, tableWidth, tableStartY, y);
-      engine.ensureSpace(HEADER_HEIGHT + MIN_ROW_HEIGHT);
-      y = engine.getY();
-      tableStartY = y;
-      y = drawTableHeader(engine, tableWidth, y);
-    }
-
-    drawTableRow(engine, rowData, margin.left, y, rowHeight, index % 2 === 1, tableWidth);
-    engine.drawLine(margin.left, y + rowHeight, margin.left + tableWidth, y + rowHeight, {
-      color: BRAND.tableBorder,
-      width: 0.3,
-    });
-
-    y += rowHeight;
-  });
-
-  closeTableSegment(engine, tableWidth, tableStartY, y);
-  drawColumnLines(engine, tableWidth, tableStartY, y);
-
-  engine.setY(y + 12);
 }

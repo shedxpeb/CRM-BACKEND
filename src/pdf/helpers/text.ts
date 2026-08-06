@@ -1,3 +1,8 @@
+import { FONTS } from './colors';
+
+/**
+ * Word-wrap a string into lines that fit within maxWidth using the given font.
+ */
 export function wrapText(
   doc: PDFKit.PDFDocument,
   text: string,
@@ -6,40 +11,43 @@ export function wrapText(
   maxWidth: number,
 ): string[] {
   if (!text) return [''];
-  const words = text.split(/\s+/);
+  const words = String(text).split(/\s+/);
   const lines: string[] = [];
   let currentLine = '';
 
   for (const word of words) {
-    const testLine = currentLine ? currentLine + ' ' + word : word;
-    const width = doc.font(font).fontSize(fontSize).widthOfString(testLine);
+    const candidate = currentLine ? currentLine + ' ' + word : word;
+    const width = doc.font(font).fontSize(fontSize).widthOfString(candidate);
     if (width > maxWidth && currentLine) {
       lines.push(currentLine);
       currentLine = word;
     } else {
-      currentLine = testLine;
+      currentLine = candidate;
     }
   }
   if (currentLine) lines.push(currentLine);
   return lines.length > 0 ? lines : [''];
 }
 
-export function measureRowHeight(
+/**
+ * Height in points for a text block (wrapped) at the given line height.
+ */
+export function measureBlock(
   doc: PDFKit.PDFDocument,
-  texts: string[],
-  fonts: string[],
-  fontSizes: number[],
-  maxWidths: number[],
+  text: string,
+  font: string,
+  fontSize: number,
+  maxWidth: number,
+  lineHeight: number,
 ): number {
-  let maxHeight = 0;
-  for (let i = 0; i < texts.length; i++) {
-    const lines = wrapText(doc, texts[i] || '', fonts[i], fontSizes[i], maxWidths[i]);
-    const height = lines.length * (fontSizes[i] + 4);
-    if (height > maxHeight) maxHeight = height;
-  }
-  return Math.max(maxHeight + 8, 20);
+  const lines = wrapText(doc, text, font, fontSize, maxWidth);
+  return Math.max(lines.length, 1) * lineHeight;
 }
 
+/**
+ * Draw a wrapped text block line-by-line at (x, y). Returns the y after the
+ * last line so callers can stack blocks manually.
+ */
 export function drawWrappedText(
   doc: PDFKit.PDFDocument,
   text: string,
@@ -48,37 +56,52 @@ export function drawWrappedText(
   font: string,
   fontSize: number,
   maxWidth: number,
-  color?: string,
+  lineHeight: number,
+  color: string,
 ): number {
   const lines = wrapText(doc, text, font, fontSize, maxWidth);
-  doc.font(font).fontSize(fontSize);
-  if (color) doc.fillColor(color);
-  let currentY = y;
+  let cursor = y;
+  doc.font(font).fontSize(fontSize).fillColor(color);
   for (const line of lines) {
-    doc.text(line, x, currentY, { width: maxWidth, lineBreak: false });
-    currentY += fontSize + 4;
+    doc.text(line, x, cursor, { width: maxWidth, lineBreak: false });
+    cursor += lineHeight;
   }
-  return currentY;
+  return cursor;
 }
 
-export function drawLabelValue(
+/**
+ * Draw an aligned single line (or wrapped lines) inside a fixed cell.
+ * Returns the y after the last drawn line.
+ */
+export function drawCell(
   doc: PDFKit.PDFDocument,
-  label: string,
-  value: string,
+  text: string,
   x: number,
   y: number,
-  labelWidth: number,
-  valueWidth: number,
-  options?: { labelFontSize?: number; valueFontSize?: number; valueColor?: string },
+  cellWidth: number,
+  font: string,
+  fontSize: number,
+  lineHeight: number,
+  align: 'left' | 'center' | 'right',
+  color: string,
+  padding = 0,
 ): number {
-  const lf = options?.labelFontSize || 8;
-  const vf = options?.valueFontSize || 8;
-  doc.font('Calibri-Bold').fontSize(lf).fillColor('#718096');
-  doc.text(label, x, y, { width: labelWidth, lineBreak: false });
-  doc
-    .font('Calibri')
-    .fontSize(vf)
-    .fillColor(options?.valueColor || '#1a202c');
-  doc.text(value || '-', x + labelWidth, y, { width: valueWidth, lineBreak: false });
-  return y + vf + 6;
+  const lines = wrapText(doc, text, font, fontSize, cellWidth - padding * 2);
+  let cursor = y;
+  doc.font(font).fontSize(fontSize).fillColor(color);
+  for (const line of lines) {
+    const textWidth = doc.widthOfString(line);
+    let tx = x + padding;
+    if (align === 'center') tx = x + (cellWidth - textWidth) / 2;
+    if (align === 'right') tx = x + cellWidth - textWidth - padding;
+    doc.text(line, tx, cursor, { lineBreak: false });
+    cursor += lineHeight;
+  }
+  return cursor;
 }
+
+export function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+export { FONTS };

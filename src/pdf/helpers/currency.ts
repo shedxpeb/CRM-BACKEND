@@ -1,11 +1,17 @@
+/**
+ * Format an amount using Indian grouping for INR, plain toFixed(2) otherwise.
+ * Negative amounts are prefixed with a minus sign.
+ */
 export function formatCurrency(amount: number, currency = 'INR'): string {
-  const absAmount = Math.abs(amount);
+  const absAmount = Math.abs(amount || 0);
   const sign = amount < 0 ? '-' : '';
 
   if (currency === 'INR') {
-    return sign + '₹ ' + formatIndianNumber(absAmount);
+    return `${sign}\u20B9 ${formatIndianNumber(absAmount)}`;
   }
-  return sign + '$ ' + absAmount.toFixed(2);
+  const symbol =
+    currency === 'USD' ? '$ ' : currency === 'EUR' ? '\u20AC ' : currency + ' ';
+  return `${sign}${symbol}${absAmount.toFixed(2)}`;
 }
 
 function formatIndianNumber(num: number): string {
@@ -19,7 +25,6 @@ function formatIndianNumber(num: number): string {
     const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
     intPart = formatted + ',' + last3;
   }
-
   return intPart + '.' + decPart;
 }
 
@@ -29,7 +34,7 @@ export function formatNumber(num: number, decimals = 2): string {
 
 export function formatQuantity(num: number): string {
   if (Number.isInteger(num)) return num.toString();
-  return num.toFixed(2);
+  return parseFloat(num.toFixed(2)).toString();
 }
 
 const ones = [
@@ -60,35 +65,43 @@ function convertBelow1000(n: number): string {
   if (n === 0) return '';
   if (n < 20) return ones[n];
   if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
-  return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertBelow1000(n % 100) : '');
+  return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convertBelow1000(n % 100) : '');
 }
 
+function convertInt(n: number): string {
+  if (n === 0) return '';
+  if (n < 1000) return convertBelow1000(n);
+  if (n < 100000) {
+    const thousands = Math.floor(n / 1000);
+    const remainder = n % 1000;
+    return (
+      convertBelow1000(thousands) + ' Thousand' + (remainder ? ' ' + convertInt(remainder) : '')
+    );
+  }
+  if (n < 10000000) {
+    const lakhs = Math.floor(n / 100000);
+    const remainder = n % 100000;
+    return convertBelow1000(lakhs) + ' Lakh' + (remainder ? ' ' + convertInt(remainder) : '');
+  }
+  const crores = Math.floor(n / 10000000);
+  const remainder = n % 10000000;
+  return convertBelow1000(crores) + ' Crore' + (remainder ? ' ' + convertInt(remainder) : '');
+}
+
+/**
+ * Indian-system amount in words, e.g.
+ * "Rupees One Lakh Twenty Five Thousand Four Hundred Fifty Only"
+ * or "Rupees One Thousand Two Hundred Thirty Four and Paise Fifty Six Only".
+ */
 export function numberToWords(num: number): string {
-  if (num === 0) return 'Rupees Zero Only';
+  const value = Math.abs(Math.round((num || 0) * 100) / 100);
+  const rupees = Math.floor(value);
+  const paise = Math.round((value - rupees) * 100);
 
-  const rounded = Math.round(num);
-  const intPart = Math.abs(rounded);
-
-  const convert = (n: number): string => {
-    if (n === 0) return '';
-    if (n < 1000) return convertBelow1000(n);
-    if (n < 100000) {
-      const thousands = Math.floor(n / 1000);
-      const remainder = n % 1000;
-      return (
-        convertBelow1000(thousands) + ' Thousand' + (remainder ? ' ' + convert(remainder) : '')
-      );
-    }
-    if (n < 10000000) {
-      const lakhs = Math.floor(n / 100000);
-      const remainder = n % 100000;
-      return convertBelow1000(lakhs) + ' Lakh' + (remainder ? ' ' + convert(remainder) : '');
-    }
-    const crores = Math.floor(n / 10000000);
-    const remainder = n % 10000000;
-    return convertBelow1000(crores) + ' Crore' + (remainder ? ' ' + convert(remainder) : '');
-  };
-
-  const words = convert(intPart);
-  return 'Rupees ' + words.trim() + ' Only';
+  const rupeeWords = convertInt(rupees) || 'Zero';
+  let words = 'Rupees ' + rupeeWords;
+  if (paise > 0) {
+    words += ' and Paise ' + convertInt(paise);
+  }
+  return words + ' Only';
 }

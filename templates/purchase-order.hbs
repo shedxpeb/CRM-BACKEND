@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase Order - {{poNumber}}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      line-height: 1.3;
+      color: #000;
+    }
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+    .dark-blue { background-color: #1e3a8a; color: white; }
+    .light-blue { background-color: #e8f0fe; }
+    .border-dark { border-color: #1e3a8a; }
+    .border-gray { border-color: #d1d5db; }
+    
+    /* Content Container - ensures proper spacing from page edges */
+    .content-container {
+      width: 100%;
+      max-width: 200mm;
+      margin: 0 auto;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    /* Header Styles */
+    .header {
+      display: grid;
+      grid-template-columns: 80mm 120mm;
+      margin-bottom: 8mm;
+    }
+    
+    .company-section {
+      margin-top: 18mm; 
+    } 
+    
+    .company-name {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    
+    .company-detail {
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 0;
+    }
+    
+    .company-email {
+      color: #0066cc;
+      text-decoration: underline;
+    }
+    
+    .logo-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4mm;
+      margin-bottom: 5mm;
+    }
+    
+    .logo-section img {
+      width: 60mm;
+      height: auto;
+    }
+    
+    .title-section {
+      text-align: center;
+      margin-bottom: 4mm;
+    }
+    
+    .title-section h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #123B73;
+      margin: 0;
+    }
+    
+    .po-info-section {
+      display: flex;
+      justify-content: center;
+    }
+    
+    .po-info-table {
+      width: 320px;
+      border: 1px solid #D1D5DB;
+      border-collapse: collapse;
+    }
+    
+    .po-info-table td {
+      padding: 0;
+      font-size: 12px;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #D1D5DB;
+      width: 33.33%;
+    }
+    
+    .po-info-table .header-row td {
+      background-color: #1e3a8a;
+      color: white;
+      font-weight: bold;
+      height: 28px;
+    }
+    
+    .po-info-table tr:not(.header-row) td {
+      background-color: white;
+      color: black;
+      height: 32px;
+    }
+    
+    /* Address Section Styles */
+    .address-section {
+      border: 1px solid #d1d5db;
+      margin-bottom: 4mm;
+    }
+    
+    .address-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .address-column {
+      padding: 12px;
+      background-color: #e8f0fe;
+    }
+    
+    .address-column:first-child {
+      border-right: 1px solid #d1d5db;
+    }
+    
+    .address-header {
+      background-color: #1e3a8a;
+      color: white;
+      font-weight: bold;
+      font-size: 10pt;
+      padding: 3px 8px;
+      margin-bottom: 8px;
+    }
+    
+    .field-container {
+      margin-bottom: 6px;
+    }
+    
+    .field-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #4a5568;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    
+    .field-value-box {
+      background-color: white;
+      border: 1px solid #d1d5db;
+      padding: 4px 6px;
+      font-size: 11px;
+      color: #000;
+      font-weight: normal;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body class="bg-white">
+  <div class="content-container">
+    <!-- Header -->
+    <div class="header">
+      <!-- Left: Company Section -->
+      <div class="company-section">
+        <div class="company-name">Shedx Peb LLP</div>
+        <p class="company-detail">438, Vishala Supreme,</p>
+        <p class="company-detail">Opp torrent tower, Nikol,</p>
+        <p class="company-detail">Ahmedabad</p>
+        <p class="company-detail">NO. +91 95126 66105</p>
+        <p class="company-detail company-email">purchase@shedxpeb.com</p>
+        <p class="company-detail">GST IN :- 24AFYFS3586G1Z9</p>
+      </div>
+      <!-- Right: Logo + PO Info -->
+      <div>
+        <div class="logo-section">
+          {{#if companyLogoBase64}}
+          <img src="{{companyLogoBase64}}" alt="Company Logo">
+          {{/if}}
+        </div>
+        <div class="title-section">
+          <h2>PURCHASE ORDER</h2>
+        </div>
+        <div class="po-info-section">
+          <table class="po-info-table">
+            <tr class="header-row">
+              <td>P.O. NUMBER</td>
+              <td>DATE</td>
+              <td>SHIPPING METHOD</td>
+            </tr>
+            <tr>
+              <td>{{poNumber}}</td>
+              <td>{{poDate}}</td>
+              <td>{{#if shippingMethod}}{{shippingMethod}}{{else}}By Road{{/if}}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Address Section -->
+    <div class="address-section">
+      <div class="address-grid">
+        <!-- Ship To -->
+        <div class="address-column">
+          <div class="address-header">SHIP TO</div>
+          <div class="field-container">
+            <div class="field-label">NAME</div>
+            <div class="field-value-box">{{#if buyer.name}}{{buyer.name}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">COMPANY NAME</div>
+            <div class="field-value-box">{{#if buyer.company}}{{buyer.company}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">ADDRESS</div>
+            <div class="field-value-box">{{#if buyer.address}}{{buyer.address}}{{/if}}{{#if buyer.city}}, {{buyer.city}}{{/if}}{{#if buyer.state}}, {{buyer.state}}{{/if}}{{#if buyer.pincode}} - {{buyer.pincode}}{{/if}}{{#unless buyer.address}}{{#unless buyer.city}}-{{/unless}}{{/unless}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">PHONE</div>
+            <div class="field-value-box">{{#if buyer.phone}}{{buyer.phone}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">EMAIL ADDRESS</div>
+            <div class="field-value-box">{{#if buyer.email}}{{buyer.email}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">GST NO.</div>
+            <div class="field-value-box">{{#if buyer.gstin}}{{buyer.gstin}}{{else}}-{{/if}}</div>
+          </div>
+        </div>
+        <!-- Supplier -->
+        <div class="address-column">
+          <div class="address-header">SUPPLIER</div>
+          <div class="field-container">
+            <div class="field-label">NAME</div>
+            <div class="field-value-box">{{#if supplier.name}}{{supplier.name}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">COMPANY NAME</div>
+            <div class="field-value-box">{{#if supplier.company}}{{supplier.company}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">ADDRESS</div>
+            <div class="field-value-box">{{#if supplier.address}}{{supplier.address}}{{/if}}{{#if supplier.city}}, {{supplier.city}}{{/if}}{{#if supplier.state}}, {{supplier.state}}{{/if}}{{#if supplier.pincode}} - {{supplier.pincode}}{{/if}}{{#unless supplier.address}}{{#unless supplier.city}}-{{/unless}}{{/unless}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">PHONE</div>
+            <div class="field-value-box">{{#if supplier.phone}}{{supplier.phone}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">EMAIL ADDRESS</div>
+            <div class="field-value-box">{{#if supplier.email}}{{supplier.email}}{{else}}-{{/if}}</div>
+          </div>
+          <div class="field-container">
+            <div class="field-label">GST NO.</div>
+            <div class="field-value-box">{{#if supplier.gstin}}{{supplier.gstin}}{{else}}-{{/if}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="mb-4">
+      <table class="w-full border-collapse border border-gray text-sm">
+        <thead>
+          <tr class="dark-blue">
+            <th class="border border-gray px-2 py-1 text-left font-semibold">No.</th>
+            <th class="border border-gray px-2 py-1 text-left font-semibold">Item & Description</th>
+            <th class="border border-gray px-2 py-1 text-center font-semibold">HSN</th>
+            <th class="border border-gray px-2 py-1 text-right font-semibold">Qty</th>
+            <th class="border border-gray px-2 py-1 text-left font-semibold">Unit</th>
+            <th class="border border-gray px-2 py-1 text-right font-semibold">Rate</th>
+            <th class="border border-gray px-2 py-1 text-right font-semibold">Disc.</th>
+            <th class="border border-gray px-2 py-1 text-center font-semibold">GST</th>
+            <th class="border border-gray px-2 py-1 text-right font-semibold">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+          <tr>
+            <td class="border border-gray px-2 py-1 text-center">{{@index}}</td>
+            <td class="border border-gray px-2 py-1">
+              <div class="font-semibold">{{name}}</div>
+              {{#if description}}<div class="text-xs text-gray-600">{{description}}</div>{{/if}}
+            </td>
+            <td class="border border-gray px-2 py-1 text-center">{{#if hsn}}{{hsn}}{{else}}-{{/if}}</td>
+            <td class="border border-gray px-2 py-1 text-right">{{quantity}}</td>
+            <td class="border border-gray px-2 py-1">{{unit}}</td>
+            <td class="border border-gray px-2 py-1 text-right">{{formatCurrency rate ../currency}}</td>
+            <td class="border border-gray px-2 py-1 text-right">{{#if discount}}{{#if (eq discountType "Percentage")}}{{discount}}%{{else}}{{formatCurrency discount ../currency}}{{/if}}{{else}}-{{/if}}</td>
+            <td class="border border-gray px-2 py-1 text-center">{{#if gstRate}}{{gstRate}}%{{else}}-{{/if}}</td>
+            <td class="border border-gray px-2 py-1 text-right font-semibold">{{formatCurrency total ../currency}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom Section: Note + Summary -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <!-- Note/Terms -->
+      <div class="text-sm">
+        <div class="dark-blue px-3 py-1 font-semibold mb-2">NOTE</div>
+        <div class="light-blue border border-gray p-3">
+          <p>Payment shall be made within <strong>30 days</strong> upon receipt of the invoice and successful delivery of the goods.</p>
+        </div>
+      </div>
+      <!-- Summary -->
+      <div class="text-sm">
+        <div class="border border-gray">
+          <div class="dark-blue px-3 py-1 font-semibold">SUMMARY</div>
+          <div class="p-2 space-y-1">
+            <div class="flex justify-between"><span>Subtotal</span><span>{{formatCurrency subtotal currency}}</span></div>
+            {{#if discount}}<div class="flex justify-between"><span>Discount</span><span class="text-red-600">-{{formatCurrency discount currency}}</span></div>{{/if}}
+            {{#if cgst}}<div class="flex justify-between"><span>CGST</span><span>{{formatCurrency cgst currency}}</span></div>{{/if}}
+            {{#if sgst}}<div class="flex justify-between"><span>SGST</span><span>{{formatCurrency sgst currency}}</span></div>{{/if}}
+            {{#if igst}}<div class="flex justify-between"><span>IGST</span><span>{{formatCurrency igst currency}}</span></div>{{/if}}
+            {{#if packing}}<div class="flex justify-between"><span>Packing</span><span>{{formatCurrency packing currency}}</span></div>{{/if}}
+            {{#if freight}}<div class="flex justify-between"><span>Freight</span><span>{{formatCurrency freight currency}}</span></div>{{/if}}
+            {{#if other}}<div class="flex justify-between"><span>Other</span><span>{{formatCurrency other currency}}</span></div>{{/if}}
+            {{#if roundOff}}<div class="flex justify-between"><span>Round Off</span><span>{{#if (gt roundOff 0)}}+{{else}}{{/if}}{{formatCurrency (abs roundOff) currency}}</span></div>{{/if}}
+            <div class="border-t border-gray pt-1 mt-1 flex justify-between font-bold" style="color: #1e3a8a;">
+              <span>GRAND TOTAL</span><span>{{formatCurrency grandTotal currency}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t-2 border-dark pt-2 text-center text-xs text-gray-600">
+      <p class="font-semibold">{{company.name}}</p>
+    </div>
+  </div>
+</body>
+</html>

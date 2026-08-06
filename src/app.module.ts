@@ -28,6 +28,7 @@ import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PdfModule } from './pdf/pdf.module';
 import { TaskModule } from './task/task.module';
 import { DocumentModule } from './document/document.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { DocumentModule } from './document/document.module';
     PdfModule,
     TaskModule,
     DocumentModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

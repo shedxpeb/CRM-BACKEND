@@ -75,6 +75,110 @@ export class CreatePurchaseOrderItemDto {
   hsnCode?: string;
 }
 
+export class ShipToDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
+}
+
+export class SupplierDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
+}
+
 export class CreatePurchaseOrderDto {
   @ApiProperty()
   @IsString()
@@ -164,6 +268,18 @@ export class CreatePurchaseOrderDto {
   @IsOptional()
   @IsString()
   internalNotes?: string;
+
+  @ApiPropertyOptional({ type: ShipToDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ShipToDto)
+  shipTo?: ShipToDto;
+
+  @ApiPropertyOptional({ type: SupplierDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SupplierDto)
+  supplier?: SupplierDto;
 
   @ApiProperty({ type: [CreatePurchaseOrderItemDto] })
   @IsArray()

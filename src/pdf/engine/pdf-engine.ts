@@ -11,12 +11,33 @@ export interface PdfEngineOptions {
   subject?: string;
 }
 
+export interface RectOptions {
+  fillColor?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  radius?: number;
+}
+
+export interface DrawTextOptions {
+  font?: string;
+  size?: number;
+  color?: string;
+  width?: number;
+  align?: 'left' | 'center' | 'right';
+  lineBreak?: boolean;
+}
+
+/**
+ * Minimal, measurement-friendly wrapper around PDFKit tuned for dense,
+ * single-page enterprise documents. All drawing is done at explicit
+ * coordinates; nothing is auto-flowed.
+ */
 export class PdfEngine {
   doc: PDFKit.PDFDocument;
   private pageMargin: { top: number; bottom: number; left: number; right: number };
   private contentWidth: number;
-  private currentY: number;
   private pageHeight: number;
+  private currentY: number;
   private pageCount = 0;
   private headerCallback:
     | ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void)
@@ -28,9 +49,7 @@ export class PdfEngine {
   private assetsPath: string;
 
   constructor(options?: PdfEngineOptions) {
-    this.pageMargin =
-      options?.margin ||
-      ({ ...PAGE.margin } as { top: number; bottom: number; left: number; right: number });
+    this.pageMargin = options?.margin || { ...PAGE.margin };
     this.contentWidth = PAGE.width - this.pageMargin.left - this.pageMargin.right;
     this.pageHeight = PAGE.height;
     this.currentY = this.pageMargin.top;
@@ -82,34 +101,45 @@ export class PdfEngine {
     return this;
   }
 
-  ensureSpace(needed: number): boolean {
-    const available = this.pageHeight - this.pageMargin.bottom - this.currentY;
-    if (needed > available) {
-      this.renderHeaderFooter();
-      this.addPage();
-      this.renderHeaderFooter();
-      return true;
-    }
-    return false;
+  // ─── Layout helpers ─────────────────────────────────────
+
+  /** Highest Y at which body content may be placed. */
+  getMaxY(): number {
+    return PAGE.bodyBottom;
   }
 
-  setHeaderCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
+  getBodyBottom(): number {
+    return PAGE.bodyBottom;
+  }
+
+  remainingHeight(): number {
+    return this.getMaxY() - this.currentY;
+  }
+
+  hasRoom(needed: number): boolean {
+    return needed <= this.remainingHeight();
+  }
+
+  ensureSpace(needed: number): boolean {
+    if (this.hasRoom(needed)) return false;
+    this.addPage();
+    return true;
+  }
+
+  // ─── Callbacks ──────────────────────────────────────────
+
+  setHeaderCallback(
+    cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void,
+  ) {
     this.headerCallback = cb;
     return this;
   }
 
-  setFooterCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
+  setFooterCallback(
+    cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void,
+  ) {
     this.footerCallback = cb;
     return this;
-  }
-
-  renderHeaderFooter() {
-    if (this.headerCallback) {
-      this.headerCallback(this.doc, this.pageCount, this.pageCount);
-    }
-    if (this.footerCallback) {
-      this.footerCallback(this.doc, this.pageCount, this.pageCount);
-    }
   }
 
   renderAllHeaderFooters() {
@@ -124,6 +154,8 @@ export class PdfEngine {
       }
     }
   }
+
+  // ─── Primitives ─────────────────────────────────────────
 
   drawLine(
     x1: number,
@@ -142,13 +174,7 @@ export class PdfEngine {
     return this;
   }
 
-  drawRect(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    options?: { fillColor?: string; strokeColor?: string; strokeWidth?: number; radius?: number },
-  ) {
+  drawRect(x: number, y: number, w: number, h: number, options?: RectOptions) {
     this.doc.save();
     if (options?.fillColor) {
       this.doc.rect(x, y, w, h).fill(options.fillColor);
@@ -164,34 +190,27 @@ export class PdfEngine {
     return this;
   }
 
-  drawText(
-    text: string,
-    x: number,
-    y: number,
-    options?: {
-      font?: string;
-      size?: number;
-      color?: string;
-      width?: number;
-      align?: 'left' | 'center' | 'right';
-      lineBreak?: boolean;
-    },
-  ): number {
+  drawText(text: string, x: number, y: number, options?: DrawTextOptions): number {
     this.doc.save();
     this.doc
       .font(options?.font || FONTS.regular)
       .fontSize(options?.size || 8)
       .fillColor(options?.color || BRAND.black);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const textOptions: any = {
+    const textOptions: {
+      lineBreak?: boolean;
+      width?: number;
+      align?: 'left' | 'center' | 'right' | 'justify';
+    } = {
       lineBreak: options?.lineBreak ?? false,
     };
     if (options?.width) textOptions.width = options.width;
     if (options?.align) textOptions.align = options.align;
 
     this.doc.text(text, x, y, textOptions);
-    const height = this.doc.heightOfString(text, { width: options?.width || this.contentWidth });
+    const height = this.doc.heightOfString(text, {
+      width: options?.width || this.contentWidth,
+    });
     this.doc.restore();
     return y + height;
   }

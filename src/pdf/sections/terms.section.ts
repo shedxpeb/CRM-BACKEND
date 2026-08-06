@@ -1,72 +1,68 @@
 import { PdfEngine } from '../engine/pdf-engine';
-import { BRAND, FONTS, PAGE } from '../helpers/colors';
+import { BRAND, FONTS } from '../helpers/colors';
+import { wrapText } from '../helpers/text';
 
-export interface TermsData {
-  terms?: string;
-  notes?: string;
-  internalNotes?: string;
+export interface TermsConfig {
+  headerH: number;
+  font: number;
+  lineH: number;
+  maxLines: number;
 }
+
+export const DEFAULT_TERMS_CONFIG: TermsConfig = {
+  headerH: 16,
+  font: 6.5,
+  lineH: 8.2,
+  maxLines: 7,
+};
+
+export const COMPACT_TERMS_CONFIG: TermsConfig = {
+  headerH: 14,
+  font: 6.2,
+  lineH: 7.5,
+  maxLines: 7,
+};
 
 const DEFAULT_TERMS = [
   '1. All goods must conform to the specifications and quality standards as agreed upon.',
   '2. Delivery must be made on or before the agreed delivery date.',
   '3. Invoice must be submitted along with delivery challan and quality certificates.',
   '4. Payment will be processed as per the agreed payment terms after successful delivery.',
-  '5. Any disputes arising shall be subject to the jurisdiction of local courts.',
-  "6. Goods found defective or not meeting specifications will be returned at supplier's risk and cost.",
-  '7. GST will be charged as applicable and must be clearly mentioned on the invoice.',
+  '5. GST will be charged as applicable and must be clearly mentioned on the invoice.',
+  '6. Any disputes arising shall be subject to the jurisdiction of local courts.',
 ];
 
-const PANEL_HEADER_HEIGHT = 26;
-const PANEL_PADDING = 12;
+export function measureTerms(
+  engine: PdfEngine,
+  terms: string,
+  cfg: TermsConfig,
+): number {
+  const doc = engine.doc;
+  const cw = engine.getContentWidth();
+  const lines = wrapText(doc, terms, FONTS.regular, cfg.font, cw - 24);
+  const count = Math.min(lines.length, cfg.maxLines);
+  return cfg.headerH + count * cfg.lineH + 5;
+}
 
-function renderPanel(engine: PdfEngine, title: string, body: string): number {
+export function renderTerms(engine: PdfEngine, terms: string, cfg: TermsConfig): number {
   const doc = engine.doc;
   const margin = engine.getMargin();
   const cw = engine.getContentWidth();
-  const bodyWidth = cw - PANEL_PADDING * 2;
+  const y = engine.getY();
 
-  engine.ensureSpace(PANEL_HEADER_HEIGHT + 24);
-  let y = engine.getY();
+  engine.drawRect(margin.left, y, cw, cfg.headerH, { fillColor: BRAND.primary });
+  doc.font(FONTS.bold).fontSize(7).fillColor(BRAND.white);
+  doc.text('TERMS & CONDITIONS', margin.left + 10, y + cfg.headerH / 2 - 2.5, {
+    lineBreak: false,
+  });
 
-  // Header strip
-  doc.save();
-  doc.rect(margin.left, y, cw, PANEL_HEADER_HEIGHT).fill(BRAND.primary);
-  doc.restore();
-
-  doc.font(FONTS.bold).fontSize(9.5).fillColor(BRAND.white);
-  doc.text(title, margin.left + PANEL_PADDING, y + 9, { lineBreak: false });
-  y += PANEL_HEADER_HEIGHT;
-
-  const lines = body.split('\n');
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    const lineHeight = doc.heightOfString(line, { width: bodyWidth });
-    if (y + lineHeight > PAGE.height - margin.bottom) {
-      engine.ensureSpace(lineHeight + 4);
-      y = engine.getY();
-    }
-
-    doc.font(FONTS.regular).fontSize(8.5).fillColor(BRAND.black);
-    doc.text(line, margin.left + PANEL_PADDING, y, { width: bodyWidth });
-    y += lineHeight + 3;
+  const lines = wrapText(doc, terms, FONTS.regular, cfg.font, cw - 24);
+  let cursor = y + cfg.headerH + 3;
+  doc.font(FONTS.regular).fontSize(cfg.font).fillColor(BRAND.black);
+  for (let i = 0; i < lines.length && i < cfg.maxLines; i++) {
+    doc.text(lines[i], margin.left + 10, cursor, { width: cw - 20, lineBreak: false });
+    cursor += cfg.lineH;
   }
 
-  return y + 10;
-}
-
-export function renderTerms(engine: PdfEngine, data: TermsData) {
-  let y = engine.getY();
-
-  if (data.notes) {
-    y = renderPanel(engine, 'NOTES', data.notes);
-    engine.setY(y);
-  }
-
-  const termsText = data.terms || DEFAULT_TERMS.join('\n');
-  y = renderPanel(engine, 'TERMS & CONDITIONS', termsText);
-
-  engine.setY(y);
+  return cursor + 2;
 }

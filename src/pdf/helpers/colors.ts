@@ -1,45 +1,45 @@
 export const BRAND = {
-  primary: '#1e3a8a', // Dark blue for headers
+  primary: '#1e3a8a', // Corporate navy — mastheads, section headers, grand total
   secondary: '#3b82f6',
   accent: '#60a5fa',
   success: '#16a34a',
   danger: '#dc2626',
   warning: '#f59e0b',
-  muted: '#64748b',
+  muted: '#5b6778',
+  subtext: '#6b7280',
   light: '#f8fafc',
-  border: '#e2e8f0',
-  darkBorder: '#94a3b8',
+  border: '#d7dee8',
+  darkBorder: '#9aa7b8',
   white: '#ffffff',
-  black: '#0f172a',
+  black: '#17202a',
+  faint: '#f3f6fb',
+  rowAlt: '#f5f8fc',
   tableHeaderBg: '#1e3a8a',
   tableHeaderText: '#ffffff',
-  tableAltRow: '#f1f5f9',
-  tableBorder: '#e2e8f0',
+  tableBorder: '#dce3ee',
   summaryBg: '#f8fafc',
-  summaryBorder: '#e2e8f0',
+  summaryBorder: '#d7dee8',
   sectionHeaderBg: '#1e3a8a',
   sectionHeaderText: '#ffffff',
-  panelBg: '#f8fafc',
-  panelBorder: '#e2e8f0',
-  panelHeaderBg: '#1e3a8a',
-  panelHeaderText: '#ffffff',
-  lightBlue: '#eff6ff',
-  mediumBlue: '#bfdbfe',
-  darkBlue: '#1e3a8a',
   grandTotalBg: '#1e3a8a',
   grandTotalText: '#ffffff',
 } as const;
 
 export const FONTS = {
-  regular: 'Helvetica',
-  bold: 'Helvetica-Bold',
-  italic: 'Helvetica-Oblique',
-  boldItalic: 'Helvetica-BoldOblique',
+  regular: 'Calibri',
+  bold: 'Calibri-Bold',
+  italic: 'Calibri-Italic',
+  boldItalic: 'Calibri-BoldItalic',
 } as const;
 
+// A4 portrait (points). 1 mm = 2.83465 pt  =>  12 mm = 34 pt
 export const PAGE = {
   width: 595.28,
   height: 841.89,
-  margin: { top: 35, bottom: 64, left: 35, right: 35 },
-  contentWidth: 595.28 - 35 - 35,
+  margin: { top: 34, bottom: 34, left: 34, right: 34 },
+  contentWidth: 595.28 - 34 - 34,
+  // Vertical boundary for body content. Space below is reserved for the
+  // signature footer (prepared/checked/approved/vendor/seal) so it never
+  // needs its own page. Footer needs ~66 points, so set bodyBottom accordingly.
+  bodyBottom: 841.89 - 80,
 } as const;
