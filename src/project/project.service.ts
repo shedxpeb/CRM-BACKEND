@@ -268,7 +268,8 @@ export class ProjectService extends BaseQueryService {
       if (!customer) {
         throw new BadRequestException('Customer not found for this organization');
       }
-      customerName = customer.customerName || customer.companyName || 'Unknown Customer';
+      customerName =
+        (customer as any).customerName || (customer as any).companyName || 'Unknown Customer';
       if (!projectTitle) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         projectTitle = (customer as any).projectTitle;

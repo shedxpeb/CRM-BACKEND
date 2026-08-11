@@ -13,7 +13,7 @@ import {
 import { ExcelImportService, ImportResult } from '../common/services/excel-import.service';
 import { AuditService } from '../auth/services/audit.service';
 import { WorkflowEngineService } from '../workflow/workflow-engine.service';
-import { GetLeadsDto, LeadStatus } from './dto/get-leads.dto';
+import { GetLeadsDto, LeadStatus, LeadPriority, LeadSource } from './dto/get-leads.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { LEAD_IMPORT_CONFIG } from './dto/import-lead.dto';
@@ -260,8 +260,8 @@ export class LeadService extends BaseQueryService {
       organizationId,
       createdById,
       status: data.status || LeadStatus.New,
-      priority: data.priority || 'Medium',
-      source: data.source || 'Other',
+      priority: data.priority || LeadPriority.Medium,
+      source: data.source || LeadSource.Other,
       isConverted: false,
       attachments: [],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -179,6 +179,7 @@ export class ItemMasterController {
       data: {
         organizationId,
         itemMasterId: id,
+        name: dto.variantName || dto.variantCode || 'Variant',
         variantName: dto.variantName,
         variantCode: dto.variantCode,
         specifications: dto.specifications,
@@ -206,6 +207,7 @@ export class ItemMasterController {
     const data = await this.prisma.itemVariant.update({
       where: { id: variantId },
       data: {
+        ...(dto.variantName !== undefined && { name: dto.variantName }),
         ...(dto.variantName !== undefined && { variantName: dto.variantName }),
         ...(dto.variantCode !== undefined && { variantCode: dto.variantCode }),
         ...(dto.specifications !== undefined && { specifications: dto.specifications }),
@@ -237,7 +239,6 @@ export class ItemMasterController {
   async getBundles(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.prisma.itemBundle.findMany({
       where: { organizationId, isDeleted: false },
-      include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
     return { message: 'Bundles fetched.', data: serializeDecimals(data) };
@@ -255,26 +256,12 @@ export class ItemMasterController {
     const bundle = await this.prisma.itemBundle.create({
       data: {
         organizationId,
+        name: dto.bundleName || dto.bundleCode || 'Bundle',
         bundleCode: dto.bundleCode,
         bundleName: dto.bundleName,
         description: dto.description,
         bundleRate: dto.bundleRate,
-        discountPercentage: dto.discountPercentage,
-        status: dto.status || 'Active',
-        items: dto.items
-          ? {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              create: dto.items.map((item: any) => ({
-                organizationId,
-                itemMasterId: item.itemMasterId,
-                quantity: item.quantity || 1,
-                unit: item.unit,
-                rate: item.rate,
-              })),
-            }
-          : undefined,
       },
-      include: { items: true },
     });
     return { message: 'Bundle created.', data: serializeDecimals(bundle) };
   }

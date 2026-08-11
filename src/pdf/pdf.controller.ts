@@ -157,10 +157,12 @@ export class PdfController {
     );
 
     let igst = 0;
-    for (const item of po.items) {
-      const rate = Number(item.gstRate) || 0;
-      if (!sameState && rate > 0) {
-        igst += Number(item.gstAmount) || 0;
+    if (po.items && Array.isArray(po.items)) {
+      for (const item of po.items) {
+        const rate = Number((item as any).gstRate) || 0;
+        if (!sameState && rate > 0) {
+          igst += Number((item as any).gstAmount) || 0;
+        }
       }
     }
     igst = round2(igst);
@@ -228,7 +230,7 @@ export class PdfController {
     }
 
     const pdfData: PurchaseOrderPdfData = {
-      poNumber: po.poNumber,
+      poNumber: po.poNumber || '',
       poDate: formatDate(po.createdAt) || '',
       revision: po.revision ?? '-',
       status: po.status,
@@ -268,7 +270,8 @@ export class PdfController {
         name: ((po as unknown as Record<string, unknown>).supplierName as string) || undefined,
         company:
           ((po as unknown as Record<string, unknown>).supplierCompanyName as string) ||
-          po.vendorName,
+          po.vendorName ||
+          '',
         address:
           ((po as unknown as Record<string, unknown>).supplierAddress as string) || undefined,
         city: ((po as unknown as Record<string, unknown>).supplierCity as string) || undefined,
@@ -281,41 +284,41 @@ export class PdfController {
           ((po as unknown as Record<string, unknown>).supplierGstNumber as string) || undefined,
       },
 
-      items: po.items.map((item) => ({
+      items: (po.items || []).map((item) => ({
         name: item.itemName,
         description: item.description || undefined,
-        hsn: item.hsnCode || undefined,
+        hsn: (item as any).hsnCode || undefined,
         quantity: Number(item.quantity),
-        unit: item.unit,
-        rate: Number(item.rate),
-        discount: item.discount ? Number(item.discount) : undefined,
-        discountType: item.discountType || undefined,
-        gstRate: item.gstRate ? Number(item.gstRate) : undefined,
-        gstAmount: item.gstAmount ? Number(item.gstAmount) : undefined,
-        total: Number(item.total),
+        unit: item.unit || '',
+        rate: Number((item as any).rate),
+        discount: (item as any).discount ? Number((item as any).discount) : undefined,
+        discountType: (item as any).discountType || undefined,
+        gstRate: (item as any).gstRate ? Number((item as any).gstRate) : undefined,
+        gstAmount: (item as any).gstAmount ? Number((item as any).gstAmount) : undefined,
+        total: Number((item as any).total),
       })),
 
-      subtotal: Number(po.subtotal),
-      discount: po.discount ? Number(po.discount) : undefined,
-      discountType: po.discountType || undefined,
+      subtotal: Number((po as any).subtotal),
+      discount: (po as any).discount ? Number((po as any).discount) : undefined,
+      discountType: (po as any).discountType || undefined,
       cgst,
       sgst,
       igst,
-      packing: po.packingCharges ? Number(po.packingCharges) : undefined,
-      freight: po.freight ? Number(po.freight) : undefined,
-      transport: po.shippingCharges ? Number(po.shippingCharges) : undefined,
-      other: po.otherCharges ? Number(po.otherCharges) : undefined,
-      roundOff: po.roundOff ? Number(po.roundOff) : undefined,
-      grandTotal: Number(po.grandTotal),
-      currency: po.currency || 'INR',
-
+      packing: (po as any).packingCharges ? Number((po as any).packingCharges) : undefined,
+      freight: (po as any).freight ? Number((po as any).freight) : undefined,
+      transport: (po as any).shippingCharges ? Number((po as any).shippingCharges) : undefined,
+      other: (po as any).otherCharges ? Number((po as any).otherCharges) : undefined,
+      roundOff: (po as any).roundOff ? Number((po as any).roundOff) : undefined,
+      grandTotal: Number((po as any).grandTotal),
+      currency: (po as any).currency || 'INR',
+      terms: (po as any).terms || undefined,
       shippingMethod: 'By Road',
-      terms: po.terms || undefined,
     };
 
     // Calculate expected grand total from individual components
     const expectedTotal =
-      Number(po.subtotal) +
+      Number((po as any).subtotal) +
+      ((po as any).discount ? Number((po as any).discount) : 0) +
       (po.discount ? Number(po.discount) : 0) +
       cgst +
       sgst +
