@@ -1122,7 +1122,11 @@ export class DashboardService {
       ]);
 
     const statusCounts: Record<string, number> = {};
-    for (const s of counts) statusCounts[s.status] = s._count._all;
+    for (const s of counts) {
+      if (s.status) {
+        statusCounts[s.status] = s._count?._all || 0;
+      }
+    }
     const lowStock = (statusCounts['Low Stock'] || 0) + (statusCounts['Critical'] || 0);
     const outOfStock = statusCounts['Out of Stock'] || 0;
 

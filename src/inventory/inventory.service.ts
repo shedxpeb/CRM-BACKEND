@@ -308,15 +308,16 @@ export class InventoryService extends BaseQueryService {
     const lastWh = await this.prisma.warehouse.findFirst({
       where: { organizationId, isDeleted: false },
       orderBy: { createdAt: 'desc' },
-      select: { warehouseCode: true },
+      select: { code: true },
     });
-    const code = dto.warehouseCode || `WH-${String((lastWh ? 0 : 0) + 1).padStart(3, '0')}`;
+    const code =
+      dto.warehouseCode || dto.code || `WH-${String((lastWh ? 0 : 0) + 1).padStart(3, '0')}`;
 
     return serializeDecimals(
       await this.prisma.warehouse.create({
         data: {
           organizationId,
-          warehouseCode: code,
+          code: code,
           name: dto.name,
           location: dto.location,
           address: dto.address,
