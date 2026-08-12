@@ -24,6 +24,10 @@ export class ModuleAccessGuard implements CanActivate {
 
   // Module permissions mapping based on HTTP method and endpoint patterns
   private readonly modulePermissionMap = {
+    // Dashboard module
+    dashboard: {
+      GET: ['dashboard.view'],
+    },
     // Lead module
     leads: {
       GET: ['leads.view'],
@@ -135,6 +139,11 @@ export class ModuleAccessGuard implements CanActivate {
     const moduleKey = this.extractModuleKey(url);
     if (!moduleKey) {
       // No module-specific access required
+      return true;
+    }
+
+    // Dashboard is a core module and should always be accessible
+    if (moduleKey === 'dashboard') {
       return true;
     }
 
