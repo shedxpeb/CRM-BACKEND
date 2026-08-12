@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -52,11 +58,7 @@ export class RolesService {
     return role;
   }
 
-  async createWithHierarchy(
-    organizationId: string,
-    dto: CreateRoleDto,
-    createdById: string,
-  ) {
+  async createWithHierarchy(organizationId: string, dto: CreateRoleDto, createdById: string) {
     // Check if role name already exists
     const existing = await this.prisma.role.findFirst({
       where: { organizationId, name: dto.name, isDeleted: false },
@@ -185,7 +187,7 @@ export class RolesService {
       include: { permission: true },
     });
 
-    const permissionKeys = permissions.map(rp => rp.permission.key);
+    const permissionKeys = permissions.map((rp) => rp.permission.key);
 
     await this.prisma.role.update({
       where: { id },
@@ -226,7 +228,7 @@ export class RolesService {
     }
 
     // Update role
-    const updatedRole = await this.prisma.role.update({
+    await this.prisma.role.update({
       where: { id },
       data: {
         ...dto,
@@ -267,7 +269,9 @@ export class RolesService {
       where: { inheritsFromId: id, isDeleted: false },
     });
     if (childRoles.length > 0) {
-      throw new BadRequestException('Cannot delete role with child roles. Please delete child roles first.');
+      throw new BadRequestException(
+        'Cannot delete role with child roles. Please delete child roles first.',
+      );
     }
 
     // Check if role is assigned to users
@@ -275,7 +279,9 @@ export class RolesService {
       where: { roleId: id },
     });
     if (userRoles.length > 0) {
-      throw new BadRequestException('Cannot delete role assigned to users. Please unassign users first.');
+      throw new BadRequestException(
+        'Cannot delete role assigned to users. Please unassign users first.',
+      );
     }
 
     // Soft delete
@@ -335,11 +341,7 @@ export class RolesService {
     return { message: 'Role assigned successfully' };
   }
 
-  async removeRoleFromUser(
-    userId: string,
-    roleId: string,
-    organizationId: string,
-  ) {
+  async removeRoleFromUser(userId: string, roleId: string, organizationId: string) {
     const userRole = await this.prisma.userRole.findFirst({
       where: { userId, roleId, organizationId },
     });
@@ -357,7 +359,7 @@ export class RolesService {
 
   async getRoleWithEffectivePermissions(roleId: string, organizationId: string) {
     const role = await this.findById(organizationId, roleId);
-    
+
     // Get effective permissions including inherited
     const effectivePermissions = await this.permissionInheritance.getRoleEffectivePermissions(
       roleId,
@@ -386,7 +388,7 @@ export class RolesService {
       },
     });
 
-    return userRoles.map(ur => ({
+    return userRoles.map((ur) => ({
       ...ur,
       role: {
         ...ur.role,

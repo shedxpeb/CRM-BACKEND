@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PermissionInheritanceService } from '../../permissions/permission-inheritance.service';
@@ -6,7 +12,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /**
  * Module Access Guard
- * 
+ *
  * Enforces module-level access control:
  * - Checks if module is enabled for organization
  * - Validates user has required permissions for module
@@ -19,73 +25,73 @@ export class ModuleAccessGuard implements CanActivate {
   // Module permissions mapping based on HTTP method and endpoint patterns
   private readonly modulePermissionMap = {
     // Lead module
-    'leads': {
-      'GET': ['leads.view'],
-      'POST': ['leads.create'],
-      'PUT': ['leads.update'],
-      'PATCH': ['leads.update'],
-      'DELETE': ['leads.delete'],
+    leads: {
+      GET: ['leads.view'],
+      POST: ['leads.create'],
+      PUT: ['leads.update'],
+      PATCH: ['leads.update'],
+      DELETE: ['leads.delete'],
     },
     // Customer module
-    'customers': {
-      'GET': ['customers.view'],
-      'POST': ['customers.create'],
-      'PUT': ['customers.update'],
-      'PATCH': ['customers.update'],
-      'DELETE': ['customers.delete'],
+    customers: {
+      GET: ['customers.view'],
+      POST: ['customers.create'],
+      PUT: ['customers.update'],
+      PATCH: ['customers.update'],
+      DELETE: ['customers.delete'],
     },
     // Project module
-    'projects': {
-      'GET': ['projects.view'],
-      'POST': ['projects.create'],
-      'PUT': ['projects.update'],
-      'PATCH': ['projects.update'],
-      'DELETE': ['projects.delete'],
+    projects: {
+      GET: ['projects.view'],
+      POST: ['projects.create'],
+      PUT: ['projects.update'],
+      PATCH: ['projects.update'],
+      DELETE: ['projects.delete'],
     },
     // Inventory module
-    'inventory': {
-      'GET': ['inventory.view'],
-      'POST': ['inventory.create'],
-      'PUT': ['inventory.update'],
-      'PATCH': ['inventory.update'],
-      'DELETE': ['inventory.delete'],
+    inventory: {
+      GET: ['inventory.view'],
+      POST: ['inventory.create'],
+      PUT: ['inventory.update'],
+      PATCH: ['inventory.update'],
+      DELETE: ['inventory.delete'],
     },
     // Purchase orders module
     'purchase-orders': {
-      'GET': ['purchase_orders.view'],
-      'POST': ['purchase_orders.create'],
-      'PUT': ['purchase_orders.update'],
-      'PATCH': ['purchase_orders.update'],
-      'DELETE': ['purchase_orders.delete'],
+      GET: ['purchase_orders.view'],
+      POST: ['purchase_orders.create'],
+      PUT: ['purchase_orders.update'],
+      PATCH: ['purchase_orders.update'],
+      DELETE: ['purchase_orders.delete'],
     },
     // Users module
-    'users': {
-      'GET': ['users.view'],
-      'POST': ['users.create'],
-      'PUT': ['users.update'],
-      'PATCH': ['users.update'],
-      'DELETE': ['users.delete'],
+    users: {
+      GET: ['users.view'],
+      POST: ['users.create'],
+      PUT: ['users.update'],
+      PATCH: ['users.update'],
+      DELETE: ['users.delete'],
     },
     // Roles module
-    'roles': {
-      'GET': ['roles.view'],
-      'POST': ['roles.create'],
-      'PUT': ['roles.update'],
-      'PATCH': ['roles.update'],
-      'DELETE': ['roles.delete'],
+    roles: {
+      GET: ['roles.view'],
+      POST: ['roles.create'],
+      PUT: ['roles.update'],
+      PATCH: ['roles.update'],
+      DELETE: ['roles.delete'],
     },
     // Tasks module
-    'tasks': {
-      'GET': ['tasks.view'],
-      'POST': ['tasks.create'],
-      'PUT': ['tasks.update'],
-      'PATCH': ['tasks.update'],
-      'DELETE': ['tasks.delete'],
+    tasks: {
+      GET: ['tasks.view'],
+      POST: ['tasks.create'],
+      PUT: ['tasks.update'],
+      PATCH: ['tasks.update'],
+      DELETE: ['tasks.delete'],
     },
     // Reports module
-    'reports': {
-      'GET': ['reports.view'],
-      'POST': ['reports.export'],
+    reports: {
+      GET: ['reports.view'],
+      POST: ['reports.export'],
     },
   };
 
@@ -143,7 +149,9 @@ export class ModuleAccessGuard implements CanActivate {
     });
 
     if (!moduleAccess || !moduleAccess.enabled) {
-      this.logger.warn(`Module ${moduleKey} not accessible for organization ${user.organizationId}`);
+      this.logger.warn(
+        `Module ${moduleKey} not accessible for organization ${user.organizationId}`,
+      );
       throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
     }
 
@@ -161,8 +169,8 @@ export class ModuleAccessGuard implements CanActivate {
     );
 
     // Check if user has all required permissions
-    const hasAllPermissions = requiredPermissions.every(perm =>
-      userPermissions.includes('*') || userPermissions.includes(perm),
+    const hasAllPermissions = requiredPermissions.every(
+      (perm) => userPermissions.includes('*') || userPermissions.includes(perm),
     );
 
     if (!hasAllPermissions) {
@@ -267,16 +275,13 @@ export class ModuleAccessGuard implements CanActivate {
       },
     });
 
-    return enabledModules.map(m => m.moduleKey);
+    return enabledModules.map((m) => m.moduleKey);
   }
 
   /**
    * Get module-specific permissions for an organization
    */
-  async getModulePermissions(
-    organizationId: string,
-    moduleKey: string,
-  ): Promise<string[]> {
+  async getModulePermissions(organizationId: string, moduleKey: string): Promise<string[]> {
     const moduleAccess = await this.prisma.organizationModule.findUnique({
       where: {
         organizationId_moduleKey: {
@@ -320,7 +325,7 @@ export class ModuleAccessGuard implements CanActivate {
     // Return all unique permissions for the module
     const allPermissions = new Set<string>();
     Object.values(modulePermissions).forEach((permissions: string[]) => {
-      permissions.forEach(perm => allPermissions.add(perm));
+      permissions.forEach((perm) => allPermissions.add(perm));
     });
 
     return Array.from(allPermissions);

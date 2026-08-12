@@ -4,7 +4,7 @@ import { PermissionInheritanceService } from '../../permissions/permission-inher
 
 /**
  * Enhanced Session Service
- * 
+ *
  * Manages user sessions with full context:
  * - Organization permissions
  * - Module access
@@ -25,7 +25,9 @@ export class EnhancedSessionService {
    * Create session with full context
    */
   async createSessionWithContext(dto: CreateSessionDto) {
-    this.logger.log(`Creating session for user ${dto.userId} in organization ${dto.organizationId}`);
+    this.logger.log(
+      `Creating session for user ${dto.userId} in organization ${dto.organizationId}`,
+    );
 
     // Parse user agent for device information
     const deviceInfo = this.parseDeviceInfo(dto.userAgent);
@@ -160,7 +162,9 @@ export class EnhancedSessionService {
     terminatorId: string,
     reason: string,
   ) {
-    this.logger.log(`Terminating all sessions for user ${userId} in organization ${organizationId}`);
+    this.logger.log(
+      `Terminating all sessions for user ${userId} in organization ${organizationId}`,
+    );
 
     const sessions = await this.prisma.session.findMany({
       where: {
@@ -263,7 +267,7 @@ export class EnhancedSessionService {
       },
     });
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       id: session.id,
       userId: session.userId,
       userEmail: session.user.email,
@@ -292,7 +296,9 @@ export class EnhancedSessionService {
       },
     });
 
-    this.logger.log(`Session ${sessionId} revoked. Reason: ${reason}`);
+    this.logger.log(
+      `Session ${sessionId} revoked. Reason: ${reason}. Revoked by: ${revokedBy || 'system'}`,
+    );
   }
 
   /**
@@ -316,10 +322,7 @@ export class EnhancedSessionService {
   async cleanupExpiredSessions() {
     const expiredSessions = await this.prisma.session.findMany({
       where: {
-        OR: [
-          { expiresAt: { lt: new Date() } },
-          { idleExpiresAt: { lt: new Date() } },
-        ],
+        OR: [{ expiresAt: { lt: new Date() } }, { idleExpiresAt: { lt: new Date() } }],
         isRevoked: false,
       },
     });
@@ -372,7 +375,7 @@ export class EnhancedSessionService {
       totalSessions,
       activeSessions,
       uniqueUsers: uniqueUsers.length,
-      deviceBreakdown: deviceStats.map(stat => ({
+      deviceBreakdown: deviceStats.map((stat) => ({
         device: stat.device,
         count: stat._count,
       })),
@@ -392,15 +395,15 @@ export class EnhancedSessionService {
    */
   private parseDeviceInfo(userAgent: string): { device: string; type: string } {
     const ua = userAgent.toLowerCase();
-    
+
     if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
       return { device: 'Mobile', type: 'mobile' };
     }
-    
+
     if (ua.includes('tablet') || ua.includes('ipad')) {
       return { device: 'Tablet', type: 'tablet' };
     }
-    
+
     return { device: 'Desktop', type: 'desktop' };
   }
 
@@ -409,27 +412,27 @@ export class EnhancedSessionService {
    */
   private parseBrowserInfo(userAgent: string): { name: string; version: string } {
     const ua = userAgent.toLowerCase();
-    
+
     if (ua.includes('chrome')) {
       const match = ua.match(/chrome\/(\d+\.\d+\.\d+\.\d+)/);
       return { name: 'Chrome', version: match ? match[1] : 'Unknown' };
     }
-    
+
     if (ua.includes('firefox')) {
       const match = ua.match(/firefox\/(\d+\.\d+)/);
       return { name: 'Firefox', version: match ? match[1] : 'Unknown' };
     }
-    
+
     if (ua.includes('safari') && !ua.includes('chrome')) {
       const match = ua.match(/version\/(\d+\.\d+)/);
       return { name: 'Safari', version: match ? match[1] : 'Unknown' };
     }
-    
+
     if (ua.includes('edge')) {
       const match = ua.match(/edge\/(\d+\.\d+\.\d+\.\d+)/);
       return { name: 'Edge', version: match ? match[1] : 'Unknown' };
     }
-    
+
     return { name: 'Unknown', version: 'Unknown' };
   }
 
@@ -438,32 +441,32 @@ export class EnhancedSessionService {
    */
   private parseOSInfo(userAgent: string): { name: string; version: string } {
     const ua = userAgent.toLowerCase();
-    
+
     if (ua.includes('windows')) {
       if (ua.includes('windows 10')) return { name: 'Windows', version: '10' };
       if (ua.includes('windows 11')) return { name: 'Windows', version: '11' };
       return { name: 'Windows', version: 'Unknown' };
     }
-    
+
     if (ua.includes('mac os') || ua.includes('macos')) {
-      const match = ua.match(/mac os x (\d+[_\.]\d+[_\.]\d+)/);
+      const match = ua.match(/mac os x (\d+[_.]\d+[_.]\d+)/);
       return { name: 'macOS', version: match ? match[1].replace(/_/g, '.') : 'Unknown' };
     }
-    
+
     if (ua.includes('linux')) {
       return { name: 'Linux', version: 'Unknown' };
     }
-    
+
     if (ua.includes('android')) {
       const match = ua.match(/android (\d+\.\d+)/);
       return { name: 'Android', version: match ? match[1] : 'Unknown' };
     }
-    
+
     if (ua.includes('iphone') || ua.includes('ipad')) {
-      const match = ua.match(/os (\d+[_\.]\d+[_\.]\d+)/);
+      const match = ua.match(/os (\d+[_.]\d+[_.]\d+)/);
       return { name: 'iOS', version: match ? match[1].replace(/_/g, '.') : 'Unknown' };
     }
-    
+
     return { name: 'Unknown', version: 'Unknown' };
   }
 }

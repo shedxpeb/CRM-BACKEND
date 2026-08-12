@@ -1,11 +1,17 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator';
 import { Reflector } from '@nestjs/core';
 
 /**
  * Data Isolation Guard
- * 
+ *
  * Enforces multi-tenant data isolation by:
  * - Validating resource ownership
  * - Preventing cross-tenant data access
@@ -127,7 +133,10 @@ export class DataIsolationGuard implements CanActivate {
   /**
    * Validate customer ownership
    */
-  private async validateCustomerOwnership(customerId: string, organizationId: string): Promise<boolean> {
+  private async validateCustomerOwnership(
+    customerId: string,
+    organizationId: string,
+  ): Promise<boolean> {
     const customer = await this.prisma.customer.findFirst({
       where: {
         id: customerId,
@@ -142,7 +151,10 @@ export class DataIsolationGuard implements CanActivate {
   /**
    * Validate project ownership
    */
-  private async validateProjectOwnership(projectId: string, organizationId: string): Promise<boolean> {
+  private async validateProjectOwnership(
+    projectId: string,
+    organizationId: string,
+  ): Promise<boolean> {
     const project = await this.prisma.project.findFirst({
       where: {
         id: projectId,
@@ -156,7 +168,10 @@ export class DataIsolationGuard implements CanActivate {
   /**
    * Validate user ownership (user must belong to same organization)
    */
-  private async validateUserOwnership(targetUserId: string, organizationId: string): Promise<boolean> {
+  private async validateUserOwnership(
+    targetUserId: string,
+    organizationId: string,
+  ): Promise<boolean> {
     const user = await this.prisma.user.findFirst({
       where: {
         id: targetUserId,
@@ -244,17 +259,13 @@ export class DataIsolationGuard implements CanActivate {
 
     // Check body for organizationId
     if (body && body.organizationId) {
-      this.logger.warn(
-        `organizationId manipulation attempt in body by user ${request.user?.id}`,
-      );
+      this.logger.warn(`organizationId manipulation attempt in body by user ${request.user?.id}`);
       delete body.organizationId;
     }
 
     // Check query for organizationId
     if (query && query.organizationId) {
-      this.logger.warn(
-        `organizationId manipulation attempt in query by user ${request.user?.id}`,
-      );
+      this.logger.warn(`organizationId manipulation attempt in query by user ${request.user?.id}`);
       delete query.organizationId;
     }
   }

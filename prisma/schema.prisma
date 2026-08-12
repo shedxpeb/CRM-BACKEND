@@ -1279,29 +1279,73 @@ model PurchaseOrder {
   organizationId       String
   orderNumber          String?
   poNumber             String?
+  poNumberInt          Int?                    @default(autoincrement())
   vendorId             String?
   vendorName           String?
+  projectId            String?
+  projectName          String?
+  warehouseId          String?
+  warehouseName        String?
+  paymentTerms         String?
+  expectedDeliveryDate DateTime?
   status               PurchaseOrderStatus     @default(Draft)
-  grandTotal           Float?
   revision             Int                     @default(0)
+  revisionNote         String?
+  currency             String                  @default("INR")
+  subtotal             Float?
   discount             Float?
   discountType         String?
+  tax                  Float?
   freight              Float?
   packingCharges       Float?
   shippingCharges      Float?
   otherCharges         Float?
-  subtotal             Float?
-  tax                  Float?
   roundOff             Float?
-  currency             String                  @default("INR")
+  grandTotal           Float?
+  notes                String?
   terms                String?
-  paymentTerms         String?
-  warehouseId          String?
-  expectedDeliveryDate DateTime?
-  projectName          String?
+  internalNotes        String?
+  approvedById         String?
+  approvedBy           String?
+  approvedAt           DateTime?
+  rejectedById         String?
+  rejectedBy           String?
+  rejectedAt           DateTime?
+  rejectReason         String?
+  sentToVendor         Boolean                 @default(false)
+  sentAt               DateTime?
+  actualDeliveryDate   DateTime?
+  pdfGenerated         Boolean                 @default(false)
+  pdfUrl               String?
+  customFields         Json?
+  shipToName           String?
+  shipToCompanyName    String?
+  shipToAddress        String?
+  shipToCity           String?
+  shipToState          String?
+  shipToPincode        String?
+  shipToCountry        String?                 @default("India")
+  shipToPhone          String?
+  shipToEmail          String?
+  shipToGstNumber      String?
+  supplierName         String?
+  supplierCompanyName  String?
+  supplierAddress      String?
+  supplierCity         String?
+  supplierState        String?
+  supplierPincode      String?
+  supplierCountry      String?                 @default("India")
+  supplierPhone        String?
+  supplierEmail        String?
+  supplierGstNumber    String?
+  createdById          String?
+  createdBy            String?
+  updatedBy            String?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   isDeleted            Boolean                 @default(false)
+  deletedAt            DateTime?
+  deletedById          String?
   organization         Organization            @relation(fields: [organizationId], references: [id])
   vendor               Vendor?                 @relation(fields: [vendorId], references: [id])
   items                PurchaseOrderItem[]
@@ -1310,12 +1354,17 @@ model PurchaseOrder {
   @@index([organizationId])
   @@index([isDeleted])
   @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model PurchaseOrderItem {
   id               String        @id @default(uuid())
+  organizationId   String?
   purchaseOrderId  String
+  itemMasterId     String?
   itemId           String?
+  itemCode         String?
   itemName         String
   description      String?
   quantity         Float
@@ -1331,18 +1380,24 @@ model PurchaseOrderItem {
   gstAmount        Float?
   hsnCode          String?
   total            Float?
+  receivedDate     DateTime?
+  customFields     Json?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
   @@index([itemId])
+  @@index([itemMasterId])
+  @@index([organizationId])
 }
 
 model PurchaseOrderTimeline {
   id              String        @id @default(uuid())
+  organizationId  String?
   purchaseOrderId String
   action          String
+  performedById   String?
   performedBy     String?
   performedByName String?
   metadata        Json?
@@ -1350,6 +1405,7 @@ model PurchaseOrderTimeline {
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
+  @@index([organizationId])
   @@index([createdAt])
 }
 

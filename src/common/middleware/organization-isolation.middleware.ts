@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 
 /**
  * Organization Isolation Middleware
- * 
+ *
  * Ensures multi-tenant data isolation by:
  * - Validating organizationId from JWT (never trust frontend)
  * - Preventing organizationId manipulation in requests
@@ -65,7 +65,7 @@ export class OrganizationIsolationMiddleware implements NestMiddleware {
       '/favicon.ico',
     ];
 
-    return publicRoutes.some(route => path.startsWith(route));
+    return publicRoutes.some((route) => path.startsWith(route));
   }
 
   /**

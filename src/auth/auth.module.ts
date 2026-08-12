@@ -44,7 +44,15 @@ import { PrismaModule } from '../prisma/prisma.module';
     EnhancedSessionService,
     CookieInterceptor,
   ],
-  exports: [AuthService, TokenService, SessionService, AuditService, OtpService, EnhancedSessionService, JwtModule],
+  exports: [
+    AuthService,
+    TokenService,
+    SessionService,
+    AuditService,
+    OtpService,
+    EnhancedSessionService,
+    JwtModule,
+  ],
 })
 export class AuthModule {
   static readonly moduleCapability = { capability: 'auth' } as const;

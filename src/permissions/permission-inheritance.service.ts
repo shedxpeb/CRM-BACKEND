@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Permission Inheritance Service
- * 
+ *
  * Handles hierarchical permission system where:
  * - Super Admin grants permissions to Tenant Admin
  * - Tenant Admin can only delegate permissions they possess
@@ -50,8 +50,9 @@ export class PermissionInheritanceService {
     }
 
     // Check if cache is valid (5 minutes)
-    const cacheValid = user.lastPermissionCalculation && 
-      (Date.now() - user.lastPermissionCalculation.getTime()) < 5 * 60 * 1000;
+    const cacheValid =
+      user.lastPermissionCalculation &&
+      Date.now() - user.lastPermissionCalculation.getTime() < 5 * 60 * 1000;
 
     if (cacheValid && user.effectivePermissions) {
       const cachedPermissions = JSON.parse(user.effectivePermissions as string);
@@ -78,9 +79,13 @@ export class PermissionInheritanceService {
    * Check if user has permission to delegate specific permission
    * Users can only delegate permissions they possess
    */
-  async canDelegatePermission(userId: string, permissionKey: string, organizationId: string): Promise<boolean> {
+  async canDelegatePermission(
+    userId: string,
+    permissionKey: string,
+    organizationId: string,
+  ): Promise<boolean> {
     const userPermissions = await this.getEffectivePermissions(userId, organizationId);
-    
+
     // SUPER_ADMIN can delegate any permission
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -116,7 +121,11 @@ export class PermissionInheritanceService {
     }
 
     // Check if delegator can delegate this permission
-    const canDelegate = await this.canDelegatePermission(delegatorId, permission.key, organizationId);
+    const canDelegate = await this.canDelegatePermission(
+      delegatorId,
+      permission.key,
+      organizationId,
+    );
     if (!canDelegate) {
       throw new ForbiddenException('You do not have permission to delegate this permission');
     }
@@ -130,7 +139,9 @@ export class PermissionInheritanceService {
     if (organization?.permissionPool) {
       const permissionPool = JSON.parse(organization.permissionPool as string);
       if (!permissionPool.includes(permission.key)) {
-        throw new ForbiddenException('This permission is not in your organization\'s permission pool');
+        throw new ForbiddenException(
+          "This permission is not in your organization's permission pool",
+        );
       }
     }
 
@@ -145,7 +156,10 @@ export class PermissionInheritanceService {
 
     // Check hierarchy constraints
     if (role.inheritsFromId) {
-      const parentPermissions = await this.getRoleEffectivePermissions(role.inheritsFromId, organizationId);
+      const parentPermissions = await this.getRoleEffectivePermissions(
+        role.inheritsFromId,
+        organizationId,
+      );
       if (!parentPermissions.includes(permission.key)) {
         throw new ForbiddenException('Cannot grant permission that parent role does not have');
       }
@@ -238,19 +252,22 @@ export class PermissionInheritanceService {
       return true; // No parent, no restrictions
     }
 
-    const parentPermissions = await this.getRoleEffectivePermissions(role.inheritsFromId, role.organizationId || '');
-    
+    const parentPermissions = await this.getRoleEffectivePermissions(
+      role.inheritsFromId,
+      role.organizationId || '',
+    );
+
     // Get permission keys for the requested permissions
     const permissions = await this.prisma.permission.findMany({
       where: { id: { in: permissionIds } },
       select: { key: true },
     });
 
-    const permissionKeys = permissions.map(p => p.key);
+    const permissionKeys = permissions.map((p) => p.key);
 
     // Check if all requested permissions are in parent's permissions
-    const hasAllPermissions = permissionKeys.every(key => 
-      parentPermissions.includes(key) || parentPermissions.includes('*')
+    const hasAllPermissions = permissionKeys.every(
+      (key) => parentPermissions.includes(key) || parentPermissions.includes('*'),
     );
 
     return hasAllPermissions;
@@ -275,7 +292,10 @@ export class PermissionInheritanceService {
   /**
    * Calculate effective permissions for a user
    */
-  private async calculateEffectivePermissions(userId: string, organizationId: string): Promise<string[]> {
+  private async calculateEffectivePermissions(
+    userId: string,
+    organizationId: string,
+  ): Promise<string[]> {
     // Get user's roles
     const userRoles = await this.prisma.userRole.findMany({
       where: { userId, organizationId },
@@ -300,8 +320,11 @@ export class PermissionInheritanceService {
     const allPermissions = new Set<string>();
 
     for (const userRole of userRoles) {
-      const rolePermissions = await this.getRoleEffectivePermissions(userRole.roleId, organizationId);
-      rolePermissions.forEach(perm => allPermissions.add(perm));
+      const rolePermissions = await this.getRoleEffectivePermissions(
+        userRole.roleId,
+        organizationId,
+      );
+      rolePermissions.forEach((perm) => allPermissions.add(perm));
     }
 
     // Apply module-level restrictions
@@ -316,7 +339,10 @@ export class PermissionInheritanceService {
   /**
    * Get effective permissions for a role including inherited permissions
    */
-  public async getRoleEffectivePermissions(roleId: string, organizationId: string): Promise<string[]> {
+  public async getRoleEffectivePermissions(
+    roleId: string,
+    _organizationId: string,
+  ): Promise<string[]> {
     const role = await this.prisma.role.findUnique({
       where: { id: roleId },
       select: {
@@ -345,13 +371,16 @@ export class PermissionInheritanceService {
 
     // Add legacy permissions array for backward compatibility
     if (role.permissions) {
-      role.permissions.forEach(perm => permissions.add(perm));
+      role.permissions.forEach((perm) => permissions.add(perm));
     }
 
     // Add inherited permissions from parent role
     if (role.inheritsFromId) {
-      const parentPermissions = await this.getRoleEffectivePermissions(role.inheritsFromId, role.organizationId || '');
-      parentPermissions.forEach(perm => permissions.add(perm));
+      const parentPermissions = await this.getRoleEffectivePermissions(
+        role.inheritsFromId,
+        role.organizationId || '',
+      );
+      parentPermissions.forEach((perm) => permissions.add(perm));
     }
 
     return Array.from(permissions);
@@ -360,17 +389,20 @@ export class PermissionInheritanceService {
   /**
    * Apply module-level restrictions to permissions
    */
-  private async applyModuleRestrictions(permissions: string[], organizationId: string): Promise<string[]> {
+  private async applyModuleRestrictions(
+    permissions: string[],
+    organizationId: string,
+  ): Promise<string[]> {
     // Get enabled modules for organization
     const enabledModules = await this.prisma.organizationModule.findMany({
       where: { organizationId, enabled: true },
       select: { moduleKey: true, permissionSet: true },
     });
 
-    const enabledModuleKeys = new Set(enabledModules.map(m => m.moduleKey));
+    const enabledModuleKeys = new Set(enabledModules.map((m) => m.moduleKey));
 
     // Filter permissions based on enabled modules
-    const filteredPermissions = permissions.filter(permission => {
+    const filteredPermissions = permissions.filter((permission) => {
       const moduleKey = permission.split('.')[0]; // e.g., "leads" from "leads.view"
       return enabledModuleKeys.has(moduleKey);
     });
@@ -414,7 +446,11 @@ export class PermissionInheritanceService {
   /**
    * Check if user has specific permission
    */
-  async hasPermission(userId: string, permissionKey: string, organizationId: string): Promise<boolean> {
+  async hasPermission(
+    userId: string,
+    permissionKey: string,
+    organizationId: string,
+  ): Promise<boolean> {
     const effectivePermissions = await this.getEffectivePermissions(userId, organizationId);
     return effectivePermissions.includes('*') || effectivePermissions.includes(permissionKey);
   }

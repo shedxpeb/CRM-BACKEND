@@ -1,10 +1,15 @@
-import { Injectable, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
 /**
  * Organization Bootstrap Service
- * 
+ *
  * Handles complete organization creation in a single ACID transaction:
  * - Organization creation
  * - Default admin user creation
@@ -13,7 +18,7 @@ import * as bcrypt from 'bcrypt';
  * - Module enablement
  * - Permission pool initialization
  * - Audit logging
- * 
+ *
  * If any step fails, the entire transaction rolls back.
  */
 @Injectable()
@@ -62,7 +67,7 @@ export class OrganizationBootstrapService {
         // Step 2: Create Default Admin User
         this.logger.log('Step 2: Creating default admin user');
         const hashedPassword = await bcrypt.hash(dto.tempPassword, 12);
-        
+
         const adminUser = await tx.user.create({
           data: {
             email: dto.adminEmail,
@@ -83,7 +88,12 @@ export class OrganizationBootstrapService {
 
         // Step 3: Create Default Roles
         this.logger.log('Step 3: Creating default roles');
-        const defaultRoles = await this.createDefaultRoles(tx, organization.id, dto.grantedPermissions, tenantInfo.superAdminId);
+        const defaultRoles = await this.createDefaultRoles(
+          tx,
+          organization.id,
+          dto.grantedPermissions,
+          tenantInfo.superAdminId,
+        );
 
         // Step 4: Assign Admin Role to User
         this.logger.log('Step 4: Assigning admin role to user');
@@ -101,7 +111,12 @@ export class OrganizationBootstrapService {
 
         // Step 5: Enable Modules
         this.logger.log('Step 5: Enabling modules');
-        await this.enableModules(tx, organization.id, dto.enabledModules || [], tenantInfo.superAdminId);
+        await this.enableModules(
+          tx,
+          organization.id,
+          dto.enabledModules || [],
+          tenantInfo.superAdminId,
+        );
 
         // Step 6: Create Default Organization Settings
         this.logger.log('Step 6: Creating default settings');
@@ -241,9 +256,10 @@ export class OrganizationBootstrapService {
     enabledModules: string[],
     grantedBy: string,
   ) {
-    const defaultModules = enabledModules.length > 0 
-      ? enabledModules 
-      : ['leads', 'customers', 'projects', 'inventory', 'tasks'];
+    const defaultModules =
+      enabledModules.length > 0
+        ? enabledModules
+        : ['leads', 'customers', 'projects', 'inventory', 'tasks'];
 
     for (const moduleKey of defaultModules) {
       await tx.organizationModule.upsert({
@@ -339,11 +355,12 @@ export class OrganizationBootstrapService {
    */
   private filterManagerPermissions(allPermissions: string[]): string[] {
     // Managers get view, create, update permissions but not delete
-    return allPermissions.filter(perm => 
-      perm.includes('.view') || 
-      perm.includes('.create') || 
-      perm.includes('.update') ||
-      perm.includes('.manage')
+    return allPermissions.filter(
+      (perm) =>
+        perm.includes('.view') ||
+        perm.includes('.create') ||
+        perm.includes('.update') ||
+        perm.includes('.manage'),
     );
   }
 
@@ -352,10 +369,7 @@ export class OrganizationBootstrapService {
    */
   private filterEmployeePermissions(allPermissions: string[]): string[] {
     // Employees get only view and create permissions
-    return allPermissions.filter(perm => 
-      perm.includes('.view') || 
-      perm.includes('.create')
-    );
+    return allPermissions.filter((perm) => perm.includes('.view') || perm.includes('.create'));
   }
 
   /**
@@ -381,8 +395,18 @@ export class OrganizationBootstrapService {
     }
 
     // Validate module keys
-    const validModules = ['leads', 'customers', 'projects', 'inventory', 'purchase-orders', 'tasks', 'users', 'roles', 'reports'];
-    const invalidModules = (dto.enabledModules || []).filter(m => !validModules.includes(m));
+    const validModules = [
+      'leads',
+      'customers',
+      'projects',
+      'inventory',
+      'purchase-orders',
+      'tasks',
+      'users',
+      'roles',
+      'reports',
+    ];
+    const invalidModules = (dto.enabledModules || []).filter((m) => !validModules.includes(m));
     if (invalidModules.length > 0) {
       throw new BadRequestException(`Invalid module keys: ${invalidModules.join(', ')}`);
     }

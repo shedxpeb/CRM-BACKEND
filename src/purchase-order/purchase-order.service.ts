@@ -28,27 +28,15 @@ export class PurchaseOrderService extends BaseQueryService {
   }
 
   async generatePONumber(organizationId: string): Promise<string> {
-    const sequence = await this.prisma.$queryRaw<{ lastValue: number }[]>`
-      UPDATE "NumberSequence"
-      SET "lastValue" = "lastValue" + 1, "updatedAt" = NOW()
-      WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
-      RETURNING "lastValue"
+    const year = new Date().getFullYear();
+    const sequence = await this.prisma.$queryRaw<{ sequence: number }[]>`
+      INSERT INTO "NumberSequence" ("id", "organizationId", "entityType", "prefix", "year", "sequence", "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${organizationId}, 'PO', 'PO', ${year}, 1, NOW(), NOW())
+      ON CONFLICT ("entityType", "organizationId", "year") DO UPDATE SET "sequence" = "NumberSequence"."sequence" + 1, "updatedAt" = NOW()
+      RETURNING "sequence"
     `;
 
-    if (sequence.length === 0) {
-      await this.prisma.$executeRaw`
-        INSERT INTO "NumberSequence" ("id", "organizationId", "entityName", "prefix", "lastValue", "createdAt", "updatedAt")
-        VALUES (gen_random_uuid(), ${organizationId}, 'PO', 'PO', 1, NOW(), NOW())
-        ON CONFLICT ("organizationId", "entityName") DO UPDATE SET "lastValue" = "NumberSequence"."lastValue" + 1, "updatedAt" = NOW()
-      `;
-      const retry = await this.prisma.$queryRaw<{ lastValue: number }[]>`
-        SELECT "lastValue" FROM "NumberSequence"
-        WHERE "organizationId" = ${organizationId} AND "entityName" = 'PO'
-      `;
-      return `PO${String(retry[0].lastValue).padStart(6, '0')}`;
-    }
-
-    return `PO${String(sequence[0].lastValue).padStart(6, '0')}`;
+    return `PO${String(sequence[0].sequence).padStart(6, '0')}`;
   }
 
   async createWithRetry(
@@ -220,7 +208,6 @@ export class PurchaseOrderService extends BaseQueryService {
 
     await this.prisma.purchaseOrderItem.createMany({
       data: dto.items.map((item, idx) => ({
-        organizationId,
         purchaseOrderId: purchaseOrder.id,
         itemId: item.itemMasterId || '',
         itemName: item.itemName,
@@ -242,10 +229,8 @@ export class PurchaseOrderService extends BaseQueryService {
 
     await this.prisma.purchaseOrderTimeline.create({
       data: {
-        organizationId,
         purchaseOrderId: purchaseOrder.id,
         action: 'Created',
-        performedById: createdById,
         performedBy: createdBy,
       },
     });
