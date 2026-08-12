@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware, ForbiddenException, Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 /**
  * Organization Isolation Middleware
@@ -14,9 +14,9 @@ import { Request, Response, NextFunction } from 'express';
 export class OrganizationIsolationMiddleware implements NestMiddleware {
   private readonly logger = new Logger(OrganizationIsolationMiddleware.name);
 
-  use(req: Request, res: Response, next: NextFunction) {
+  use(req: FastifyRequest, res: FastifyReply, next: () => void) {
     // Skip middleware for public routes
-    if (this.isPublicRoute(req.path)) {
+    if (this.isPublicRoute(req.url)) {
       return next();
     }
 
@@ -71,7 +71,7 @@ export class OrganizationIsolationMiddleware implements NestMiddleware {
   /**
    * Validate that organizationId is not being manipulated in request
    */
-  private validateNoOrganizationIdManipulation(req: Request): void {
+  private validateNoOrganizationIdManipulation(req: FastifyRequest): void {
     const body = req.body as any;
     const query = req.query as any;
 
