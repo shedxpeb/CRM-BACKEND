@@ -170,21 +170,41 @@ export class VendorService {
     createdBy: string,
     organizationId: string,
   ) {
-    const existingVendor = await this.prisma.vendor.findFirst({
-      where: {
-        organizationId,
-        companyName: dto.companyName,
-        isDeleted: false,
-      },
-    });
+    if (dto.companyName) {
+      const existingVendor = await this.prisma.vendor.findFirst({
+        where: {
+          organizationId,
+          companyName: dto.companyName,
+          isDeleted: false,
+        },
+      });
 
-    if (existingVendor) {
-      throw new BadRequestException('Vendor with this company name already exists');
+      if (existingVendor) {
+        throw new BadRequestException('Vendor with this company name already exists');
+      }
     }
 
     const vendor = await this.prisma.vendor.create({
       data: {
-        ...dto,
+        companyName: dto.companyName,
+        gstNumber: dto.gstNumber,
+        gstRegistered: dto.gstRegistered,
+        panNumber: dto.panNumber,
+        contactPerson: dto.contactPerson,
+        email: dto.email,
+        mobile: dto.mobile,
+        phone: dto.phone,
+        address: dto.address,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
+        pincode: dto.pincode,
+        rating: dto.rating,
+        paymentTerms: dto.paymentTerms,
+        creditLimit: dto.creditLimit,
+        creditDays: dto.creditDays,
+        status: dto.status || 'Active',
+        notes: dto.notes,
         createdById,
         createdBy,
         organizationId,

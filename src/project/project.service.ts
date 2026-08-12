@@ -235,17 +235,29 @@ export class ProjectService extends BaseQueryService {
       throw new BadRequestException('Organization context is required to create a project');
     }
 
-    // Check if projectCode already exists
-    const existingProject = await this.client.findFirst({
-      where: {
-        projectCode: data.projectCode,
-        organizationId,
-        isDeleted: false,
-      },
-    });
+    // Generate project code if not provided
+    let projectCode = data.projectCode;
+    if (!projectCode) {
+      const lastProject = await this.client.findFirst({
+        where: { organizationId, isDeleted: false },
+        orderBy: { projectId: 'desc' },
+        select: { projectId: true },
+      });
+      const nextNumber = (lastProject?.projectId || 0) + 1;
+      projectCode = `PRJ-${String(nextNumber).padStart(4, '0')}`;
+    } else {
+      // Check if projectCode already exists
+      const existingProject = await this.client.findFirst({
+        where: {
+          projectCode,
+          organizationId,
+          isDeleted: false,
+        },
+      });
 
-    if (existingProject) {
-      throw new BadRequestException(`Project with code "${data.projectCode}" already exists`);
+      if (existingProject) {
+        throw new BadRequestException(`Project with code "${projectCode}" already exists`);
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -295,11 +307,12 @@ export class ProjectService extends BaseQueryService {
     const project = await this.client.create({
       data: {
         ...restData,
-        projectCode: data.projectCode,
+        projectCode,
         projectName: projectTitle || data.projectName,
         projectType: projectType || data.projectType,
         customerName,
         projectManager,
+        projectManagerId: data.projectManagerId,
         organizationId,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,

@@ -107,7 +107,6 @@ export class TaskService extends BaseQueryService {
         tags: dto.tags || [],
         notes: dto.notes,
         beforeImages: dto.beforeImages || [],
-        checklist: dto.beforeImages ? undefined : undefined,
       },
       include: TASK_INCLUDE,
     });

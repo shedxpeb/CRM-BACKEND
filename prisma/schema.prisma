@@ -8,51 +8,54 @@ datasource db {
 }
 
 model Organization {
-  id                  String              @id @default(uuid())
-  name                String
-  slug                String?             @unique
-  code                String?             @unique
-  email               String?             @unique
-  mobile              String?
-  address             String?
-  city                String?
-  state               String?
-  country             String?             @default("India")
-  pincode             String?
-  gstNumber           String?
-  panNumber           String?
-  website             String?
-  status              OrganizationStatus  @default(Active)
-  maxUsers            Int                 @default(25)
-  maxStorageGb        Int                 @default(10)
-  subscriptionTier    String              @default("free")
-  settings            Json?
-  createdById         String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  isDeleted           Boolean             @default(false)
-  deletedAt           DateTime?
-  deletedById         String?
-  version             Int                 @default(1)
-  customers           Customer[]
-  inventoryCategories InventoryCategory[]
-  inventoryItems      InventoryItem[]
-  itemBundles         ItemBundle[]
-  itemMasters         ItemMaster[]
-  itemVariants        ItemVariant[]
-  leads               Lead[]
-  projects            Project[]
-  purchaseOrders      PurchaseOrder[]
-  salaryAdjustments   SalaryAdjustment[]
-  stockMovements      StockMovement[]
-  suppliers           Supplier[]
-  tasks               Task[]
-  users               User[]
-  vendors             Vendor[]
-  warehouses          Warehouse[]
-  roles               Role[]
-  userRoles           UserRole[]
-  modules             OrganizationModule[]
+  id                   String               @id @default(uuid())
+  name                 String
+  slug                 String?              @unique
+  code                 String?              @unique
+  email                String?              @unique
+  mobile               String?
+  address              String?
+  city                 String?
+  state                String?
+  country              String?              @default("India")
+  pincode              String?
+  gstNumber            String?
+  panNumber            String?
+  website              String?
+  status               OrganizationStatus   @default(Active)
+  maxUsers             Int                  @default(25)
+  maxStorageGb         Int                  @default(10)
+  subscriptionTier     String               @default("free")
+  settings             Json?
+  permissionPool       Json? // Pool of permissions delegated by Super Admin
+  roleHierarchyEnabled Boolean              @default(true)
+  maxRoleDepth         Int                  @default(5) // Maximum hierarchy depth
+  createdById          String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  isDeleted            Boolean              @default(false)
+  deletedAt            DateTime?
+  deletedById          String?
+  version              Int                  @default(1)
+  customers            Customer[]
+  inventoryCategories  InventoryCategory[]
+  inventoryItems       InventoryItem[]
+  itemBundles          ItemBundle[]
+  itemMasters          ItemMaster[]
+  itemVariants         ItemVariant[]
+  leads                Lead[]
+  projects             Project[]
+  purchaseOrders       PurchaseOrder[]
+  salaryAdjustments    SalaryAdjustment[]
+  stockMovements       StockMovement[]
+  suppliers            Supplier[]
+  tasks                Task[]
+  users                User[]
+  vendors              Vendor[]
+  warehouses           Warehouse[]
+  roles                Role[]
+  userRoles            UserRole[]
+  modules              OrganizationModule[]
 
   @@index([status])
   @@index([email])
@@ -64,40 +67,43 @@ model Organization {
 }
 
 model User {
-  id                  String           @id @default(uuid())
-  email               String           @unique
-  password            String
-  isActive            Boolean          @default(false)
-  isVerified          Boolean          @default(false)
-  otp                 String?
-  otpExpiry           DateTime?
-  otpAttempts         Int              @default(0)
-  role                SystemRole       @default(EMPLOYEE)
-  organizationType    OrganizationType @default(COMPANY)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  avatar              String?
-  department          String?
-  designation         String?
-  failedLoginAttempts Int              @default(0)
-  isLocked            Boolean          @default(false)
-  lastLogin           DateTime?
-  lockedUntil         DateTime?
-  mobile              String?
-  name                String?
-  organizationId      String?
-  passwordHistory     Json?
-  passwordVersion     Int              @default(1)
-  version             Int              @default(1)
-  isDeleted           Boolean          @default(false)
-  deletedAt           DateTime?
-  deletedById         String?
-  refreshTokens       RefreshToken[]
-  sessions            Session[]
-  organization        Organization?    @relation(fields: [organizationId], references: [id])
-  userRoles           UserRole[]
-  createdEntities     AuditLog[]       @relation("CreatedEntities")
-  updatedEntities     AuditLog[]       @relation("UpdatedEntities")
+  id                        String           @id @default(uuid())
+  email                     String           @unique
+  password                  String
+  isActive                  Boolean          @default(false)
+  isVerified                Boolean          @default(false)
+  otp                       String?
+  otpExpiry                 DateTime?
+  otpAttempts               Int              @default(0)
+  role                      SystemRole       @default(EMPLOYEE)
+  organizationType          OrganizationType @default(COMPANY)
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  avatar                    String?
+  department                String?
+  designation               String?
+  failedLoginAttempts       Int              @default(0)
+  isLocked                  Boolean          @default(false)
+  lastLogin                 DateTime?
+  lockedUntil               DateTime?
+  mobile                    String?
+  name                      String?
+  organizationId            String?
+  passwordHistory           Json?
+  passwordVersion           Int              @default(1)
+  permissionVersion         Int              @default(1) // Track permission changes
+  effectivePermissions      Json? // Cached effective permissions
+  lastPermissionCalculation DateTime?
+  version                   Int              @default(1)
+  isDeleted                 Boolean          @default(false)
+  deletedAt                 DateTime?
+  deletedById               String?
+  refreshTokens             RefreshToken[]
+  sessions                  Session[]
+  organization              Organization?    @relation(fields: [organizationId], references: [id])
+  userRoles                 UserRole[]
+  createdEntities           AuditLog[]       @relation("CreatedEntities")
+  updatedEntities           AuditLog[]       @relation("UpdatedEntities")
 
   @@index([email])
   @@index([role])
@@ -230,57 +236,69 @@ model AuditLog {
 }
 
 model Role {
-  id             String         @id @default(uuid())
+  id             String    @id @default(uuid())
   organizationId String
   name           String
   code           String?
   description    String?
-  permissions    String[]
-  isSystem       Boolean        @default(false)
+  permissions    String[] // Keep for backward compatibility
+  permissionIds  String[] // New: explicit permission references
+  inheritsFromId String? // Parent role for inheritance
+  isSystem       Boolean   @default(false)
+  level          Int       @default(0) // Hierarchy level
   createdById    String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  version        Int            @default(1)
-  isDeleted      Boolean        @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  version        Int       @default(1)
+  isDeleted      Boolean   @default(false)
   deletedAt      DateTime?
   deletedById    String?
-  organization   Organization   @relation(fields: [organizationId], references: [id])
-  userRoles      UserRole[]
+
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  inheritsFrom    Role?            @relation("RoleHierarchy", fields: [inheritsFromId], references: [id])
+  inheritedRoles  Role[]           @relation("RoleHierarchy")
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
 
   @@unique([organizationId, name])
   @@unique([organizationId, code])
   @@index([organizationId])
   @@index([isDeleted])
+  @@index([inheritsFromId])
 }
 
 model Permission {
-  id          String   @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String?
-  key         String   // e.g. "leads:read", "customers:create"
-  module      String   // module key: "leads", "customers", "projects", ...
-  label       String
-  description String?
-  category    String   @default("general")
-  isSystem    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  key            String // e.g. "leads.view", "leads.create", "leads.update", "leads.delete"
+  module         String // module key: "leads", "customers", "projects", ...
+  action         String // "view", "create", "update", "delete", "export", "import", "approve", "manage"
+  label          String
+  description    String?
+  category       String   @default("general")
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  rolePermissions RolePermission[]
 
   @@unique([organizationId, key])
   @@index([module])
   @@index([organizationId])
+  @@index([action])
 }
 
 model UserRole {
-  id           String   @id @default(uuid())
-  userId       String
-  roleId       String
+  id             String   @id @default(uuid())
+  userId         String
+  roleId         String
   organizationId String
-  assignedById String?
-  assignedAt   DateTime @default(now())
+  assignedById   String?
+  assignedAt     DateTime @default(now())
 
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  org      Organization @relation(fields: [organizationId], references: [id])
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([userId, roleId, organizationId])
   @@index([userId])
@@ -288,17 +306,51 @@ model UserRole {
   @@index([organizationId])
 }
 
+model RolePermission {
+  roleId       String
+  permissionId String
+  grantedById  String?
+  grantedAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model PermissionDelegation {
+  id             String    @id @default(uuid())
+  organizationId String
+  delegatedBy    String // User ID who delegated
+  delegatedTo    String // User ID receiving delegation
+  permissionId   String
+  grantedAt      DateTime  @default(now())
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  revokedBy      String?
+  reason         String?
+
+  @@index([organizationId])
+  @@index([delegatedBy])
+  @@index([delegatedTo])
+  @@index([permissionId])
+}
+
 model OrganizationModule {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   organizationId String
   moduleKey      String
-  enabled        Boolean  @default(true)
+  enabled        Boolean   @default(true)
   configuredById String?
   enabledAt      DateTime?
   disabledAt     DateTime?
   settings       Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  grantedBy      String? // Super Admin who granted this module
+  permissionSet  Json? // Specific permissions granted for this module
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -308,14 +360,14 @@ model OrganizationModule {
 }
 
 model SystemSettings {
-  id        String   @id @default(uuid())
-  key       String   @unique
+  id        String      @id @default(uuid())
+  key       String      @unique
   value     Json
   type      SettingType @default(STRING)
-  category  String   @default("general")
-  isSecret  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  category  String      @default("general")
+  isSecret  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@index([category])
 }
@@ -645,8 +697,8 @@ model Customer {
   state               String
   country             String         @default("India")
   pincode             String?
-  assignedEmployee     String?
-  assignedEmployeeId   String?
+  assignedEmployee    String?
+  assignedEmployeeId  String?
   source              String         @default("Website")
   status              CustomerStatus @default(Prospect)
   notes               String?
@@ -654,9 +706,11 @@ model Customer {
   customerSince       DateTime       @default(now())
   leadId              String?
   convertedFromLeadId String?
+  projectTitle        String?
+  projectType         String?
   createdById         String?
   createdBy           String?
-  updatedBy            String?
+  updatedBy           String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
   isDeleted           Boolean        @default(false)
@@ -678,9 +732,9 @@ model Customer {
 }
 
 model Lead {
-  id                  String             @id @default(uuid())
+  id                  String              @id @default(uuid())
   organizationId      String
-  leadNumber          Int                @default(autoincrement())
+  leadNumber          Int                 @default(autoincrement())
   customerName        String
   companyName         String
   designation         String?
@@ -697,15 +751,15 @@ model Lead {
   area                String?
   city                String?
   state               String?
-  country             String             @default("India")
+  country             String              @default("India")
   pincode             String?
   companySize         String?
   annualRevenue       Float?
-  employeeCount        Int?
+  employeeCount       Int?
   linkedin            String?
   facebook            String?
   instagram           String?
-  profileImage         String?
+  profileImage        String?
   companyLogo         String?
   tags                String[]
   projectTitle        String
@@ -716,13 +770,13 @@ model Lead {
   height              Float?
   baySpacing          Float?
   roofType            RoofType?
-  craneRequired       Boolean            @default(false)
+  craneRequired       Boolean             @default(false)
   craneCapacity       Float?
-  mezzanine           Boolean            @default(false)
+  mezzanine           Boolean             @default(false)
   mezzanineArea       Float?
   mezzanineLoad       Float?
   wallType            WallType?
-  insulationRequired  Boolean            @default(false)
+  insulationRequired  Boolean             @default(false)
   insulationType      String?
   insulationThickness Float?
   materialPreference  MaterialPreference?
@@ -735,25 +789,26 @@ model Lead {
   attachments         String[]
   source              LeadSource
   priority            LeadPriority
-  status              LeadStatus         @default(New)
+  status              LeadStatus          @default(New)
   createdById         String
   assignedToId        String?
   assignedTo          String?
   remarks             String?
   score               Int?
-  isConverted         Boolean            @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  isConverted         Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
   lastFollowUp        DateTime?
   nextFollowUpDate    DateTime?
   createdBy           String?
-  updatedBy            String?
+  updatedBy           String?
   customerId          String?
   convertedDate       DateTime?
-  isDeleted           Boolean            @default(false)
+  isDeleted           Boolean             @default(false)
   deletedAt           DateTime?
   deletedById         String?
   customFields        Json?
+  currentDate         String?
   organization        Organization        @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, leadNumber])
@@ -771,79 +826,79 @@ model Lead {
 }
 
 model Project {
-  id                    String                @id @default(uuid())
-  organizationId        String
-  projectId             Int                   @default(autoincrement())
-  projectCode           String?
-  projectName           String
-  customerId            String
-  customerName          String
-  leadId                String?
-  projectType           String
-  value                 Float?
-  budget                Float?
-  location              String
-  city                  String
-  state                 String
-  pincode               String?
-  startDate             DateTime?
-  endDate               DateTime?
-  priority              ProjectPriority
-  projectManager        String?
-  projectManagerId      String?
-  structureType         String
-  width                 Float?
-  length                Float?
-  height                Float?
-  baySpacing            Float?
-  roofType              String
-  craneSystem           String
-  mezzanine             Boolean              @default(false)
-  wallType              String
-  insulation            Boolean              @default(false)
-  coveredArea           Float?
-  totalWeight           Float?
-  status                String                @default("Lead")
-  stage                 ProjectStage?
-  progress              Int                   @default(0)
-  designProgress        Int                   @default(0)
-  procurementProgress   Int                   @default(0)
-  fabricationProgress   Int                   @default(0)
-  installationProgress  Int                   @default(0)
-  healthStatus          String                @default("Healthy")
-  timelineHealth        String                @default("Healthy")
-  budgetHealth          String                @default("Healthy")
-  materialHealth        String                @default("Healthy")
-  resourceHealth        String                @default("Healthy")
-  materialCost          Float?
-  procurementCost       Float?
-  fabricationCost       Float?
-  installationCost      Float?
-  profitMargin          Float?
-  boqId                 String?
-  designId              String?
-  estimateId            String?
-  proposalId            String?
-  quotationId           String?
-  invoiceIds            String[]
+  id                      String              @id @default(uuid())
+  organizationId          String
+  projectId               Int                 @default(autoincrement())
+  projectCode             String?
+  projectName             String
+  customerId              String
+  customerName            String?
+  leadId                  String?
+  projectType             String
+  value                   Float?
+  budget                  Float?
+  location                String
+  city                    String
+  state                   String
+  pincode                 String?
+  startDate               DateTime?
+  endDate                 DateTime?
+  priority                ProjectPriority
+  projectManager          String?
+  projectManagerId        String
+  structureType           String
+  width                   Float?
+  length                  Float?
+  height                  Float?
+  baySpacing              Float?
+  roofType                String
+  craneSystem             String
+  mezzanine               Boolean             @default(false)
+  wallType                String
+  insulation              Boolean             @default(false)
+  coveredArea             Float?
+  totalWeight             Float?
+  status                  String              @default("Lead")
+  stage                   ProjectStage?
+  progress                Int                 @default(0)
+  designProgress          Int                 @default(0)
+  procurementProgress     Int                 @default(0)
+  fabricationProgress     Int                 @default(0)
+  installationProgress    Int                 @default(0)
+  healthStatus            String              @default("Healthy")
+  timelineHealth          String              @default("Healthy")
+  budgetHealth            String              @default("Healthy")
+  materialHealth          String              @default("Healthy")
+  resourceHealth          String              @default("Healthy")
+  materialCost            Float?
+  procurementCost         Float?
+  fabricationCost         Float?
+  installationCost        Float?
+  profitMargin            Float?
+  boqId                   String?
+  designId                String?
+  estimateId              String?
+  proposalId              String?
+  quotationId             String?
+  invoiceIds              String[]
   inventoryReservationIds String[]
-  reservedItems         String[]
-  consumedItems         String[]
-  customFields          Json?
-  createdById           String?
-  createdBy             String?
-  updatedBy              String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  isDeleted             Boolean               @default(false)
-  deletedAt             DateTime?
-  deletedById           String?
-  organization          Organization          @relation(fields: [organizationId], references: [id])
-  customer              Customer?             @relation(fields: [customerId], references: [id])
-  milestones            ProjectMilestone[]
-  teamMembers           ProjectTeamMember[]
-  activities            ProjectActivity[]
-  tasks                 ProjectTask[]
+  reservedItems           String[]
+  consumedItems           String[]
+  customFields            Json?
+  createdById             String?
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  isDeleted               Boolean             @default(false)
+  deletedAt               DateTime?
+  deletedById             String?
+  organization            Organization        @relation(fields: [organizationId], references: [id])
+  customer                Customer?           @relation(fields: [customerId], references: [id])
+  milestones              ProjectMilestone[]
+  teamMembers             ProjectTeamMember[]
+  activities              ProjectActivity[]
+  tasks                   ProjectTask[]
 
   @@unique([organizationId, projectId])
   @@index([status])
@@ -860,14 +915,14 @@ model Project {
 }
 
 model ProjectMilestone {
-  id          String               @id @default(uuid())
+  id          String                 @id @default(uuid())
   projectId   String
   name        String
   plannedDate DateTime?
   actualDate  DateTime?
   status      ProjectMilestoneStatus @default(Pending)
   delay       Int?
-  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
 }
@@ -887,33 +942,33 @@ model ProjectTeamMember {
 }
 
 model ProjectActivity {
-  id          String             @id @default(uuid())
+  id          String              @id @default(uuid())
   projectId   String
   type        ProjectActivityType
   description String
   performedBy String?
-  performedAt DateTime           @default(now())
+  performedAt DateTime            @default(now())
   metadata    Json?
-  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([projectId, performedAt])
 }
 
 model ProjectTask {
-  id           String           @id @default(uuid())
-  projectId    String
-  title        String
-  description  String?
-  assignedTo   String
+  id             String            @id @default(uuid())
+  projectId      String
+  title          String
+  description    String?
+  assignedTo     String
   assignedToName String?
-  dueDate      DateTime?
-  priority     ProjectPriority
-  status       ProjectTaskStatus @default(Pending)
-  dependencies String[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dueDate        DateTime?
+  priority       ProjectPriority
+  status         ProjectTaskStatus @default(Pending)
+  dependencies   String[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([projectId, status])
@@ -921,37 +976,53 @@ model ProjectTask {
 }
 
 model Task {
-  id             String     @id @default(uuid())
-  title          String
-  description    String?
-  status         TaskStatus @default(Pending)
-  priority       TaskPriority @default(Medium)
-  category       TaskCategory @default(General)
-  dueDate        DateTime?
-  assignedTo     String?
-  assignedUserId  String?
-  assignedUserName String?
-  createdById    String?
-  projectId      String?
-  taskId         String?
-  startDate      DateTime?
-  progress       Int?
-  estimatedHours Float?
-  timeSpent      Float?
-  completedAt    DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  isDeleted      Boolean    @default(false)
-  deletedAt      DateTime?
-  deletedById    String?
-  organizationId String?
-  checklists     TaskChecklist[]
-  comments       TaskComment[]
-  attachments    TaskAttachment[]
-  dependencies   TaskDependency[] @relation("TaskDependencies")
-  dependsOn      TaskDependency[] @relation("DependentTasks")
-  activityLogs   TaskActivityLog[]
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  id                String            @id @default(uuid())
+  title             String
+  description       String?
+  status            TaskStatus        @default(Pending)
+  priority          TaskPriority      @default(Medium)
+  category          TaskCategory      @default(General)
+  dueDate           DateTime?
+  assignedTo        String?
+  assignedUserId    String?
+  assignedUserName  String?
+  createdById       String?
+  createdByName     String?
+  projectId         String?
+  taskId            String?
+  leadId            String?
+  customerId        String?
+  documentId        String?
+  startDate         DateTime?
+  reminderDate      DateTime?
+  progress          Int?
+  estimatedHours    Float?
+  timeSpent         Float?
+  completedAt       DateTime?
+  verifiedAt        DateTime?
+  verifiedBy        String?
+  verifiedByName    String?
+  verificationNotes String?
+  completionNotes   String?
+  completionProof   Json?
+  afterImages       String[]
+  beforeImages      String[]
+  incentiveValue    Float             @default(0)
+  tags              String[]
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  isDeleted         Boolean           @default(false)
+  deletedAt         DateTime?
+  deletedById       String?
+  organizationId    String?
+  checklists        TaskChecklist[]
+  comments          TaskComment[]
+  attachments       TaskAttachment[]
+  dependencies      TaskDependency[]  @relation("TaskDependencies")
+  dependsOn         TaskDependency[]  @relation("DependentTasks")
+  activityLogs      TaskActivityLog[]
+  organization      Organization?     @relation(fields: [organizationId], references: [id])
 
   @@index([status])
   @@index([priority])
@@ -1088,44 +1159,63 @@ model InventoryCategory {
 }
 
 model InventoryItem {
-  id             String       @id @default(uuid())
-  organizationId String
-  name           String
-  code           String
-  description    String?
-  currentStock   Float?
-  purchaseRate   Float?
-  minimumStock   Float?
-  reorderLevel   Float?
-  totalValue     Float?
-  status         String?
-  category       String?
-  warehouseId    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  warehouse      Warehouse?    @relation(fields: [warehouseId], references: [id])
+  id              String       @id @default(uuid())
+  organizationId  String
+  itemNumber      Int          @default(autoincrement())
+  itemName        String
+  itemCode        String
+  itemMasterId    String?
+  description     String?
+  unit            String?
+  currentStock    Float        @default(0)
+  reservedStock   Float        @default(0)
+  issuedStock     Float        @default(0)
+  minimumStock    Float        @default(0)
+  reorderLevel    Float        @default(0)
+  safetyStock     Float        @default(0)
+  purchaseRate    Float        @default(0)
+  totalValue      Float        @default(0)
+  status          String?
+  category        String?
+  brand           String?
+  itemTypeClass   String?
+  warehouseId     String?
+  warehouseName   String?
+  binLocation     String?
+  supplierId      String?
+  reorderQuantity Float?
+  tags            String[]
+  customFields    Json?
+  lastUpdated     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  isDeleted       Boolean      @default(false)
+  deletedAt       DateTime?
+  deletedById     String?
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  warehouse       Warehouse?   @relation(fields: [warehouseId], references: [id])
 
+  @@unique([organizationId, itemCode])
   @@index([organizationId])
   @@index([isDeleted])
   @@index([warehouseId])
   @@index([status])
   @@index([category])
+  @@index([itemCode])
 }
 
 model ItemBundle {
-  id             String       @id @default(uuid())
+  id             String           @id @default(uuid())
   organizationId String
   name           String
   bundleCode     String?
   bundleName     String?
   bundleRate     Float?
   description    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  isDeleted      Boolean          @default(false)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
   items          ItemBundleItem[]
 
   @@index([organizationId])
@@ -1133,26 +1223,26 @@ model ItemBundle {
 }
 
 model ItemBundleItem {
-  id          String   @id @default(uuid())
-  bundleId    String
-  itemId      String
-  quantity    Float
-  createdAt   DateTime @default(now())
-  bundle      ItemBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  id        String     @id @default(uuid())
+  bundleId  String
+  itemId    String
+  quantity  Float
+  createdAt DateTime   @default(now())
+  bundle    ItemBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
 
   @@index([bundleId])
   @@index([itemId])
 }
 
 model ItemMaster {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   organizationId String
   name           String?
   description    String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  isDeleted      Boolean       @default(false)
+  organization   Organization  @relation(fields: [organizationId], references: [id])
   variants       ItemVariant[]
 
   @@index([organizationId])
@@ -1177,7 +1267,7 @@ model ItemVariant {
   updatedAt      DateTime     @updatedAt
   isDeleted      Boolean      @default(false)
   organization   Organization @relation(fields: [organizationId], references: [id])
-  itemMaster     ItemMaster?   @relation(fields: [itemMasterId], references: [id])
+  itemMaster     ItemMaster?  @relation(fields: [itemMasterId], references: [id])
 
   @@index([organizationId])
   @@index([isDeleted])
@@ -1185,47 +1275,96 @@ model ItemVariant {
 }
 
 model PurchaseOrder {
-  id                    String                @id @default(uuid())
-  organizationId        String
-  orderNumber           String?
-  poNumber              String?
-  vendorId              String?
-  vendorName            String?
-  status                PurchaseOrderStatus  @default(Draft)
-  grandTotal            Float?
-  revision              Int                   @default(0)
-  discount              Float?
-  discountType          String?
-  freight               Float?
-  packingCharges        Float?
-  shippingCharges       Float?
-  otherCharges          Float?
-  subtotal              Float?
-  tax                   Float?
-  roundOff              Float?
-  currency              String                @default("INR")
-  terms                 String?
-  paymentTerms          String?
-  warehouseId           String?
-  expectedDeliveryDate   DateTime?
-  projectName           String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  isDeleted             Boolean              @default(false)
-  organization          Organization          @relation(fields: [organizationId], references: [id])
-  vendor                Vendor?               @relation(fields: [vendorId], references: [id])
-  items                 PurchaseOrderItem[]
-  timeline              PurchaseOrderTimeline[]
+  id                   String                  @id @default(uuid())
+  organizationId       String
+  orderNumber          String?
+  poNumber             String?
+  poNumberInt          Int?                    @default(autoincrement())
+  vendorId             String?
+  vendorName           String?
+  projectId            String?
+  projectName          String?
+  warehouseId          String?
+  warehouseName        String?
+  paymentTerms         String?
+  expectedDeliveryDate DateTime?
+  status               PurchaseOrderStatus     @default(Draft)
+  revision             Int                     @default(0)
+  revisionNote         String?
+  currency             String                  @default("INR")
+  subtotal             Float?
+  discount             Float?
+  discountType         String?
+  tax                  Float?
+  freight              Float?
+  packingCharges       Float?
+  shippingCharges      Float?
+  otherCharges         Float?
+  roundOff             Float?
+  grandTotal           Float?
+  notes                String?
+  terms                String?
+  internalNotes        String?
+  approvedById         String?
+  approvedBy           String?
+  approvedAt           DateTime?
+  rejectedById         String?
+  rejectedBy           String?
+  rejectedAt           DateTime?
+  rejectReason         String?
+  sentToVendor         Boolean                 @default(false)
+  sentAt               DateTime?
+  actualDeliveryDate   DateTime?
+  pdfGenerated         Boolean                 @default(false)
+  pdfUrl               String?
+  customFields         Json?
+  shipToName           String?
+  shipToCompanyName    String?
+  shipToAddress        String?
+  shipToCity           String?
+  shipToState          String?
+  shipToPincode        String?
+  shipToCountry        String?                 @default("India")
+  shipToPhone          String?
+  shipToEmail          String?
+  shipToGstNumber      String?
+  supplierName         String?
+  supplierCompanyName  String?
+  supplierAddress      String?
+  supplierCity         String?
+  supplierState        String?
+  supplierPincode      String?
+  supplierCountry      String?                 @default("India")
+  supplierPhone        String?
+  supplierEmail        String?
+  supplierGstNumber    String?
+  createdById          String?
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  isDeleted            Boolean                 @default(false)
+  deletedAt            DateTime?
+  deletedById          String?
+  organization         Organization            @relation(fields: [organizationId], references: [id])
+  vendor               Vendor?                 @relation(fields: [vendorId], references: [id])
+  items                PurchaseOrderItem[]
+  timeline             PurchaseOrderTimeline[]
 
   @@index([organizationId])
   @@index([isDeleted])
   @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model PurchaseOrderItem {
-  id               String   @id @default(uuid())
-  purchaseOrderId   String
+  id               String        @id @default(uuid())
+  organizationId   String?
+  purchaseOrderId  String
+  itemMasterId     String?
   itemId           String?
+  itemCode         String?
   itemName         String
   description      String?
   quantity         Float
@@ -1241,25 +1380,32 @@ model PurchaseOrderItem {
   gstAmount        Float?
   hsnCode          String?
   total            Float?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  receivedDate     DateTime?
+  customFields     Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
   @@index([itemId])
+  @@index([itemMasterId])
+  @@index([organizationId])
 }
 
 model PurchaseOrderTimeline {
-  id             String   @id @default(uuid())
+  id              String        @id @default(uuid())
+  organizationId  String?
   purchaseOrderId String
-  action         String
-  performedBy    String?
+  action          String
+  performedById   String?
+  performedBy     String?
   performedByName String?
-  metadata       Json?
-  createdAt      DateTime @default(now())
-  purchaseOrder  PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
+  @@index([organizationId])
   @@index([createdAt])
 }
 
@@ -1279,18 +1425,18 @@ model NumberSequence {
 }
 
 model StockMovement {
-  id             String       @id @default(uuid())
-  organizationId String
-  type           String
-  quantity       Float
-  performedBy    String?
-  movementNumber String?
-  warehouseName  String?
+  id              String       @id @default(uuid())
+  organizationId  String
+  type            String
+  quantity        Float
+  performedBy     String?
+  movementNumber  String?
+  warehouseName   String?
   referenceNumber String?
-  date           DateTime     @default(now())
-  createdAt      DateTime     @default(now())
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  date            DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  isDeleted       Boolean      @default(false)
+  organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([isDeleted])
@@ -1311,52 +1457,57 @@ model Supplier {
 }
 
 model Vendor {
-  id             String       @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
-  name           String?
   companyName    String?
-  contact        String?
+  contactPerson  String?
   email          String?
   phone          String?
+  mobile         String?
   address        String?
   city           String?
   state          String?
-  country        String?
+  country        String?         @default("India")
   pincode        String?
   gstNumber      String?
+  gstRegistered  Boolean         @default(false)
   panNumber      String?
-  status         String?
+  status         String?         @default("Active")
+  rating         String?
   creditDays     Int?
   creditLimit    Float?
   paymentTerms   String?
   notes          String?
   outstanding    Float?
-  contactPerson  String?
   createdBy      String?
   createdById    String?
   updatedBy      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isDeleted      Boolean         @default(false)
+  deletedAt      DateTime?
+  deletedById    String?
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   purchaseOrders PurchaseOrder[]
 
   @@index([organizationId])
   @@index([isDeleted])
+  @@index([status])
+  @@index([companyName])
 }
 
 model Warehouse {
-  id             String       @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
   name           String
   code           String?
   warehouseCode  String?
   location       String?
   address        String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isDeleted      Boolean         @default(false)
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   inventoryItems InventoryItem[]
 
   @@index([organizationId])
@@ -1405,22 +1556,22 @@ model Attachment {
 }
 
 model ApprovalRequest {
-  id             String   @id @default(uuid())
-  organizationId String?
-  entityType     String
-  entityId       String
-  requestedBy    String?
+  id              String    @id @default(uuid())
+  organizationId  String?
+  entityType      String
+  entityId        String
+  requestedBy     String?
   requestedByName String?
-  requestedById  String?
-  approverId     String?
-  level          Int?
-  status         String   @default("Pending")
-  requestedAt    DateTime @default(now())
-  reviewedAt     DateTime?
-  reviewedBy     String?
-  reviewedByName String?
-  comments       String?
-  metadata       Json?
+  requestedById   String?
+  approverId      String?
+  level           Int?
+  status          String    @default("Pending")
+  requestedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  reviewedByName  String?
+  comments        String?
+  metadata        Json?
 
   @@index([entityType, entityId])
   @@index([organizationId])
@@ -1472,14 +1623,14 @@ model StatusPipeline {
 
 // Workflow models
 model BusinessEvent {
-  id             String   @id @default(uuid())
-  entityType     String
-  entityId       String
-  eventType      String
-  data           Json?
-  triggeredBy    String?
-  createdById    String?
-  createdAt      DateTime @default(now())
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  eventType   String
+  data        Json?
+  triggeredBy String?
+  createdById String?
+  createdAt   DateTime @default(now())
 
   @@index([entityType, entityId])
   @@index([eventType])

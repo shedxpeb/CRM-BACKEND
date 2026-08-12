@@ -126,22 +126,8 @@ export class LeadController {
     @CurrentUser('id') createdById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    // Temporary logging for debugging 400 error
-    console.log('[LEAD CREATE DEBUG] Request body:', JSON.stringify(dto, null, 2));
-    console.log('[LEAD CREATE DEBUG] DTO after validation:', JSON.stringify(dto, null, 2));
-    console.log('[LEAD CREATE DEBUG] createdById:', createdById);
-    console.log('[LEAD CREATE DEBUG] organizationId:', organizationId);
-
-    try {
-      const data = await this.leadService.create(dto, createdById, organizationId);
-      console.log('[LEAD CREATE DEBUG] Success - Lead created:', data.id);
-      return { message: 'Lead created successfully.', data };
-    } catch (error) {
-      console.error('[LEAD CREATE DEBUG] Error:', error);
-      console.error('[LEAD CREATE DEBUG] Error message:', error.message);
-      console.error('[LEAD CREATE DEBUG] Error stack:', error.stack);
-      throw error;
-    }
+    const data = await this.leadService.create(dto, createdById, organizationId);
+    return { message: 'Lead created successfully.', data };
   }
 
   @Get(':id/project-data')
