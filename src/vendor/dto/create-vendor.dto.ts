@@ -1,11 +1,11 @@
-import { IsString, IsOptional, IsEmail, IsNumber, IsArray, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsNumber, IsArray, IsObject, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateVendorDto {
   @ApiProperty()
   @IsString()
-  companyName: string;
+  companyName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -14,12 +14,17 @@ export class CreateVendorDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsBoolean()
+  gstRegistered?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   panNumber?: string;
 
   @ApiProperty()
   @IsString()
-  contactPerson: string;
+  contactPerson?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -28,7 +33,12 @@ export class CreateVendorDto {
 
   @ApiProperty()
   @IsString()
-  phone: string;
+  mobile?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -57,9 +67,8 @@ export class CreateVendorDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsObject()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  bankDetails?: any;
+  @IsString()
+  rating?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

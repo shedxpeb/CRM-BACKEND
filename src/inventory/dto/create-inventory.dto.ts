@@ -50,8 +50,9 @@ export class CreateInventoryItemDto {
   @IsString()
   warehouseId?: string;
 
+  @IsOptional()
   @IsString()
-  warehouseName: string;
+  warehouseName?: string;
 
   @IsOptional()
   @IsString()

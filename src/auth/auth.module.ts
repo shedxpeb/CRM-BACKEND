@@ -10,7 +10,10 @@ import { SessionService } from './services/session.service';
 import { AuditService } from './services/audit.service';
 import { LoginProtectionService } from './services/login-protection.service';
 import { OtpService } from './services/otp.service';
+import { EnhancedSessionService } from './services/enhanced-session.service';
 import { CookieInterceptor } from './cookie.interceptor';
+import { PermissionsModule } from '../permissions/permissions.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -26,6 +29,8 @@ import { CookieInterceptor } from './cookie.interceptor';
         },
       }),
     }),
+    PrismaModule,
+    PermissionsModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -36,9 +41,10 @@ import { CookieInterceptor } from './cookie.interceptor';
     AuditService,
     LoginProtectionService,
     OtpService,
+    EnhancedSessionService,
     CookieInterceptor,
   ],
-  exports: [AuthService, TokenService, SessionService, AuditService, OtpService, JwtModule],
+  exports: [AuthService, TokenService, SessionService, AuditService, OtpService, EnhancedSessionService, JwtModule],
 })
 export class AuthModule {
   static readonly moduleCapability = { capability: 'auth' } as const;

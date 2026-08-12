@@ -13,6 +13,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { OrganizationGuard } from './common/guards/organization.guard';
+import { ModuleAccessGuard } from './auth/guards/module-access.guard';
+import { DataIsolationGuard } from './common/guards/data-isolation.guard';
 import { CustomerModule } from './customer/customer.module';
 import { ProjectModule } from './project/project.module';
 import { OrganizationModule } from './organization/organization.module';
@@ -29,6 +31,8 @@ import { PdfModule } from './pdf/pdf.module';
 import { TaskModule } from './task/task.module';
 import { DocumentModule } from './document/document.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { OrganizationBootstrapModule } from './organizations/organization-bootstrap.module';
 
 @Module({
   imports: [
@@ -64,6 +68,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     TaskModule,
     DocumentModule,
     DashboardModule,
+    PermissionsModule,
+    OrganizationBootstrapModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -71,6 +77,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: OrganizationGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: ModuleAccessGuard },
+    { provide: APP_GUARD, useClass: DataIsolationGuard },
   ],
 })
 export class AppModule {}
