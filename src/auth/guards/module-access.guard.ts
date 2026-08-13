@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PermissionInheritanceService } from '../../permissions/permission-inheritance.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { normalizeModuleKey, getModuleKeyAliases } from '../../common/utils/module-key.util';
 
 /**
  * Module Access Guard
@@ -23,13 +24,14 @@ export class ModuleAccessGuard implements CanActivate {
   private readonly logger = new Logger(ModuleAccessGuard.name);
 
   // Module permissions mapping based on HTTP method and endpoint patterns
+  // Note: Keys are singular (matching permission format), not plural
   private readonly modulePermissionMap = {
     // Dashboard module
     dashboard: {
-      GET: ['dashboard.view'],
+      GET: ['dashboard:view'],
     },
     // Lead module
-    leads: {
+    lead: {
       GET: ['lead:list', 'lead:read'],
       POST: ['lead:create'],
       PUT: ['lead:update'],
@@ -37,7 +39,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['lead:delete'],
     },
     // Customer module
-    customers: {
+    customer: {
       GET: ['customer:list', 'customer:read'],
       POST: ['customer:create'],
       PUT: ['customer:update'],
@@ -45,7 +47,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['customer:delete'],
     },
     // Project module
-    projects: {
+    project: {
       GET: ['project:list', 'project:read'],
       POST: ['project:create'],
       PUT: ['project:update'],
@@ -61,7 +63,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['inventory:delete'],
     },
     // Purchase orders module
-    'purchase-orders': {
+    'purchase-order': {
       GET: ['purchase-order:list', 'purchase-order:read'],
       POST: ['purchase-order:create'],
       PUT: ['purchase-order:update'],
@@ -69,7 +71,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['purchase-order:delete'],
     },
     // Users module
-    users: {
+    user: {
       GET: ['user:list', 'user:read'],
       POST: ['user:create'],
       PUT: ['user:update'],
@@ -77,7 +79,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['user:delete'],
     },
     // Roles module
-    roles: {
+    role: {
       GET: ['role:list', 'role:read'],
       POST: ['role:create'],
       PUT: ['role:update'],
@@ -85,7 +87,7 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['role:delete'],
     },
     // Tasks module
-    tasks: {
+    task: {
       GET: ['task:list', 'task:read'],
       POST: ['task:create'],
       PUT: ['task:update'],
@@ -93,12 +95,12 @@ export class ModuleAccessGuard implements CanActivate {
       DELETE: ['task:delete'],
     },
     // Reports module
-    reports: {
+    report: {
       GET: ['report:list', 'report:read'],
       POST: ['report:export'],
     },
     // Vendors module
-    vendors: {
+    vendor: {
       GET: ['vendor:list', 'vendor:read'],
       POST: ['vendor:create'],
       PUT: ['vendor:update'],
@@ -166,19 +168,31 @@ export class ModuleAccessGuard implements CanActivate {
       return true;
     }
 
-    // Check if module is enabled for organization
-    const moduleAccess = await this.prisma.organizationModule.findUnique({
-      where: {
-        organizationId_moduleKey: {
-          organizationId: user.organizationId,
-          moduleKey,
-        },
-      },
-    });
+    // Resolve module enablement. Stored keys may be plural from legacy
+    // provisioning; canonical keys are singular (matching permission prefix).
+    const moduleAccess = await this.findOrganizationModule(user.organizationId, moduleKey);
 
-    if (!moduleAccess || !moduleAccess.enabled) {
+    if (!moduleAccess) {
+      // No explicit configuration row for this module. If the organization has
+      // NO module configuration at all (legacy org), default to all modules
+      // enabled (matches OrganizationModule.enabled default and bootstrap
+      // behavior). If it has rows but not this module, deny explicitly.
+      const moduleRowCount = await this.prisma.organizationModule.count({
+        where: { organizationId: user.organizationId },
+      });
+      if (moduleRowCount === 0) {
+        this.logger.debug(
+          `Organization ${user.organizationId} has no module configuration; defaulting module ${moduleKey} to enabled`,
+        );
+      } else {
+        this.logger.warn(
+          `Module ${moduleKey} not accessible for organization ${user.organizationId}`,
+        );
+        throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
+      }
+    } else if (!moduleAccess.enabled) {
       this.logger.warn(
-        `Module ${moduleKey} not accessible for organization ${user.organizationId}`,
+        `Module ${moduleKey} disabled for organization ${user.organizationId}`,
       );
       throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
     }
@@ -196,14 +210,21 @@ export class ModuleAccessGuard implements CanActivate {
       user.organizationId,
     );
 
+    this.logger.debug(
+      `Module access check for user ${user.id}: Module ${moduleKey}, Method ${method}, Required [${requiredPermissions.join(', ')}], UserPermissions [${userPermissions.join(', ')}]`,
+    );
+
     // Check if user has all required permissions
     const hasAllPermissions = requiredPermissions.every(
       (perm) => userPermissions.includes('*') || userPermissions.includes(perm),
     );
 
     if (!hasAllPermissions) {
-      this.logger.warn(
-        `User ${user.id} lacks required permissions ${requiredPermissions.join(', ')} for module ${moduleKey}`,
+      const missing = requiredPermissions.filter(
+        (perm) => !userPermissions.includes('*') && !userPermissions.includes(perm),
+      );
+      this.logger.error(
+        `Module access denied for user ${user.id}: Missing permissions [${missing.join(', ')}] for module ${moduleKey}. Required: [${requiredPermissions.join(', ')}], User has: [${userPermissions.join(', ')}]`,
       );
       throw new ForbiddenException('Insufficient permissions for this module');
     }
@@ -214,11 +235,13 @@ export class ModuleAccessGuard implements CanActivate {
   /**
    * Extract module key from URL
    * Examples:
-   * /leads -> leads
-   * /customers/123 -> customers
-   * /api/projects -> projects
-   * /lead -> leads (normalized to plural)
-   * /customer -> customers (normalized to plural)
+   * /leads -> lead
+   * /customers/123 -> customer
+   * /api/projects -> project
+   * /lead -> lead
+   * /customer -> customer
+   *
+   * Note: Returns singular form to match permission format (e.g., 'customer:list')
    */
   private extractModuleKey(url: string): string | null {
     // Remove query parameters and trailing slashes
@@ -239,25 +262,31 @@ export class ModuleAccessGuard implements CanActivate {
     // Normalize module key (replace hyphens with underscores)
     moduleKey = moduleKey.replace(/-/g, '_');
 
-    // Normalize singular to plural for known modules
-    const singularToPlural: Record<string, string> = {
-      lead: 'leads',
-      customer: 'customers',
-      user: 'users',
-      role: 'roles',
-      task: 'tasks',
-      project: 'projects',
-      vendor: 'vendors',
-      report: 'reports',
+    // Normalize plural to singular for known modules to match permission format
+    const pluralToSingular: Record<string, string> = {
+      leads: 'lead',
+      customers: 'customer',
+      users: 'user',
+      roles: 'role',
+      tasks: 'task',
+      projects: 'project',
+      vendors: 'vendor',
+      reports: 'report',
     };
 
-    return singularToPlural[moduleKey] || moduleKey;
+    return pluralToSingular[moduleKey] || moduleKey;
   }
 
   /**
-   * Get required permissions for a module based on HTTP method and URL
+   * Get required permissions for a module based on HTTP method.
+   *
+   * Action-specific endpoints (export/import/approve/manage/restore) are
+   * already enforced by controller-level @RequirePermissions decorators
+   * (e.g. `customer:list` for /customer/export), so only the base method
+   * permissions are checked here. Overriding them here with non-existent
+   * dot-delimited keys (e.g. `customer.export`) caused spurious 403s.
    */
-  private getRequiredPermissions(moduleKey: string, method: string, url: string): string[] {
+  private getRequiredPermissions(moduleKey: string, method: string, _url: string): string[] {
     // Get base permissions for module and method
     const modulePermissions = this.modulePermissionMap[moduleKey];
     if (!modulePermissions) {
@@ -269,44 +298,47 @@ export class ModuleAccessGuard implements CanActivate {
       return [];
     }
 
-    // Check for special actions in URL
-    if (url.includes('/approve') || url.includes('/approve')) {
-      return [`${moduleKey}.approve`];
-    }
-
-    if (url.includes('/export') || url.includes('/export')) {
-      return [`${moduleKey}.export`];
-    }
-
-    if (url.includes('/import') || url.includes('/import')) {
-      return [`${moduleKey}.import`];
-    }
-
-    if (url.includes('/manage') || url.includes('/manage')) {
-      return [`${moduleKey}.manage`];
-    }
-
     return methodPermissions;
+  }
+
+  /**
+   * Find an organization module row, tolerating legacy plural keys.
+   */
+  private async findOrganizationModule(
+    organizationId: string,
+    moduleKey: string,
+  ): Promise<{ enabled: boolean } | null> {
+    const canonical = normalizeModuleKey(moduleKey);
+    const candidates = [canonical, ...getModuleKeyAliases(canonical)];
+
+    for (const key of candidates) {
+      const row = await this.prisma.organizationModule.findUnique({
+        where: {
+          organizationId_moduleKey: { organizationId, moduleKey: key },
+        },
+        select: { enabled: true },
+      });
+      if (row) return row;
+    }
+    return null;
   }
 
   /**
    * Check if a specific module is enabled for an organization
    */
   async isModuleEnabled(organizationId: string, moduleKey: string): Promise<boolean> {
-    const moduleAccess = await this.prisma.organizationModule.findUnique({
-      where: {
-        organizationId_moduleKey: {
-          organizationId,
-          moduleKey,
-        },
-      },
-    });
+    const moduleAccess = await this.findOrganizationModule(organizationId, moduleKey);
+    if (moduleAccess) return moduleAccess.enabled;
 
-    return moduleAccess?.enabled || false;
+    // No module configuration at all -> all modules enabled by default
+    const moduleRowCount = await this.prisma.organizationModule.count({
+      where: { organizationId },
+    });
+    return moduleRowCount === 0;
   }
 
   /**
-   * Get all enabled modules for an organization
+   * Get all enabled modules for an organization (canonical singular keys)
    */
   async getEnabledModules(organizationId: string): Promise<string[]> {
     const enabledModules = await this.prisma.organizationModule.findMany({
@@ -319,24 +351,28 @@ export class ModuleAccessGuard implements CanActivate {
       },
     });
 
-    return enabledModules.map((m) => m.moduleKey);
+    const keys = enabledModules.map((m) => normalizeModuleKey(m.moduleKey));
+    return Array.from(new Set(keys));
   }
 
   /**
    * Get module-specific permissions for an organization
    */
   async getModulePermissions(organizationId: string, moduleKey: string): Promise<string[]> {
-    const moduleAccess = await this.prisma.organizationModule.findUnique({
-      where: {
-        organizationId_moduleKey: {
-          organizationId,
-          moduleKey,
+    const canonical = normalizeModuleKey(moduleKey);
+    const candidates = [canonical, ...getModuleKeyAliases(canonical)];
+    let moduleAccess: { settings: unknown } | null = null;
+    for (const key of candidates) {
+      moduleAccess = await this.prisma.organizationModule.findUnique({
+        where: {
+          organizationId_moduleKey: { organizationId, moduleKey: key },
         },
-      },
-      select: {
-        settings: true,
-      },
-    });
+        select: {
+          settings: true,
+        },
+      });
+      if (moduleAccess) break;
+    }
 
     if (!moduleAccess?.settings) {
       // Return default permissions for module

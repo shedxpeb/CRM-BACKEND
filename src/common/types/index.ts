@@ -18,5 +18,7 @@ export interface CurrentUser {
   name?: string;
   role: string;
   organizationId?: string;
+  tenantId?: string;
+  crmOrganizationId?: string;
   organizationType?: string;
 }

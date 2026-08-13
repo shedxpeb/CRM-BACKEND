@@ -17,6 +17,8 @@ export class TokenService {
     email: string;
     role: string;
     organizationId?: string;
+    tenantId?: string;
+    crmOrganizationId?: string;
     sessionId: string;
     permissionVersion?: number;
     passwordVersion?: number;
@@ -27,6 +29,8 @@ export class TokenService {
         email: params.email,
         role: params.role,
         organizationId: params.organizationId,
+        tenantId: params.tenantId || params.organizationId,
+        crmOrganizationId: params.crmOrganizationId || params.organizationId,
         sessionId: params.sessionId,
         permissionVersion: params.permissionVersion || 1,
         tokenVersion: 1,

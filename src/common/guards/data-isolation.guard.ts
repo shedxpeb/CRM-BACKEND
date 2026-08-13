@@ -58,18 +58,23 @@ export class DataIsolationGuard implements CanActivate {
     this.validateNoOrganizationIdManipulation(request);
 
     // Extract resource ID from request if applicable
-    const resourceId = this.extractResourceId(request);
-    if (resourceId) {
+    const resource = this.extractResourceId(request);
+    if (resource?.id) {
+      // Fastify v5 exposes request.routeOptions (v4: request.route); fall back
+      // to the request URL so resource-type detection still works.
+      const routePath =
+        request.routeOptions?.path || request.route?.path || request.url || '';
       const hasAccess = await this.validateResourceOwnership(
-        resourceId,
+        resource.id,
         user.organizationId,
         user.id,
-        request.route.path,
+        routePath,
+        resource.field,
       );
 
       if (!hasAccess) {
         this.logger.warn(
-          `Data isolation violation: User ${user.id} attempted to access resource ${resourceId} in organization ${user.organizationId}`,
+          `Data isolation violation: User ${user.id} attempted to access resource ${resource.id} in organization ${user.organizationId}`,
         );
         throw new ForbiddenException('Resource not found or access denied');
       }
@@ -86,10 +91,12 @@ export class DataIsolationGuard implements CanActivate {
     organizationId: string,
     userId: string,
     routePath: string,
+    idField?: string,
   ): Promise<boolean> {
     try {
-      // Determine resource type based on route path
-      const resourceType = this.determineResourceType(routePath);
+      // Determine resource type based on the ID field (body references like
+      // leadId/customerId) or the route path (params.id)
+      const resourceType = this.determineResourceType(routePath, idField);
 
       // Validate ownership based on resource type
       switch (resourceType) {
@@ -213,9 +220,22 @@ export class DataIsolationGuard implements CanActivate {
   }
 
   /**
-   * Determine resource type from route path
+   * Determine resource type from the ID field name (body references) or the
+   * route path (params.id).
    */
-  private determineResourceType(routePath: string): string {
+  private determineResourceType(routePath: string, idField?: string): string {
+    if (idField) {
+      const fieldToType: Record<string, string> = {
+        leadId: 'lead',
+        customerId: 'customer',
+        projectId: 'project',
+        userId: 'user',
+        roleId: 'role',
+        taskId: 'task',
+      };
+      if (fieldToType[idField]) return fieldToType[idField];
+    }
+
     const path = routePath.toLowerCase();
 
     if (path.includes('/lead')) return 'lead';
@@ -229,12 +249,14 @@ export class DataIsolationGuard implements CanActivate {
   }
 
   /**
-   * Extract resource ID from request
+   * Extract resource ID from request, along with the body field it came from
+   * (when extracted from the body) so the resource type can be resolved
+   * correctly (e.g. leadId -> lead, not the URL's module).
    */
-  private extractResourceId(request: any): string | null {
+  private extractResourceId(request: any): { id: string; field?: string } | null {
     // Check route parameters
     if (request.params && request.params.id) {
-      return request.params.id;
+      return { id: request.params.id };
     }
 
     // Check request body for common ID fields
@@ -242,7 +264,7 @@ export class DataIsolationGuard implements CanActivate {
       const idFields = ['id', 'leadId', 'customerId', 'projectId', 'userId', 'roleId', 'taskId'];
       for (const field of idFields) {
         if (request.body[field]) {
-          return request.body[field];
+          return { id: request.body[field], field };
         }
       }
     }
