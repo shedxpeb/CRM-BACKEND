@@ -39,12 +39,8 @@ export class PdfEngine {
   private pageHeight: number;
   private currentY: number;
   private pageCount = 0;
-  private headerCallback:
-    | ((doc: any, pageNum: number, totalPages: number) => void)
-    | null = null;
-  private footerCallback:
-    | ((doc: any, pageNum: number, totalPages: number) => void)
-    | null = null;
+  private headerCallback: ((doc: any, pageNum: number, totalPages: number) => void) | null = null;
+  private footerCallback: ((doc: any, pageNum: number, totalPages: number) => void) | null = null;
   private stream: PassThrough;
   private assetsPath: string;
 

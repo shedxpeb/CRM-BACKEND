@@ -1,5 +1,4 @@
 import { FONTS } from './colors';
-import PDFDocument from 'pdfkit';
 
 /**
  * Word-wrap a string into lines that fit within maxWidth using the given font.
