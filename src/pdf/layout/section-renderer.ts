@@ -414,7 +414,7 @@ export class SectionRenderer {
   }
 
   private measureRowHeight(
-    doc: PDFKit.PDFDocument,
+    doc: PDFDocument,
     item: TableData['items'][0],
     cw: number,
   ): number {

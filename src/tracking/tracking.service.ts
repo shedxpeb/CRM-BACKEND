@@ -534,7 +534,6 @@ export class TrackingService {
               label: def.label,
               color: def.color,
               isInitial: !!def.isInitial,
-              isFinal: !!def.isFinal,
             },
           }),
         );
@@ -966,7 +965,7 @@ export class TrackingService {
 
     const updated = await this.prisma.approvalRequest.update({
       where: { id: approvalId },
-      data: { status, comment, respondedAt: new Date() },
+      data: { status, comment, reviewedAt: new Date() },
     });
 
     await this.workflowEngine.processEvent({
