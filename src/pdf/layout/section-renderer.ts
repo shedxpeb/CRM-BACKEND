@@ -413,11 +413,7 @@ export class SectionRenderer {
     return currentY;
   }
 
-  private measureRowHeight(
-    doc: PDFDocument,
-    item: TableData['items'][0],
-    cw: number,
-  ): number {
+  private measureRowHeight(doc: PDFDocument, item: TableData['items'][0], cw: number): number {
     const itemColWidth = Math.max(110, cw - 318);
     const nameLines = wrapText(doc, item.name, FONTS.regular, 6.8, itemColWidth - 10);
     const descLines = item.description

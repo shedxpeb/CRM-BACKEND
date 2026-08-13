@@ -45,7 +45,7 @@ export class TenantContextService {
     this.storage.disable();
   }
 
-  setPrismaClient(prismaClient: any): void {
+  setPrismaClient(_prismaClient: any): void {
     // Store reference if needed for future use
   }
 }
