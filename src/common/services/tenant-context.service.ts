@@ -3,6 +3,8 @@ import { AsyncLocalStorage } from 'async_hooks';
 
 export interface TenantContext {
   organizationId: string;
+  tenantId?: string;
+  crmOrganizationId?: string;
   userId: string;
   isSuperAdmin: boolean;
   isImpersonation: boolean;
@@ -23,6 +25,14 @@ export class TenantContextService {
 
   getOrganizationId(): string | undefined {
     return this.storage.getStore()?.organizationId;
+  }
+
+  getTenantId(): string | undefined {
+    return this.storage.getStore()?.tenantId || this.storage.getStore()?.organizationId;
+  }
+
+  getCrmOrganizationId(): string | undefined {
+    return this.storage.getStore()?.crmOrganizationId || this.storage.getStore()?.organizationId;
   }
 
   getUserId(): string | undefined {

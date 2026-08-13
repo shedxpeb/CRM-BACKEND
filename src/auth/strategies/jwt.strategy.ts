@@ -10,6 +10,8 @@ export interface JwtPayload {
   email: string;
   role: string;
   organizationId?: string;
+  tenantId?: string;
+  crmOrganizationId?: string;
   sessionId: string;
   permissionVersion: number;
   tokenVersion: number;
@@ -74,13 +76,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     await this.sessionService.touchSession(payload.sessionId);
 
+    // Validate tenant context - ensure organizationId is present for non-super-admin users
+    const resolvedOrganizationId = user.organizationId || payload.organizationId;
+    if (user.role !== 'SUPER_ADMIN' && !resolvedOrganizationId) {
+      throw new UnauthorizedException('Organization context is required');
+    }
+
+    // Tenant mismatch validation: ensure JWT organizationId matches database
+    if (
+      payload.organizationId &&
+      user.organizationId &&
+      payload.organizationId !== user.organizationId
+    ) {
+      throw new UnauthorizedException('Tenant context mismatch detected');
+    }
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
       organizationType: user.organizationType,
-      organizationId: user.organizationId || payload.organizationId,
+      organizationId: resolvedOrganizationId,
+      tenantId: payload.tenantId || resolvedOrganizationId, // Map organizationId as tenantId
+      crmOrganizationId: payload.crmOrganizationId || resolvedOrganizationId, // Map organizationId as crmOrganizationId
       sessionId: payload.sessionId,
     };
   }

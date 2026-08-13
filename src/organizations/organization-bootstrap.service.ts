@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { normalizeModuleKey } from '../common/utils/module-key.util';
 
 /**
  * Organization Bootstrap Service
@@ -256,10 +257,11 @@ export class OrganizationBootstrapService {
     enabledModules: string[],
     grantedBy: string,
   ) {
+    // Canonical module keys are singular (match permission prefix format)
     const defaultModules =
       enabledModules.length > 0
-        ? enabledModules
-        : ['leads', 'customers', 'projects', 'inventory', 'tasks'];
+        ? enabledModules.map((m) => normalizeModuleKey(m))
+        : ['lead', 'customer', 'project', 'inventory', 'task'];
 
     for (const moduleKey of defaultModules) {
       await tx.organizationModule.upsert({
@@ -394,21 +396,32 @@ export class OrganizationBootstrapService {
       throw new BadRequestException('User with this email already exists');
     }
 
-    // Validate module keys
+    // Validate module keys (canonical singular form; legacy plural accepted)
     const validModules = [
-      'leads',
-      'customers',
-      'projects',
+      'lead',
+      'customer',
+      'project',
       'inventory',
-      'purchase-orders',
-      'tasks',
-      'users',
-      'roles',
-      'reports',
+      'purchase-order',
+      'task',
+      'user',
+      'role',
+      'report',
+      'vendor',
+      'warehouse',
+      'tracking',
+      'document',
+      'dashboard',
     ];
-    const invalidModules = (dto.enabledModules || []).filter((m) => !validModules.includes(m));
+    const invalidModules = (dto.enabledModules || [])
+      .map((m) => normalizeModuleKey(m))
+      .filter((m) => !validModules.includes(m));
     if (invalidModules.length > 0) {
       throw new BadRequestException(`Invalid module keys: ${invalidModules.join(', ')}`);
+    }
+    // Normalize DTO module keys to canonical singular form
+    if (dto.enabledModules) {
+      dto.enabledModules = dto.enabledModules.map((m) => normalizeModuleKey(m));
     }
   }
 }

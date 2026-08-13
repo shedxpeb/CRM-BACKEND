@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { TenantContextService } from '../services/tenant-context.service';
 import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator';
 import { Reflector } from '@nestjs/core';
@@ -35,9 +41,17 @@ export class TenantContextGuard implements CanActivate {
       return true; // No user context, will be handled by auth guards
     }
 
+    // Validate organizationId is present for non-super-admin users
+    if (user.role !== 'SUPER_ADMIN' && !user.organizationId) {
+      this.logger.error(`User ${user.id} missing organizationId context`);
+      throw new ForbiddenException('Organization context required');
+    }
+
     // Build tenant context from user
     const tenantContext = {
       organizationId: user.organizationId,
+      tenantId: user.tenantId || user.organizationId,
+      crmOrganizationId: user.crmOrganizationId || user.organizationId,
       userId: user.id,
       isSuperAdmin: user.role === 'SUPER_ADMIN',
       isImpersonation: user.isImpersonation || false,

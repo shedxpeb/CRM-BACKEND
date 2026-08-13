@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeModuleKey } from '../common/utils/module-key.util';
 
 /**
  * Permission Inheritance Service
@@ -393,18 +394,28 @@ export class PermissionInheritanceService {
     permissions: string[],
     organizationId: string,
   ): Promise<string[]> {
+    // If the organization has no module configuration rows at all (legacy org),
+    // all modules are enabled by default and nothing is filtered out.
+    const moduleRowCount = await this.prisma.organizationModule.count({
+      where: { organizationId },
+    });
+    if (moduleRowCount === 0) {
+      return permissions;
+    }
+
     // Get enabled modules for organization
     const enabledModules = await this.prisma.organizationModule.findMany({
       where: { organizationId, enabled: true },
       select: { moduleKey: true, permissionSet: true },
     });
 
-    const enabledModuleKeys = new Set(enabledModules.map((m) => m.moduleKey));
+    // Canonicalize stored keys (singular) so legacy plural rows still match
+    const enabledModuleKeys = new Set(enabledModules.map((m) => normalizeModuleKey(m.moduleKey)));
 
     // Filter permissions based on enabled modules
     const filteredPermissions = permissions.filter((permission) => {
-      const moduleKey = permission.split('.')[0]; // e.g., "leads" from "leads.view"
-      return enabledModuleKeys.has(moduleKey);
+      const moduleKey = permission.split(':')[0]; // e.g., "customer" from "customer:list"
+      return enabledModuleKeys.has(normalizeModuleKey(moduleKey));
     });
 
     return filteredPermissions;
