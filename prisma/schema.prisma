@@ -1112,6 +1112,7 @@ model NumberSequence {
 model StockMovement {
   id              String       @id @default(uuid())
   organizationId  String
+  inventoryItemId String?
   type            String
   quantity        Float
   createdAt       DateTime     @default(now())
@@ -1125,12 +1126,15 @@ model StockMovement {
 
   @@index([organizationId])
   @@index([isDeleted])
+  @@index([inventoryItemId])
 }
 
 model Supplier {
   id             String       @id @default(uuid())
   organizationId String
   name           String
+  gstNumber      String?
+  status         String       @default("Active")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   isDeleted      Boolean      @default(false)
@@ -1139,6 +1143,7 @@ model Supplier {
 
   @@index([organizationId])
   @@index([isDeleted])
+  @@index([status])
 }
 
 model Vendor {
@@ -1186,6 +1191,7 @@ model Warehouse {
   organizationId String
   name           String
   location       String?
+  manager        String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   isDeleted      Boolean         @default(false)
@@ -1233,10 +1239,14 @@ model Attachment {
   originalName   String?
   size           Int?
   url            String?
+  isDeleted      Boolean  @default(false)
+  deletedAt      DateTime?
+  deletedById    String?
 
   @@index([entityType, entityId])
   @@index([uploadedBy])
   @@index([organizationId])
+  @@index([isDeleted])
 }
 
 model ApprovalRequest {
@@ -1251,6 +1261,7 @@ model ApprovalRequest {
   reviewedBy      String?
   reviewedByName  String?
   comments        String?
+  comment         String?
   approverId      String?
   level           Int?
   metadata        Json?
@@ -1273,6 +1284,7 @@ model Notification {
   message        String
   type           String?
   isRead         Boolean  @default(false)
+  readAt         DateTime?
   metadata       Json?
   createdAt      DateTime @default(now())
   entityId       String?
@@ -1293,6 +1305,7 @@ model StatusPipeline {
   icon               String?
   order              Int      @default(0)
   isActive           Boolean  @default(true)
+  isInitial          Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   allowedTransitions String[]
@@ -1313,10 +1326,12 @@ model BusinessEvent {
   triggeredBy String?
   createdAt   DateTime @default(now())
   createdById String?
+  organizationId String?
 
   @@index([entityType, entityId])
   @@index([eventType])
   @@index([createdAt])
+  @@index([organizationId])
 }
 
 model EventRule {
