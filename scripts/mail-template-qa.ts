@@ -9,4 +9,5 @@
 
 // Skip mail template QA in CI if template engine is not available
 console.log('Skipping mail template QA - disabled for CI environment');
+// @ts-ignore
 process.exit(0);
