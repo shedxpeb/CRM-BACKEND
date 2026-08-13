@@ -3,7 +3,7 @@ import { BRAND, FONTS, PAGE } from '../helpers/colors';
 import { SectionDimensions } from './layout-engine';
 import { wrapText } from '../helpers/text';
 import { formatCurrency, numberToWords } from '../helpers/currency';
-import * as PDFKit from 'pdfkit';
+import PDFDocument from 'pdfkit';
 
 export interface HeaderData {
   companyName: string;

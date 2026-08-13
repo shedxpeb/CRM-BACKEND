@@ -1,10 +1,11 @@
 import { FONTS } from './colors';
+import PDFDocument from 'pdfkit';
 
 /**
  * Word-wrap a string into lines that fit within maxWidth using the given font.
  */
 export function wrapText(
-  doc: PDFKit.PDFDocument,
+  doc: any,
   text: string,
   font: string,
   fontSize: number,
@@ -33,7 +34,7 @@ export function wrapText(
  * Height in points for a text block (wrapped) at the given line height.
  */
 export function measureBlock(
-  doc: PDFKit.PDFDocument,
+  doc: any,
   text: string,
   font: string,
   fontSize: number,
@@ -49,7 +50,7 @@ export function measureBlock(
  * last line so callers can stack blocks manually.
  */
 export function drawWrappedText(
-  doc: PDFKit.PDFDocument,
+  doc: any,
   text: string,
   x: number,
   y: number,
@@ -74,7 +75,7 @@ export function drawWrappedText(
  * Returns the y after the last drawn line.
  */
 export function drawCell(
-  doc: PDFKit.PDFDocument,
+  doc: any,
   text: string,
   x: number,
   y: number,
