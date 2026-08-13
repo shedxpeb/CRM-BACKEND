@@ -30,72 +30,80 @@ export class ModuleAccessGuard implements CanActivate {
     },
     // Lead module
     leads: {
-      GET: ['leads.view'],
-      POST: ['leads.create'],
-      PUT: ['leads.update'],
-      PATCH: ['leads.update'],
-      DELETE: ['leads.delete'],
+      GET: ['lead:list', 'lead:read'],
+      POST: ['lead:create'],
+      PUT: ['lead:update'],
+      PATCH: ['lead:update'],
+      DELETE: ['lead:delete'],
     },
     // Customer module
     customers: {
-      GET: ['customers.view'],
-      POST: ['customers.create'],
-      PUT: ['customers.update'],
-      PATCH: ['customers.update'],
-      DELETE: ['customers.delete'],
+      GET: ['customer:list', 'customer:read'],
+      POST: ['customer:create'],
+      PUT: ['customer:update'],
+      PATCH: ['customer:update'],
+      DELETE: ['customer:delete'],
     },
     // Project module
     projects: {
-      GET: ['projects.view'],
-      POST: ['projects.create'],
-      PUT: ['projects.update'],
-      PATCH: ['projects.update'],
-      DELETE: ['projects.delete'],
+      GET: ['project:list', 'project:read'],
+      POST: ['project:create'],
+      PUT: ['project:update'],
+      PATCH: ['project:update'],
+      DELETE: ['project:delete'],
     },
     // Inventory module
     inventory: {
-      GET: ['inventory.view'],
-      POST: ['inventory.create'],
-      PUT: ['inventory.update'],
-      PATCH: ['inventory.update'],
-      DELETE: ['inventory.delete'],
+      GET: ['inventory:list', 'inventory:read'],
+      POST: ['inventory:create'],
+      PUT: ['inventory:update'],
+      PATCH: ['inventory:update'],
+      DELETE: ['inventory:delete'],
     },
     // Purchase orders module
     'purchase-orders': {
-      GET: ['purchase_orders.view'],
-      POST: ['purchase_orders.create'],
-      PUT: ['purchase_orders.update'],
-      PATCH: ['purchase_orders.update'],
-      DELETE: ['purchase_orders.delete'],
+      GET: ['purchase-order:list', 'purchase-order:read'],
+      POST: ['purchase-order:create'],
+      PUT: ['purchase-order:update'],
+      PATCH: ['purchase-order:update'],
+      DELETE: ['purchase-order:delete'],
     },
     // Users module
     users: {
-      GET: ['users.view'],
-      POST: ['users.create'],
-      PUT: ['users.update'],
-      PATCH: ['users.update'],
-      DELETE: ['users.delete'],
+      GET: ['user:list', 'user:read'],
+      POST: ['user:create'],
+      PUT: ['user:update'],
+      PATCH: ['user:update'],
+      DELETE: ['user:delete'],
     },
     // Roles module
     roles: {
-      GET: ['roles.view'],
-      POST: ['roles.create'],
-      PUT: ['roles.update'],
-      PATCH: ['roles.update'],
-      DELETE: ['roles.delete'],
+      GET: ['role:list', 'role:read'],
+      POST: ['role:create'],
+      PUT: ['role:update'],
+      PATCH: ['role:update'],
+      DELETE: ['role:delete'],
     },
     // Tasks module
     tasks: {
-      GET: ['tasks.view'],
-      POST: ['tasks.create'],
-      PUT: ['tasks.update'],
-      PATCH: ['tasks.update'],
-      DELETE: ['tasks.delete'],
+      GET: ['task:list', 'task:read'],
+      POST: ['task:create'],
+      PUT: ['task:update'],
+      PATCH: ['task:update'],
+      DELETE: ['task:delete'],
     },
     // Reports module
     reports: {
-      GET: ['reports.view'],
-      POST: ['reports.export'],
+      GET: ['report:list', 'report:read'],
+      POST: ['report:export'],
+    },
+    // Vendors module
+    vendors: {
+      GET: ['vendor:list', 'vendor:read'],
+      POST: ['vendor:create'],
+      PUT: ['vendor:update'],
+      PATCH: ['vendor:update'],
+      DELETE: ['vendor:delete'],
     },
   };
 
@@ -135,6 +143,11 @@ export class ModuleAccessGuard implements CanActivate {
     const url = request.url;
     const method = request.method;
 
+    // Skip module checks for auth endpoints
+    if (url.startsWith('/auth') || url.startsWith('/api/auth')) {
+      return true;
+    }
+
     // Extract module key from URL
     const moduleKey = this.extractModuleKey(url);
     if (!moduleKey) {
@@ -144,6 +157,12 @@ export class ModuleAccessGuard implements CanActivate {
 
     // Dashboard is a core module and should always be accessible
     if (moduleKey === 'dashboard') {
+      return true;
+    }
+
+    // If this is not a known module (no permissions defined), skip module enablement check
+    const isKnownModule = moduleKey in this.modulePermissionMap;
+    if (!isKnownModule) {
       return true;
     }
 
@@ -198,6 +217,8 @@ export class ModuleAccessGuard implements CanActivate {
    * /leads -> leads
    * /customers/123 -> customers
    * /api/projects -> projects
+   * /lead -> leads (normalized to plural)
+   * /customer -> customers (normalized to plural)
    */
   private extractModuleKey(url: string): string | null {
     // Remove query parameters and trailing slashes
@@ -213,10 +234,24 @@ export class ModuleAccessGuard implements CanActivate {
 
     if (startIndex >= segments.length) return null;
 
-    const moduleKey = segments[startIndex];
+    let moduleKey = segments[startIndex];
 
     // Normalize module key (replace hyphens with underscores)
-    return moduleKey.replace(/-/g, '_');
+    moduleKey = moduleKey.replace(/-/g, '_');
+
+    // Normalize singular to plural for known modules
+    const singularToPlural: Record<string, string> = {
+      lead: 'leads',
+      customer: 'customers',
+      user: 'users',
+      role: 'roles',
+      task: 'tasks',
+      project: 'projects',
+      vendor: 'vendors',
+      report: 'reports',
+    };
+
+    return singularToPlural[moduleKey] || moduleKey;
   }
 
   /**

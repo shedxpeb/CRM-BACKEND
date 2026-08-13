@@ -49,6 +49,7 @@ export class TrackingController {
   // ─── STATUS ────────────────────────────────────────────
 
   @Get(':entityType/:entityId/status')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get current status + allowed transitions + pipeline' })
   async getStatus(
     @Param('entityType') entityType: string,
@@ -61,6 +62,7 @@ export class TrackingController {
   }
 
   @Get(':entityType/pipeline')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get status pipeline definition for entity type' })
   async getPipeline(
     @Param('entityType') entityType: string,
@@ -95,6 +97,7 @@ export class TrackingController {
   // ─── TIMELINE ──────────────────────────────────────────
 
   @Get(':entityType/:entityId/timeline')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get full timeline (status changes + activities)' })
   async getTimeline(
     @Param('entityType') entityType: string,
@@ -109,6 +112,7 @@ export class TrackingController {
   // ─── COMMENTS ──────────────────────────────────────────
 
   @Get(':entityType/:entityId/comments')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get entity comments' })
   async getComments(
     @Param('entityType') entityType: string,
@@ -121,6 +125,7 @@ export class TrackingController {
   }
 
   @Post(':entityType/:entityId/comments')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Add comment to entity' })
   async addComment(
     @Param('entityType') entityType: string,
@@ -141,6 +146,7 @@ export class TrackingController {
   }
 
   @Delete('comments/:commentId')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Delete comment' })
   async deleteComment(
     @Param('commentId') commentId: string,
@@ -154,6 +160,7 @@ export class TrackingController {
   // ─── ATTACHMENTS ──────────────────────────────────────
 
   @Get(':entityType/:entityId/attachments')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get entity attachments' })
   async getAttachments(
     @Param('entityType') entityType: string,
@@ -166,6 +173,7 @@ export class TrackingController {
   }
 
   @Post(':entityType/:entityId/attachments')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Add attachment to entity' })
   async addAttachment(
     @Param('entityType') entityType: string,
@@ -193,6 +201,7 @@ export class TrackingController {
   }
 
   @Delete('attachments/:attachmentId')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Delete attachment' })
   async deleteAttachment(
     @Param('attachmentId') attachmentId: string,
@@ -206,6 +215,7 @@ export class TrackingController {
   // ─── APPROVALS ────────────────────────────────────────
 
   @Get(':entityType/:entityId/approvals')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get entity approvals' })
   async getApprovals(
     @Param('entityType') entityType: string,
@@ -218,6 +228,7 @@ export class TrackingController {
   }
 
   @Post(':entityType/:entityId/approvals')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Request approval' })
   async requestApproval(
     @Param('entityType') entityType: string,
@@ -239,6 +250,7 @@ export class TrackingController {
   }
 
   @Patch('approvals/:approvalId')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Respond to approval (Approve/Reject)' })
   async respondToApproval(
     @Param('approvalId') approvalId: string,
@@ -259,6 +271,7 @@ export class TrackingController {
   // ─── NOTIFICATIONS ────────────────────────────────────
 
   @Get('notifications')
+  @RequirePermissions('tracking:read')
   @ApiOperation({ summary: 'Get user notifications' })
   async getNotifications(
     @Query('unreadOnly') unreadOnly?: string,
@@ -274,6 +287,7 @@ export class TrackingController {
   }
 
   @Post('notifications')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Create notification' })
   async createNotification(
     @Body()
@@ -305,6 +319,7 @@ export class TrackingController {
   }
 
   @Patch('notifications/:id/read')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Mark notification as read' })
   async markNotificationRead(@Param('id') id: string, @CurrentUser() user?: CurrentUserType) {
     const u = this.getUser(user);
@@ -313,6 +328,7 @@ export class TrackingController {
   }
 
   @Post('notifications/read-all')
+  @RequirePermissions('tracking:update')
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllRead(@CurrentUser() user?: CurrentUserType) {
     const u = this.getUser(user);

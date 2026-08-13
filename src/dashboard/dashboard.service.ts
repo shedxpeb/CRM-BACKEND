@@ -992,15 +992,15 @@ export class DashboardService {
         },
       }),
       this.prisma.stockMovement.findMany({
-        where: { organizationId: orgId },
+        where: { organizationId: orgId, isDeleted: false },
         orderBy: { createdAt: 'desc' },
         take: 10,
         select: {
           id: true,
-          itemName: true,
           type: true,
           quantity: true,
           performedBy: true,
+          warehouseName: true,
           date: true,
         },
       }),
@@ -1060,7 +1060,7 @@ export class DashboardService {
         id: `activity-${m.id}`,
         entityType: 'inventory',
         entityId: m.id,
-        entityName: m.itemName,
+        entityName: m.warehouseName || `Movement #${m.id}`,
         currentStatus: m.type,
         user: m.performedBy || 'System',
         timestamp: m.date,
@@ -1104,15 +1104,14 @@ export class DashboardService {
         }),
         this.prisma.warehouse.findMany({
           where: { organizationId: orgId, isDeleted: false },
-          select: { id: true, name: true, currentOccupancy: true, capacity: true },
+          select: { id: true, name: true },
         }),
         this.prisma.stockMovement.findMany({
-          where: { organizationId: orgId },
+          where: { organizationId: orgId, isDeleted: false },
           orderBy: { date: 'desc' },
           take: 10,
           select: {
             id: true,
-            itemName: true,
             type: true,
             quantity: true,
             warehouseName: true,
@@ -1146,8 +1145,6 @@ export class DashboardService {
           id: w.id,
           name: w.name,
           value: Number(agg._sum.totalValue) || 0,
-          occupancy: Number(w.currentOccupancy) || 0,
-          capacity: Number(w.capacity) || 0,
         };
       }),
     );

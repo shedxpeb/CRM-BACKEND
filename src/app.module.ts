@@ -15,6 +15,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { OrganizationGuard } from './common/guards/organization.guard';
 import { ModuleAccessGuard } from './auth/guards/module-access.guard';
 import { DataIsolationGuard } from './common/guards/data-isolation.guard';
+import { TenantContextGuard } from './common/guards/tenant-context.guard';
 import { CustomerModule } from './customer/customer.module';
 import { ProjectModule } from './project/project.module';
 import { OrganizationModule } from './organization/organization.module';
@@ -74,6 +75,7 @@ import { OrganizationBootstrapModule } from './organizations/organization-bootst
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: TenantContextGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: OrganizationGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },

@@ -1,4 +1,4 @@
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PassThrough } from 'stream';
@@ -33,17 +33,17 @@ export interface DrawTextOptions {
  * coordinates; nothing is auto-flowed.
  */
 export class PdfEngine {
-  doc: PDFKit.PDFDocument;
+  doc: any;
   private pageMargin: { top: number; bottom: number; left: number; right: number };
   private contentWidth: number;
   private pageHeight: number;
   private currentY: number;
   private pageCount = 0;
   private headerCallback:
-    | ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void)
+    | ((doc: any, pageNum: number, totalPages: number) => void)
     | null = null;
   private footerCallback:
-    | ((doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void)
+    | ((doc: any, pageNum: number, totalPages: number) => void)
     | null = null;
   private stream: PassThrough;
   private assetsPath: string;
@@ -128,12 +128,12 @@ export class PdfEngine {
 
   // ─── Callbacks ──────────────────────────────────────────
 
-  setHeaderCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
+  setHeaderCallback(cb: (doc: any, pageNum: number, totalPages: number) => void) {
     this.headerCallback = cb;
     return this;
   }
 
-  setFooterCallback(cb: (doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) => void) {
+  setFooterCallback(cb: (doc: any, pageNum: number, totalPages: number) => void) {
     this.footerCallback = cb;
     return this;
   }
