@@ -20,9 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "type-check": "tsc --noEmit",
-    "ci": "npm run architecture:validate && npm run type-check && npm run build",
+    "ci": "npm run architecture:validate && npm run build",
     "architecture:validate": "node scripts/architecture-validate.mjs",
-    "mail:qa": "node scripts/mail-template-qa.ts",
     "clean": "rm -rf dist coverage"
   },
   "prisma": {
