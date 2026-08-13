@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../../common/decorators/permissions.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -59,9 +65,7 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'tracking:update',
     'purchase-order:approve',
   ],
-  COMPANY_OWNER: [
-    '*',
-  ],
+  COMPANY_OWNER: ['*'],
   EMPLOYEE: [
     'dashboard:view',
     'lead:list',

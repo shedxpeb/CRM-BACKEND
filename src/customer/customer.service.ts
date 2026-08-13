@@ -3,7 +3,6 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
-  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
@@ -877,7 +876,7 @@ export class CustomerService extends BaseQueryService {
     }
 
     const contextOrgId = context.organizationId;
-    
+
     // Only validate if context has an organizationId
     if (!contextOrgId) {
       this.logger.debug('Tenant context has no organizationId - skipping validation');

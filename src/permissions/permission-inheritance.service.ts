@@ -410,9 +410,7 @@ export class PermissionInheritanceService {
     });
 
     // Canonicalize stored keys (singular) so legacy plural rows still match
-    const enabledModuleKeys = new Set(
-      enabledModules.map((m) => normalizeModuleKey(m.moduleKey)),
-    );
+    const enabledModuleKeys = new Set(enabledModules.map((m) => normalizeModuleKey(m.moduleKey)));
 
     // Filter permissions based on enabled modules
     const filteredPermissions = permissions.filter((permission) => {

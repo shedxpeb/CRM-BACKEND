@@ -83,7 +83,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Tenant mismatch validation: ensure JWT organizationId matches database
-    if (payload.organizationId && user.organizationId && payload.organizationId !== user.organizationId) {
+    if (
+      payload.organizationId &&
+      user.organizationId &&
+      payload.organizationId !== user.organizationId
+    ) {
       throw new UnauthorizedException('Tenant context mismatch detected');
     }
 

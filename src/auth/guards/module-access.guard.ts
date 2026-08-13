@@ -191,9 +191,7 @@ export class ModuleAccessGuard implements CanActivate {
         throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
       }
     } else if (!moduleAccess.enabled) {
-      this.logger.warn(
-        `Module ${moduleKey} disabled for organization ${user.organizationId}`,
-      );
+      this.logger.warn(`Module ${moduleKey} disabled for organization ${user.organizationId}`);
       throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
     }
 

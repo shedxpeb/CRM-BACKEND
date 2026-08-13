@@ -62,8 +62,7 @@ export class DataIsolationGuard implements CanActivate {
     if (resource?.id) {
       // Fastify v5 exposes request.routeOptions (v4: request.route); fall back
       // to the request URL so resource-type detection still works.
-      const routePath =
-        request.routeOptions?.path || request.route?.path || request.url || '';
+      const routePath = request.routeOptions?.path || request.route?.path || request.url || '';
       const hasAccess = await this.validateResourceOwnership(
         resource.id,
         user.organizationId,
