@@ -6,6 +6,9 @@
 import { buildMailTemplate, MailTemplateId, minifyHtml } from '../src/mail/template.engine';
 import { buildMailHeaders, buildMessageId } from '../src/mail/mail.headers';
 
+// Type definitions for Node.js globals
+declare const process: NodeJS.Process;
+
 const brand = {
   companyName: 'Acme Steel',
   companyLogo: '',
