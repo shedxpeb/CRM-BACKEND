@@ -8,6 +8,7 @@ export const SYSTEM_ROLE_DEFS = [
   {
     name: 'Admin',
     permissions: [
+      'dashboard:view',
       'lead:list',
       'lead:read',
       'lead:create',
@@ -41,6 +42,7 @@ export const SYSTEM_ROLE_DEFS = [
   {
     name: 'Employee',
     permissions: [
+      'dashboard:view',
       'lead:list',
       'lead:read',
       'lead:create',

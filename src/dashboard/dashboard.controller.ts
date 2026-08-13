@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { GetDashboardDto, DashboardDateRange } from './dto/get-dashboard.dto';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUser as CurrentUserType } from '../common/types';
 
@@ -12,6 +13,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get()
+  @RequirePermissions('dashboard:view')
   @ApiOperation({ summary: 'Get executive dashboard overview' })
   @ApiQuery({ name: 'dateRange', required: false, enum: DashboardDateRange })
   @ApiQuery({ name: 'customFrom', required: false, type: String })
@@ -27,6 +29,7 @@ export class DashboardController {
   }
 
   @Get('gantt')
+  @RequirePermissions('dashboard:view')
   @ApiOperation({ summary: 'Get project gantt chart data' })
   @ApiQuery({ name: 'projectId', required: false, type: String })
   async getGantt(

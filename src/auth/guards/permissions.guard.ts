@@ -14,6 +14,7 @@ const ROLE_NAME_ALIASES: Record<string, string[]> = {
 
 const DEFAULT_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [
+    'dashboard:view',
     'lead:list',
     'lead:read',
     'lead:create',
@@ -49,8 +50,10 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'organization:update',
     'tracking:read',
     'tracking:update',
+    'purchase-order:approve',
   ],
   EMPLOYEE: [
+    'dashboard:view',
     'lead:list',
     'lead:read',
     'lead:create',

@@ -1104,7 +1104,7 @@ export class DashboardService {
         }),
         this.prisma.warehouse.findMany({
           where: { organizationId: orgId, isDeleted: false },
-          select: { id: true, name: true, currentOccupancy: true, capacity: true },
+          select: { id: true, name: true },
         }),
         this.prisma.stockMovement.findMany({
           where: { organizationId: orgId, isDeleted: false },
@@ -1145,8 +1145,6 @@ export class DashboardService {
           id: w.id,
           name: w.name,
           value: Number(agg._sum.totalValue) || 0,
-          occupancy: Number(w.currentOccupancy) || 0,
-          capacity: Number(w.capacity) || 0,
         };
       }),
     );

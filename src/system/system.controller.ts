@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { SystemCapabilitiesService } from './system-capabilities.service';
 import { SystemSeedService } from './system-seed.service';
 import type { SeedAdminDto } from './system-seed.service';
@@ -12,6 +13,7 @@ export class SystemController {
   ) {}
 
   @Get('capabilities')
+  @RequirePermissions('system:read')
   getCapabilities() {
     return this.capabilities.getCapabilities();
   }
