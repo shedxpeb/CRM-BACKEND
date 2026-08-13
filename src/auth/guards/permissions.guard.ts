@@ -64,6 +64,11 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'tracking:read',
     'tracking:update',
     'purchase-order:approve',
+    'task:list',
+    'task:read',
+    'task:create',
+    'task:update',
+    'task:delete',
   ],
   COMPANY_OWNER: ['*'],
   EMPLOYEE: [
@@ -89,6 +94,10 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'inventory:update',
     'tracking:read',
     'tracking:update',
+    'task:list',
+    'task:read',
+    'task:create',
+    'task:update',
   ],
   SALES_MANAGER: [
     'dashboard:view',

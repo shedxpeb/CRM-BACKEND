@@ -20,16 +20,24 @@ export async function upsertSystemRoles(
   db: Tx,
   organizationId: string,
   createdById?: string | null,
-) {
+): Promise<boolean> {
+  let changed = false;
   for (const role of SYSTEM_ROLE_DEFS) {
     const existing = await db.role.findFirst({
       where: { organizationId, name: role.name },
     });
     if (existing) {
-      await db.role.update({
-        where: { id: existing.id },
-        data: { permissions: [...role.permissions], isSystem: true },
-      });
+      const current = Array.isArray(existing.permissions) ? existing.permissions : [];
+      const same =
+        current.length === role.permissions.length &&
+        current.every((perm: string, index: number) => perm === role.permissions[index]);
+      if (!same) {
+        await db.role.update({
+          where: { id: existing.id },
+          data: { permissions: [...role.permissions], isSystem: true },
+        });
+        changed = true;
+      }
     } else {
       await db.role.create({
         data: {
@@ -40,8 +48,10 @@ export async function upsertSystemRoles(
           createdById: createdById || undefined,
         },
       });
+      changed = true;
     }
   }
+  return changed;
 }
 
 export async function replacePipelines(db: Tx, organizationId: string) {
