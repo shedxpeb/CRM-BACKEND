@@ -1,30 +1,24 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
 import { getPrismaConnectionUrl, sleep } from './database-bootstrap';
 import { TenantContextService } from '../common/services/tenant-context.service';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
-  private readonly pool: Pool;
 
   constructor(@Inject(TenantContextService) private tenantContextService: TenantContextService) {
     const dbUrl = getPrismaConnectionUrl();
-    const pool = new Pool({
-      connectionString: dbUrl,
-      max: 10,
-      idleTimeoutMillis: 20_000,
-      connectionTimeoutMillis: 10_000,
-    });
 
     super({
-      adapter: new PrismaPg(pool),
+      datasources: {
+        db: {
+          url: dbUrl,
+        },
+      },
       log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     });
 
-    this.pool = pool;
     this.logger.log(`DATABASE_URL: ${dbUrl ? dbUrl.replace(/:[^:@]+@/, ':****@') : 'NOT SET'}`);
   }
 
@@ -71,6 +65,5 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleDestroy() {
     await this.$disconnect();
-    await this.pool.end();
   }
 }
