@@ -22,6 +22,7 @@
     "type-check": "tsc --noEmit",
     "ci": "npm run architecture:validate && npm run build",
     "architecture:validate": "node scripts/architecture-validate.mjs",
+    "mail:qa": "node scripts/mail-template-qa.ts",
     "clean": "rm -rf dist coverage"
   },
   "prisma": {
