@@ -13,12 +13,24 @@ import {
 } from './dto/salary-adjustment.dto';
 
 const TASK_INCLUDE = {
-  checklist: { orderBy: { order: 'asc' } },
+  checklists: { orderBy: { order: 'asc' } },
   comments: { where: { isDeleted: false }, orderBy: { createdAt: 'desc' } },
   attachments: { orderBy: { createdAt: 'desc' } },
   dependencies: true,
-  activities: { orderBy: { createdAt: 'desc' }, take: 50 },
+  activityLogs: { orderBy: { createdAt: 'desc' }, take: 50 },
 };
+
+/** Maps DB relation names to the frontend Task contract (checklist / activityHistory). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeTask(task: any) {
+  if (!task) return task;
+  const { checklists, activityLogs, ...rest } = task;
+  return {
+    ...rest,
+    checklist: checklists,
+    activityHistory: activityLogs,
+  };
+}
 
 @Injectable()
 export class TaskService extends BaseQueryService {
@@ -60,7 +72,7 @@ export class TaskService extends BaseQueryService {
 
   async findById(id: string, organizationId?: string) {
     const orgId = this.requireOrganizationId(organizationId);
-    return super.findById(id, TASK_INCLUDE, orgId);
+    return serializeTask(await super.findById(id, TASK_INCLUDE, orgId));
   }
 
   async create(
@@ -131,7 +143,7 @@ export class TaskService extends BaseQueryService {
       );
     }
 
-    return task;
+    return serializeTask(task);
   }
 
   async update(
@@ -816,7 +828,7 @@ export class TaskService extends BaseQueryService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: Record<string, any>,
   ) {
-    await this.client.taskActivityLog.create({
+    await this.prisma.taskActivityLog.create({
       data: {
         taskId,
         activityType,

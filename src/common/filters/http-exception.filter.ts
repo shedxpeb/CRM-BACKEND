@@ -39,11 +39,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const requestId = request.requestId || 'unknown';
 
+    let errorCode: string | undefined;
+
     // Log detailed validation errors
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const responseObj = exceptionResponse as { message?: unknown };
+        const responseObj = exceptionResponse as { message?: unknown; code?: string };
+        if (typeof responseObj.code === 'string') {
+          errorCode = responseObj.code;
+        }
         if (responseObj.message && Array.isArray(responseObj.message)) {
           this.logger.error(
             `${request.method} ${request.url} - RequestId: ${requestId} - Status: ${status} - Validation Errors: ${JSON.stringify(responseObj.message)}`,
@@ -53,6 +58,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           this.logger.error(
             `${request.method} ${request.url} - RequestId: ${requestId} - Status: ${status} - Error Details: ${JSON.stringify(responseObj)}`,
           );
+          message = String(responseObj.message);
         }
       }
     }
@@ -68,6 +74,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
       requestId,
       message,
+      ...(errorCode ? { code: errorCode } : {}),
       errors: Array.isArray(message) ? message : message ? [message] : [],
     });
   }

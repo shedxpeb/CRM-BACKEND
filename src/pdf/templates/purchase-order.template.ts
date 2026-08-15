@@ -84,7 +84,6 @@ const GAP = 6;
 export async function generatePurchaseOrderPdf(
   data: PurchaseOrderPdfData,
 ): Promise<import('stream').Readable> {
-  console.log('NEW PDF TEMPLATE - Generating PO:', data.poNumber);
   const engine = new PdfEngine({
     title: `Purchase Order ${data.poNumber}`,
     author: 'PEB CRM',

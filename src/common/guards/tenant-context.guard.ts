@@ -54,8 +54,6 @@ export class TenantContextGuard implements CanActivate {
       crmOrganizationId: user.crmOrganizationId || user.organizationId,
       userId: user.id,
       isSuperAdmin: user.role === 'SUPER_ADMIN',
-      isImpersonation: user.isImpersonation || false,
-      impersonationGrantId: user.impersonationGrantId,
     };
 
     // Run the request within tenant context

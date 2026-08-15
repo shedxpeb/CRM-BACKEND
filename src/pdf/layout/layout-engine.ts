@@ -42,7 +42,6 @@ export class LayoutCalculator {
   private engine: PdfEngine;
 
   constructor(engine: PdfEngine) {
-    console.log('LAYOUT ENGINE - Initialized');
     this.engine = engine;
   }
 

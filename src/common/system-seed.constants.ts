@@ -4,9 +4,10 @@
  * No demo CRM rows — pipelines, event rules, and role permission defaults only.
  */
 export const SYSTEM_ROLE_DEFS = [
-  { name: 'Owner', permissions: ['*'] as string[] },
+  { name: 'Owner', code: 'OWNER', permissions: ['*'] as string[] },
   {
     name: 'Admin',
+    code: 'ADMIN',
     permissions: [
       'dashboard:view',
       'lead:list',
@@ -58,6 +59,7 @@ export const SYSTEM_ROLE_DEFS = [
   },
   {
     name: 'Employee',
+    code: 'EMPLOYEE',
     permissions: [
       'dashboard:view',
       'lead:list',

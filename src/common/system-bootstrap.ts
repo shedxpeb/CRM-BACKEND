@@ -28,13 +28,18 @@ export async function upsertSystemRoles(
     });
     if (existing) {
       const current = Array.isArray(existing.permissions) ? existing.permissions : [];
-      const same =
+      const samePermissions =
         current.length === role.permissions.length &&
         current.every((perm: string, index: number) => perm === role.permissions[index]);
-      if (!same) {
+      const sameCode = existing.code === (role.code || null);
+      if (!samePermissions || !sameCode) {
         await db.role.update({
           where: { id: existing.id },
-          data: { permissions: [...role.permissions], isSystem: true },
+          data: {
+            permissions: [...role.permissions],
+            code: role.code || null,
+            isSystem: true,
+          },
         });
         changed = true;
       }
@@ -43,6 +48,7 @@ export async function upsertSystemRoles(
         data: {
           organizationId,
           name: role.name,
+          code: role.code || null,
           permissions: [...role.permissions],
           isSystem: true,
           createdById: createdById || undefined,

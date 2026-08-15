@@ -107,6 +107,44 @@ export class ModuleAccessGuard implements CanActivate {
       PATCH: ['vendor:update'],
       DELETE: ['vendor:delete'],
     },
+    // Item Master module
+    'item-master': {
+      GET: ['item-master:list', 'item-master:read'],
+      POST: ['item-master:create'],
+      PUT: ['item-master:update'],
+      PATCH: ['item-master:update'],
+      DELETE: ['item-master:delete'],
+    },
+    // Tracking module
+    tracking: {
+      GET: ['tracking:read'],
+      PUT: ['tracking:update'],
+      PATCH: ['tracking:update'],
+    },
+    // Documents module
+    document: {
+      GET: ['document:list'],
+    },
+    // Organization module
+    organization: {
+      GET: ['organization:list', 'organization:read'],
+      POST: ['organization:create'],
+      PUT: ['organization:update'],
+      PATCH: ['organization:update'],
+      DELETE: ['organization:delete'],
+    },
+    // Warehouse module
+    warehouse: {
+      GET: ['warehouse:list', 'warehouse:read'],
+      POST: ['warehouse:create'],
+      PUT: ['warehouse:update'],
+      PATCH: ['warehouse:update'],
+      DELETE: ['warehouse:delete'],
+    },
+    // System module
+    system: {
+      GET: ['system:read'],
+    },
   };
 
   constructor(
@@ -130,16 +168,6 @@ export class ModuleAccessGuard implements CanActivate {
 
     if (!user) {
       throw new ForbiddenException('Not authenticated');
-    }
-
-    // SUPER_ADMIN bypasses module restrictions
-    if (user.role === 'SUPER_ADMIN') {
-      return true;
-    }
-
-    // OWNER has full access within their organization
-    if (user.role === 'OWNER') {
-      return true;
     }
 
     const url = request.url;
@@ -168,8 +196,10 @@ export class ModuleAccessGuard implements CanActivate {
       return true;
     }
 
-    // Resolve module enablement. Stored keys may be plural from legacy
-    // provisioning; canonical keys are singular (matching permission prefix).
+    // Module enablement is checked for EVERY role (including OWNER and
+    // SUPER_ADMIN): a disabled module must be unreachable, with no bypass.
+    // Role-based permission checks below still short-circuit for OWNER /
+    // SUPER_ADMIN, but the module must first be enabled.
     const moduleAccess = await this.findOrganizationModule(user.organizationId, moduleKey);
 
     if (!moduleAccess) {
@@ -188,11 +218,78 @@ export class ModuleAccessGuard implements CanActivate {
         this.logger.warn(
           `Module ${moduleKey} not accessible for organization ${user.organizationId}`,
         );
-        throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
+        throw new ForbiddenException({
+          code: 'MODULE_DISABLED',
+          message: `Module ${moduleKey} is not accessible`,
+        });
       }
     } else if (!moduleAccess.enabled) {
       this.logger.warn(`Module ${moduleKey} disabled for organization ${user.organizationId}`);
-      throw new ForbiddenException(`Module ${moduleKey} is not accessible`);
+      throw new ForbiddenException({
+        code: 'MODULE_DISABLED',
+        message: `Module ${moduleKey} is not accessible`,
+      });
+    }
+
+    // User-level module override (UserModuleAccess): explicit allowed=false
+    // denies this module for the user regardless of org state; explicit
+    // allowed=true re-enables it even if the org row is off. This applies to
+    // every role including OWNER (deny always wins); only SUPER_ADMIN is
+    // exempt because it operates outside any organization.
+    const userModule = await this.prisma.userModuleAccess.findUnique({
+      where: {
+        userId_moduleKey_organizationId: {
+          userId: user.id,
+          moduleKey: normalizeModuleKey(moduleKey),
+          organizationId: user.organizationId,
+        },
+      },
+      select: { allowed: true },
+    });
+
+    if (userModule && !userModule.allowed) {
+      this.logger.warn(`Module ${moduleKey} denied for user ${user.id} via user override`);
+      throw new ForbiddenException({
+        code: 'MODULE_DISABLED',
+        message: `Module ${moduleKey} is not accessible`,
+      });
+    }
+    if (userModule && userModule.allowed) {
+      // Explicit user allow overrides a disabled org module. Permission checks
+      // below still apply for non-OWNER roles.
+      if (user.role === 'SUPER_ADMIN' || user.role === 'OWNER') {
+        return true;
+      }
+      const allowedPerms = this.getRequiredPermissions(moduleKey, method, url);
+      const userPerms = await this.permissionInheritance.getEffectivePermissions(
+        user.id,
+        user.organizationId,
+      );
+      const hasAll = allowedPerms.every(
+        (perm) => userPerms.includes('*') || userPerms.includes(perm),
+      );
+      if (!hasAll) {
+        throw new ForbiddenException({
+          code: 'INSUFFICIENT_PERMISSION',
+          message: 'Insufficient permissions for this module',
+        });
+      }
+      return true;
+    }
+
+    // The module is enabled. SUPER_ADMIN and OWNER have full access to all
+    // enabled modules (permission-level bypass), while every other role must
+    // pass the permission check below.
+    if (user.role === 'SUPER_ADMIN' || user.role === 'OWNER') {
+      return true;
+    }
+
+    // The organization modules config endpoint is navigation/config data used
+    // by the sidebar and route guards for every role; module enablement is
+    // already enforced above, but no organization:read permission is required
+    // to read it.
+    if (moduleKey === 'organization' && /\/organization\/modules\/?$/.test(url)) {
+      return true;
     }
 
     // Get required permissions for this module and method
@@ -224,7 +321,10 @@ export class ModuleAccessGuard implements CanActivate {
       this.logger.error(
         `Module access denied for user ${user.id}: Missing permissions [${missing.join(', ')}] for module ${moduleKey}. Required: [${requiredPermissions.join(', ')}], User has: [${userPermissions.join(', ')}]`,
       );
-      throw new ForbiddenException('Insufficient permissions for this module');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSION',
+        message: 'Insufficient permissions for this module',
+      });
     }
 
     return true;
@@ -255,12 +355,11 @@ export class ModuleAccessGuard implements CanActivate {
 
     if (startIndex >= segments.length) return null;
 
-    let moduleKey = segments[startIndex];
+    const moduleKey = segments[startIndex];
 
-    // Normalize module key (replace hyphens with underscores)
-    moduleKey = moduleKey.replace(/-/g, '_');
-
-    // Normalize plural to singular for known modules to match permission format
+    // Normalize plural to singular for known modules to match permission format.
+    // NOTE: hyphens are preserved (map keys and permission prefixes are
+    // hyphenated, e.g. `purchase-order`, `item-master`).
     const pluralToSingular: Record<string, string> = {
       leads: 'lead',
       customers: 'customer',
@@ -270,6 +369,13 @@ export class ModuleAccessGuard implements CanActivate {
       projects: 'project',
       vendors: 'vendor',
       reports: 'report',
+      inventories: 'inventory',
+      documents: 'document',
+      'item-masters': 'item-master',
+      'purchase-orders': 'purchase-order',
+      warehouses: 'warehouse',
+      organizations: 'organization',
+      systems: 'system',
     };
 
     return pluralToSingular[moduleKey] || moduleKey;

@@ -186,12 +186,21 @@ export class MailTransportService implements OnModuleInit, OnModuleDestroy {
       this.state = 'FAILED';
       this.failureType = 'SMTP_NOT_CONFIGURED';
       this.lastError = 'SMTP_HOST / SMTP_USER / SMTP_PASS incomplete';
-      this.logger.error(
-        `Transport Verify Result FAILED ${JSON.stringify({
-          failureType: this.failureType,
-          reason: this.lastError,
-          ...snapshot,
-        })}`,
+      // When the operator explicitly opted out of boot-time verification
+      // (SMTP_VERIFY_ON_BOOT=false), an unconfigured SMTP is a known/expected
+      // state (e.g. local development) — log as WARN, not ERROR. The ERROR
+      // level is reserved for the case where boot verification was requested.
+      const logFn = snapshot.verifyOnBoot
+        ? this.logger.error.bind(this.logger)
+        : this.logger.warn.bind(this.logger);
+      logFn(
+        `Transport Verify Result ${snapshot.verifyOnBoot ? 'FAILED' : 'SKIPPED (SMTP not configured)'} ${JSON.stringify(
+          {
+            failureType: this.failureType,
+            reason: this.lastError,
+            ...snapshot,
+          },
+        )}`,
       );
       return;
     }
