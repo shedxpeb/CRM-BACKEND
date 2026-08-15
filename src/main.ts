@@ -24,6 +24,7 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('nodeEnv', 'development');
 
   const fastify = app.getHttpAdapter().getInstance();
+
   fastify.addHook('onRequest', async (request, reply) => {
     const requestId = (request.headers['x-request-id'] as string) || randomUUID();
     request.requestId = requestId;
@@ -80,6 +81,23 @@ async function bootstrap() {
   }
 
   app.enableShutdownHooks();
+
+  // Fastify rejects bodyless requests that carry `Content-Type: application/json`
+  // (e.g. DELETE without a payload) with "Body cannot be empty". Accept an empty
+  // JSON body as `{}` so standard clients (axios sets the header globally) can
+  // delete without a payload. Must run after app.init() because the Nest adapter
+  // registers its own JSON parser there.
+  await app.init();
+  fastify.removeContentTypeParser('application/json');
+  fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+    try {
+      const raw = typeof body === 'string' ? body : body.toString('utf8');
+      done(null, raw && raw.trim().length > 0 ? JSON.parse(raw) : {});
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      done(error);
+    }
+  });
 
   const port = configService.get<number>('port', 8000);
   await app.listen(port, '0.0.0.0');

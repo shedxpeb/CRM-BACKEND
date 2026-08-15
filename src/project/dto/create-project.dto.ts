@@ -48,6 +48,7 @@ class CreateTeamMemberDto {
 }
 
 export class CreateProjectDto {
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(50)

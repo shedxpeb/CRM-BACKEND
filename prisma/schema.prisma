@@ -72,6 +72,7 @@ model User {
   password                  String
   isActive                  Boolean          @default(false)
   isVerified                Boolean          @default(false)
+  mustChangePassword        Boolean          @default(false)
   otp                       String?
   otpExpiry                 DateTime?
   otpAttempts               Int              @default(0)
@@ -103,6 +104,8 @@ model User {
   sessions                  Session[]
   organization              Organization?    @relation(fields: [organizationId], references: [id])
   userRoles                 UserRole[]
+  userPermissions           UserPermission[]
+  userModuleAccess          UserModuleAccess[]
 
   @@index([email])
   @@index([role])
@@ -312,6 +315,46 @@ model RolePermission {
   @@id([roleId, permissionId])
   @@index([roleId])
   @@index([permissionId])
+}
+
+// User-level permission override: grants additional permissions the role does
+// not provide (granted=true) or denies permissions the role would otherwise
+// allow (granted=false). Effective = role perms + granted - denied.
+model UserPermission {
+  id             String       @id @default(uuid())
+  userId         String
+  permissionKey  String
+  granted        Boolean      @default(true)
+  organizationId String
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionKey, organizationId])
+  @@index([userId])
+  @@index([permissionKey])
+  @@index([organizationId])
+}
+
+// User-level module access override: narrows or widens the modules this user
+// can use relative to the organization defaults. No rows = inherit org
+// modules. Rows with allowed=true/false are explicit overrides.
+model UserModuleAccess {
+  id             String   @id @default(uuid())
+  userId         String
+  moduleKey      String
+  allowed        Boolean  @default(true)
+  organizationId String
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleKey, organizationId])
+  @@index([userId])
+  @@index([moduleKey])
+  @@index([organizationId])
 }
 
 model PermissionDelegation {
@@ -877,8 +920,10 @@ model InventoryItem {
   tags            String[]
   unit            String?
   warehouseName   String?
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  warehouse       Warehouse?   @relation(fields: [warehouseId], references: [id])
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  warehouse       Warehouse?     @relation(fields: [warehouseId], references: [id])
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  movements       StockMovement[]
 
   @@unique([organizationId, itemCode])
   @@index([organizationId])
@@ -1122,7 +1167,8 @@ model StockMovement {
   performedBy     String?
   referenceNumber String?
   warehouseName   String?
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
 
   @@index([organizationId])
   @@index([isDeleted])
@@ -1134,12 +1180,13 @@ model Supplier {
   organizationId String
   name           String
   gstNumber      String?
-  status         String       @default("Active")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  isDeleted      Boolean      @default(false)
+  status         String         @default("Active")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  isDeleted      Boolean        @default(false)
   contact        String?
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  inventoryItems InventoryItem[]
 
   @@index([organizationId])
   @@index([isDeleted])

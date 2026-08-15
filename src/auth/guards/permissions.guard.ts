@@ -7,23 +7,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../../common/decorators/permissions.decorator';
+import { ROLE_NAME_ALIASES } from '../../common/constants/role-aliases';
 import { PrismaService } from '../../prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-
-/** Map JWT UserRole enum values to Role.name records stored in DB */
-const ROLE_NAME_ALIASES: Record<string, string[]> = {
-  SUPER_ADMIN: ['SUPER_ADMIN', 'Super Admin', 'SuperAdmin'],
-  OWNER: ['OWNER', 'Owner', 'COMPANY_OWNER', 'Company Owner'],
-  ADMIN: ['ADMIN', 'Admin'],
-  EMPLOYEE: ['EMPLOYEE', 'Employee'],
-  SALES_MANAGER: ['SALES_MANAGER', 'Sales Manager', 'SalesManager'],
-  SALES_EXECUTIVE: ['SALES_EXECUTIVE', 'Sales Executive', 'SalesExecutive'],
-  PROJECT_MANAGER: ['PROJECT_MANAGER', 'Project Manager', 'ProjectManager'],
-  PURCHASE_MANAGER: ['PURCHASE_MANAGER', 'Purchase Manager', 'PurchaseManager'],
-  INVENTORY_MANAGER: ['INVENTORY_MANAGER', 'Inventory Manager', 'InventoryManager'],
-  ACCOUNTANT: ['ACCOUNTANT', 'Accountant'],
-  VIEW_ONLY: ['VIEW_ONLY', 'View Only', 'ViewOnly'],
-};
 
 const DEFAULT_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [

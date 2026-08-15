@@ -7,8 +7,6 @@ export interface TenantContext {
   crmOrganizationId?: string;
   userId: string;
   isSuperAdmin: boolean;
-  isImpersonation: boolean;
-  impersonationGrantId?: string;
 }
 
 @Injectable()
@@ -41,14 +39,6 @@ export class TenantContextService {
 
   isSuperAdmin(): boolean {
     return this.storage.getStore()?.isSuperAdmin ?? false;
-  }
-
-  isImpersonation(): boolean {
-    return this.storage.getStore()?.isImpersonation ?? false;
-  }
-
-  getImpersonationGrantId(): string | undefined {
-    return this.storage.getStore()?.impersonationGrantId;
   }
 
   clear(): void {

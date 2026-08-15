@@ -33,6 +33,21 @@ export class OrganizationController {
     return { message: 'Organizations fetched successfully.', data };
   }
 
+  @Get('modules')
+  @ApiOperation({
+    summary: 'Get module enablement state for the current organization',
+    description:
+      'Read-only navigation/config endpoint used by the sidebar and route guards for every role; ' +
+      'module-level access is still enforced by the ModuleAccessGuard.',
+  })
+  async getModules(
+    @CurrentUser('organizationId') organizationId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const data = await this.orgService.getModules(organizationId, userId);
+    return { message: 'Modules fetched successfully.', data };
+  }
+
   @Get(':id')
   @SkipOrgScope()
   @RequirePermissions('organization:read')

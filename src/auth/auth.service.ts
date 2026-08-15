@@ -30,6 +30,7 @@ import { SessionService } from './services/session.service';
 import { AuditService } from './services/audit.service';
 import { LoginProtectionService } from './services/login-protection.service';
 import { OtpService, OtpPurposeKey } from './services/otp.service';
+import { PermissionInheritanceService } from '../permissions/permission-inheritance.service';
 import { bootstrapOrganizationSystem } from '../common/system-bootstrap';
 
 @Injectable()
@@ -45,6 +46,7 @@ export class AuthService {
     private auditService: AuditService,
     private loginProtection: LoginProtectionService,
     private otpService: OtpService,
+    private permissionInheritance: PermissionInheritanceService,
   ) {}
 
   private bcryptRounds() {
@@ -150,6 +152,7 @@ export class AuthService {
         organizationId: this.orgId(user),
         organizationName: user.organization?.name,
       },
+      mustChangePassword: user.mustChangePassword,
     };
   }
 
@@ -562,14 +565,30 @@ export class AuthService {
         isActive: true,
         isVerified: true,
         isLocked: true,
+        mustChangePassword: true,
         lastLogin: true,
         createdAt: true,
         organization: { select: { name: true } },
       },
     });
     if (!user) throw new UnauthorizedException('User not found');
+
+    // Effective permissions (inherited from roles), used by the frontend for
+    // permission-based UI gating (buttons, menus, forms).
+    let effectivePermissions: string[] = [];
+    try {
+      if (user.organizationId) {
+        effectivePermissions = await this.permissionInheritance.getEffectivePermissions(
+          userId,
+          user.organizationId,
+        );
+      }
+    } catch {
+      effectivePermissions = [];
+    }
+
     const { organization, ...rest } = user;
-    return { ...rest, organizationName: organization?.name };
+    return { ...rest, organizationName: organization?.name, permissions: effectivePermissions };
   }
 
   // ─── PASSWORD / EMAIL ─────────────────────────────────
@@ -640,6 +659,7 @@ export class AuthService {
         password: passwordHash,
         passwordVersion: newVersion,
         passwordHistory: JSON.stringify(history),
+        mustChangePassword: false,
         otp: null,
         otpExpiry: null,
         otpAttempts: 0,
@@ -683,6 +703,7 @@ export class AuthService {
         password: passwordHash,
         passwordVersion: newVersion,
         passwordHistory: JSON.stringify(history),
+        mustChangePassword: false,
       },
     });
 

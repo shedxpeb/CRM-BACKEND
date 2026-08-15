@@ -88,9 +88,7 @@ export interface FooterData {
 }
 
 export class SectionRenderer {
-  constructor(private engine: PdfEngine) {
-    console.log('SECTION RENDERER - Initialized');
-  }
+  constructor(private engine: PdfEngine) {}
 
   measureHeader(data: HeaderData): SectionDimensions {
     const _doc = this.engine.doc;

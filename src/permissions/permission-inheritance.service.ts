@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeModuleKey } from '../common/utils/module-key.util';
+import { ROLE_NAME_ALIASES } from '../common/constants/role-aliases';
 
 /**
  * Permission Inheritance Service
@@ -45,9 +46,17 @@ export class PermissionInheritanceService {
       return ['*'];
     }
 
-    // OWNER has full access within their organization
+    // OWNER has full access within their organization. The organization
+    // permission pool is the subset of permissions the owner may delegate to
+    // roles; the owner themselves is never restricted. When the pool is empty
+    // or unset (e.g. tenants provisioned by SUPER-ADMIN, which never writes a
+    // pool), fall back to full access.
     if (user.role === 'OWNER') {
-      return await this.getOrganizationPermissionPool(organizationId);
+      const pool = await this.getOrganizationPermissionPool(organizationId);
+      if (!pool || pool.length === 0) {
+        return ['*'];
+      }
+      return pool;
     }
 
     // Check if cache is valid (5 minutes)
@@ -313,10 +322,6 @@ export class PermissionInheritanceService {
       },
     });
 
-    if (userRoles.length === 0) {
-      return [];
-    }
-
     // Collect all permissions from all roles
     const allPermissions = new Set<string>();
 
@@ -328,10 +333,55 @@ export class PermissionInheritanceService {
       rolePermissions.forEach((perm) => allPermissions.add(perm));
     }
 
-    // Apply module-level restrictions
+    // Legacy-organization fallback: organizations provisioned before the
+    // UserRole join table existed have no join rows (the API guard resolves
+    // permissions from the user's role enum + Role rows by name). Mirror that
+    // here so /auth/me and the API guard agree on permissions.
+    if (userRoles.length === 0) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (user) {
+        const roleNames = ROLE_NAME_ALIASES[user.role] || [user.role];
+        const legacyRoles = await this.prisma.role.findMany({
+          where: {
+            organizationId,
+            name: { in: roleNames },
+          },
+          select: { id: true },
+        });
+        for (const legacyRole of legacyRoles) {
+          const rolePermissions = await this.getRoleEffectivePermissions(
+            legacyRole.id,
+            organizationId,
+          );
+          rolePermissions.forEach((perm) => allPermissions.add(perm));
+        }
+      }
+    }
+
+    // User-level overrides: granted adds, denied removes. Deny wins over
+    // role-granted permissions (user deny overrides role allow). Applied even
+    // when the user has no assigned roles — a direct grant must still work.
+    const userOverrides = await this.prisma.userPermission.findMany({
+      where: { userId, organizationId },
+      select: { permissionKey: true, granted: true },
+    });
+
+    for (const override of userOverrides) {
+      if (override.granted) {
+        allPermissions.add(override.permissionKey);
+      } else {
+        allPermissions.delete(override.permissionKey);
+      }
+    }
+
+    // Apply module-level restrictions (org modules + user module overrides)
     const finalPermissions = await this.applyModuleRestrictions(
       Array.from(allPermissions),
       organizationId,
+      userId,
     );
 
     return finalPermissions;
@@ -388,34 +438,59 @@ export class PermissionInheritanceService {
   }
 
   /**
-   * Apply module-level restrictions to permissions
+   * Apply module-level restrictions to permissions.
+   *
+   * Base set: modules enabled for the organization (legacy orgs with no module
+   * rows default to everything enabled). User-level module overrides (from
+   * UserModuleAccess) narrow or widen per user: allowed=false removes the
+   * module, allowed=true explicitly re-adds it even if the org row is off.
    */
   private async applyModuleRestrictions(
     permissions: string[],
     organizationId: string,
+    userId?: string,
   ): Promise<string[]> {
     // If the organization has no module configuration rows at all (legacy org),
     // all modules are enabled by default and nothing is filtered out.
     const moduleRowCount = await this.prisma.organizationModule.count({
       where: { organizationId },
     });
+
+    let enabledModuleKeys: Set<string>;
     if (moduleRowCount === 0) {
-      return permissions;
+      enabledModuleKeys = new Set<string>(); // empty = unrestricted below
+    } else {
+      const enabledModules = await this.prisma.organizationModule.findMany({
+        where: { organizationId, enabled: true },
+        select: { moduleKey: true },
+      });
+      enabledModuleKeys = new Set(enabledModules.map((m) => normalizeModuleKey(m.moduleKey)));
     }
 
-    // Get enabled modules for organization
-    const enabledModules = await this.prisma.organizationModule.findMany({
-      where: { organizationId, enabled: true },
-      select: { moduleKey: true, permissionSet: true },
-    });
+    // User-level module overrides.
+    const userModuleDenied = new Set<string>();
+    const userModuleAllowed = new Set<string>();
+    if (userId) {
+      const userModules = await this.prisma.userModuleAccess.findMany({
+        where: { userId, organizationId },
+        select: { moduleKey: true, allowed: true },
+      });
+      for (const um of userModules) {
+        const canonical = normalizeModuleKey(um.moduleKey);
+        if (um.allowed) userModuleAllowed.add(canonical);
+        else userModuleDenied.add(canonical);
+      }
+    }
 
-    // Canonicalize stored keys (singular) so legacy plural rows still match
-    const enabledModuleKeys = new Set(enabledModules.map((m) => normalizeModuleKey(m.moduleKey)));
-
-    // Filter permissions based on enabled modules
     const filteredPermissions = permissions.filter((permission) => {
-      const moduleKey = permission.split(':')[0]; // e.g., "customer" from "customer:list"
-      return enabledModuleKeys.has(normalizeModuleKey(moduleKey));
+      const moduleKey = normalizeModuleKey(permission.split(':')[0]);
+      // User deny wins over everything.
+      if (userModuleDenied.has(moduleKey)) return false;
+      // User allow re-enables even if the org module row is off.
+      if (userModuleAllowed.has(moduleKey)) return true;
+      // Org default: unrestricted when no module rows; otherwise must be enabled.
+      if (moduleRowCount === 0) return true;
+      return enabledModuleKeys.has(moduleKey);
     });
 
     return filteredPermissions;
