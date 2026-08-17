@@ -8,6 +8,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { AppModule } from './app.module';
+import { isOriginAllowed, parseAllowedOrigins } from './common/cors/allowed-origins';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { GlobalValidationPipe } from './common/pipes/validation.pipe';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -44,16 +45,34 @@ async function bootstrap() {
   if (!frontendUrl?.trim()) {
     throw new Error('FRONTEND_URL is required for CORS configuration');
   }
-  const allowedOrigins = frontendUrl
-    .split(',')
-    .map((u) => u.trim())
-    .filter(Boolean);
+  // Accept ALLOWED_ORIGINS (comma-separated) in addition to FRONTEND_URL.
+  // Origins are normalized (trailing slashes stripped, case-insensitive) and
+  // `*.vercel.app` previews are allowed unless explicitly disabled.
+  const rawOrigins = [configService.get<string>('ALLOWED_ORIGINS', ''), frontendUrl]
+    .filter(Boolean)
+    .join(',');
+  const corsOrigins = parseAllowedOrigins(rawOrigins);
+  const allowVercelPreview =
+    (configService.get<string>('CORS_ALLOW_VERCEL_PREVIEW', 'true') || 'true').toLowerCase() !==
+    'false';
+
   await app.register(cors, {
-    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin, corsOrigins, { allowVercelApp: allowVercelPreview })) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID', 'X-Request-ID'],
   });
+
+  console.log(
+    `CORS allowed origins: ${corsOrigins.join(', ') || '(none)'}` +
+      (allowVercelPreview ? ' (+ any *.vercel.app)' : ''),
+  );
 
   await app.register(cookie, {
     secret: configService.get<string>('cookieSecret')!,
