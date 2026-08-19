@@ -19,12 +19,11 @@ function appendPoolParams(url: string): string {
 }
 
 export function getPrismaConnectionUrl(): string {
-  const raw = (
+  const raw =
     process.env.DIRECT_DATABASE_URL ||
     process.env.DATABASE_URL?.replace(/[?&]pgbouncer=true/g, '') ||
     process.env.DATABASE_URL ||
-    ''
-  );
+    '';
   return appendPoolParams(raw);
 }
 
