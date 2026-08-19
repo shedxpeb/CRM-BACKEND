@@ -42,9 +42,9 @@ export default () => {
     },
     throttle: {
       ttlMs: parseInt(process.env.THROTTLE_TTL_MS || '60000', 10),
-      limit: parseInt(process.env.THROTTLE_LIMIT || '300', 10),       // Normal CRM API: 300 req/min
+      limit: parseInt(process.env.THROTTLE_LIMIT || '300', 10), // Normal CRM API: 300 req/min
       authLimit: parseInt(process.env.THROTTLE_AUTH_LIMIT || '30', 10), // Login/Register/OTP: 30 req/min
-      pdfLimit: parseInt(process.env.THROTTLE_PDF_LIMIT || '30', 10),   // PDF generation: 30 req/min
+      pdfLimit: parseInt(process.env.THROTTLE_PDF_LIMIT || '30', 10), // PDF generation: 30 req/min
       bulkLimit: parseInt(process.env.THROTTLE_BULK_LIMIT || '50', 10), // Bulk operations: 50 req/min
       passwordResetLimit: parseInt(process.env.THROTTLE_PASSWORD_RESET_LIMIT || '20', 10), // Password reset: 20 req/min
     },
