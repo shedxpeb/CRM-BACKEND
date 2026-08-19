@@ -598,6 +598,9 @@ export class DashboardService {
 
   // ─── PROJECTS ──────────────────────────────────────────────────────────────
 
+  /** Maximum projects to load for dashboard statistics. Prevents unbounded queries. */
+  private static readonly DASHBOARD_PROJECT_LIMIT = 1000;
+
   private async buildProjects(orgId: string, range: ResolvedDateRange, now: Date) {
     const lean = await this.prisma.project.findMany({
       where: { organizationId: orgId, isDeleted: false },
@@ -618,6 +621,7 @@ export class DashboardService {
         updatedAt: true,
       },
       orderBy: { endDate: 'asc' },
+      take: DashboardService.DASHBOARD_PROJECT_LIMIT,
     });
 
     const buckets = {
@@ -701,6 +705,9 @@ export class DashboardService {
     const monthEnd = new Date(now);
     monthEnd.setDate(monthEnd.getDate() + 30);
 
+    /** Timeline only shows upcoming + recent items, limit each to prevent unbounded queries. */
+    const TIMELINE_LIMIT = 500;
+
     const [projects, milestones, tasks] = await Promise.all([
       this.prisma.project.findMany({
         where: { organizationId: orgId, isDeleted: false, endDate: { not: null } },
@@ -714,6 +721,7 @@ export class DashboardService {
           endDate: true,
         },
         orderBy: { endDate: 'asc' },
+        take: TIMELINE_LIMIT,
       }),
       this.prisma.projectMilestone.findMany({
         where: { project: { organizationId: orgId }, plannedDate: { not: null } },
@@ -725,11 +733,13 @@ export class DashboardService {
           project: { select: { id: true, projectName: true, projectCode: true, status: true } },
         },
         orderBy: { plannedDate: 'asc' },
+        take: TIMELINE_LIMIT,
       }),
       this.prisma.task.findMany({
         where: { organizationId: orgId, isDeleted: false },
         select: { id: true, title: true, dueDate: true, status: true, projectId: true },
         orderBy: { dueDate: 'asc' },
+        take: TIMELINE_LIMIT,
       }),
     ]);
 
@@ -1344,6 +1354,10 @@ export class DashboardService {
     const where: Record<string, unknown> = { organizationId: orgId, isDeleted: false };
     if (dto.projectId) where.id = dto.projectId;
 
+    /** Gantt view limits to prevent unbounded queries under load. */
+    const GANTT_PROJECT_LIMIT = 500;
+    const GANTT_TASK_LIMIT = 2000;
+
     const projects = await this.prisma.project.findMany({
       where,
       select: {
@@ -1375,6 +1389,7 @@ export class DashboardService {
         },
       },
       orderBy: { createdAt: 'asc' },
+      take: GANTT_PROJECT_LIMIT,
     });
 
     const projectIds = projects.map((p) => p.id);
@@ -1403,6 +1418,7 @@ export class DashboardService {
         completedAt: true,
       },
       orderBy: { startDate: 'asc' },
+      take: GANTT_TASK_LIMIT,
     });
 
     const taskDeps = await this.prisma.taskDependency.findMany({

@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import helmet from '@fastify/helmet';
+import compress from '@fastify/compress';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
@@ -39,6 +40,14 @@ async function bootstrap() {
   await app.register(helmet, {
     contentSecurityPolicy: nodeEnv === 'production',
     crossOriginEmbedderPolicy: false,
+  });
+
+  // Compression — compress API responses with gzip/brotli.
+  // NGINX/CloudPanel may also compress; Fastify-level compression is lightweight
+  // and ensures API responses are compressed even if proxied without NGINX gzip.
+  await app.register(compress, {
+    encodings: ['br', 'gzip', 'deflate'],
+    threshold: 1024, // Only compress responses > 1 KB
   });
 
   const frontendUrl = configService.get<string>('frontendUrl');

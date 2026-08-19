@@ -73,13 +73,13 @@ export class HtmlPdfService {
 
     const html = template(data);
 
-    // Save generated HTML to file for debugging
-    const debugHtmlPath = path.join(process.cwd(), 'debug-pdf-output.html');
-    fs.writeFileSync(debugHtmlPath, html);
-    this.logger.log(`Generated HTML saved to: ${debugHtmlPath}`);
-
-    // Log first 500 chars of generated HTML for debugging
-    this.logger.log(`Generated HTML preview (first 500 chars): ${html.substring(0, 500)}`);
+    // Save generated HTML to file for debugging (development only — never write debug artifacts in production)
+    if (process.env.NODE_ENV !== 'production') {
+      const debugHtmlPath = path.join(process.cwd(), 'debug-pdf-output.html');
+      fs.writeFileSync(debugHtmlPath, html);
+      this.logger.log(`Generated HTML saved to: ${debugHtmlPath}`);
+      this.logger.log(`Generated HTML preview (first 500 chars): ${html.substring(0, 500)}`);
+    }
 
     const browser = await chromium.launch({
       headless: true,

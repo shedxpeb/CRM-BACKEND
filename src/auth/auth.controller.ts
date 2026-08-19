@@ -42,7 +42,10 @@ interface RequestWithUser extends FastifyRequest {
 }
 
 /** Stricter limit for credential / OTP endpoints (not session refresh). */
-const AUTH_STRICT = { default: { limit: 10, ttl: 60_000 } };
+const AUTH_STRICT = { default: { limit: 30, ttl: 60_000 } };
+
+/** Even stricter limit for password reset / forgot-password endpoints. */
+const PASSWORD_RESET_THROTTLE = { default: { limit: 20, ttl: 60_000 } };
 
 @ApiTags('auth')
 @Controller('auth')
@@ -141,7 +144,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle(AUTH_STRICT)
+  @Throttle(PASSWORD_RESET_THROTTLE)
   @Post('send-forgot-password-otp')
   @ApiOperation({ summary: 'Send forgot-password OTP' })
   sendForgotPasswordOtp(@Body() dto: SendForgotPasswordOtpDto, @Req() req: FastifyRequest) {
@@ -150,7 +153,7 @@ export class AuthController {
 
   /** Legacy alias */
   @Public()
-  @Throttle(AUTH_STRICT)
+  @Throttle(PASSWORD_RESET_THROTTLE)
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset OTP (legacy alias)' })
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: FastifyRequest) {
@@ -158,7 +161,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle(AUTH_STRICT)
+  @Throttle(PASSWORD_RESET_THROTTLE)
   @Post('verify-forgot-password-otp')
   @ApiOperation({ summary: 'Verify forgot-password OTP' })
   verifyForgotPasswordOtp(@Body() dto: VerifyForgotPasswordOtpDto) {
@@ -166,7 +169,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle(AUTH_STRICT)
+  @Throttle(PASSWORD_RESET_THROTTLE)
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password with OTP' })
   resetPassword(@Body() dto: ResetPasswordDto) {
