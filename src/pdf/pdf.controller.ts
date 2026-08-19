@@ -8,6 +8,7 @@ import {
   Header,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiProduces } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -109,6 +110,9 @@ function formatDate(d?: Date): string | undefined {
   });
 }
 
+/** PDF generation is CPU/memory-intensive (Playwright Chromium). Stricter throttle. */
+const PDF_THROTTLE = { default: { limit: 30, ttl: 60_000 } };
+
 @ApiTags('purchase-order-pdf')
 @ApiBearerAuth()
 @Controller('purchase-order')
@@ -120,6 +124,7 @@ export class PdfController {
     private readonly htmlPdfService: HtmlPdfService,
   ) {}
 
+  @Throttle(PDF_THROTTLE)
   @Get(':id/pdf')
   @RequirePermissions('purchase-order:read')
   @ApiOperation({ summary: 'Generate and stream Purchase Order PDF' })
