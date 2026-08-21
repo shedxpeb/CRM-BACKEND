@@ -275,7 +275,7 @@ export class RolesService {
     }
 
     // Check if role is assigned to users
-    const userRoles = await this.prisma.userRole.findMany({
+    const userRoles = await this.prisma.userRoleAssignment.findMany({
       where: { roleId: id },
     });
     if (userRoles.length > 0) {
@@ -318,7 +318,7 @@ export class RolesService {
     }
 
     // Check if assignment already exists
-    const existing = await this.prisma.userRole.findFirst({
+    const existing = await this.prisma.userRoleAssignment.findFirst({
       where: { userId, roleId, organizationId },
     });
     if (existing) {
@@ -326,7 +326,7 @@ export class RolesService {
     }
 
     // Assign role
-    await this.prisma.userRole.create({
+    await this.prisma.userRoleAssignment.create({
       data: {
         userId,
         roleId,
@@ -342,12 +342,12 @@ export class RolesService {
   }
 
   async removeRoleFromUser(userId: string, roleId: string, organizationId: string) {
-    const userRole = await this.prisma.userRole.findFirst({
+    const userRole = await this.prisma.userRoleAssignment.findFirst({
       where: { userId, roleId, organizationId },
     });
     if (!userRole) throw new NotFoundException('Role assignment not found');
 
-    await this.prisma.userRole.delete({
+    await this.prisma.userRoleAssignment.delete({
       where: { id: userRole.id },
     });
 
@@ -373,7 +373,7 @@ export class RolesService {
   }
 
   async getUserRoles(userId: string, organizationId: string) {
-    const userRoles = await this.prisma.userRole.findMany({
+    const userRoles = await this.prisma.userRoleAssignment.findMany({
       where: { userId, organizationId },
       include: {
         role: {
@@ -399,7 +399,7 @@ export class RolesService {
 
   private async invalidateRoleCache(roleId: string) {
     // Get all users with this role
-    const userRoles = await this.prisma.userRole.findMany({
+    const userRoles = await this.prisma.userRoleAssignment.findMany({
       where: { roleId },
       select: { userId: true },
     });

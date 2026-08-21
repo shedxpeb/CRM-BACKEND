@@ -53,7 +53,7 @@ model Organization {
   suppliers            Supplier[]
   tasks                Task[]
   users                User[]
-  userRoles            UserRole[]
+  userRoles            UserRoleAssignment[]
   vendors              Vendor[]
   warehouses           Warehouse[]
 
@@ -95,7 +95,7 @@ model User {
   deletedById               String?
   isDeleted                 Boolean          @default(false)
   version                   Int              @default(1)
-  role                      SystemRole       @default(EMPLOYEE)
+  role                      CrmUserRole      @default(EMPLOYEE)
   effectivePermissions      Json?
   lastPermissionCalculation DateTime?
   permissionVersion         Int              @default(1)
@@ -103,7 +103,7 @@ model User {
   refreshTokens             RefreshToken[]
   sessions                  Session[]
   organization              Organization?    @relation(fields: [organizationId], references: [id])
-  userRoles                 UserRole[]
+  userRoles                 UserRoleAssignment[]
   userPermissions           UserPermission[]
   userModuleAccess          UserModuleAccess[]
 
@@ -258,7 +258,7 @@ model Role {
   inheritedRoles  Role[]           @relation("RoleHierarchy")
   organization    Organization     @relation(fields: [organizationId], references: [id])
   rolePermissions RolePermission[]
-  userRoles       UserRole[]
+  userRoles       UserRoleAssignment[]
 
   @@unique([organizationId, name])
   @@unique([organizationId, code])
@@ -287,7 +287,7 @@ model Permission {
   @@index([action])
 }
 
-model UserRole {
+model UserRoleAssignment {
   id             String       @id @default(uuid())
   userId         String
   roleId         String
@@ -302,6 +302,8 @@ model UserRole {
   @@index([userId])
   @@index([roleId])
   @@index([organizationId])
+
+  @@map("user_roles")
 }
 
 model RolePermission {
@@ -1530,19 +1532,13 @@ enum BusinessType {
   Other
 }
 
-enum SystemRole {
+enum CrmUserRole {
   SUPER_ADMIN
-  COMPANY_OWNER
-  ADMIN
-  SALES_MANAGER
-  SALES_EXECUTIVE
-  PROJECT_MANAGER
-  PURCHASE_MANAGER
-  INVENTORY_MANAGER
-  ACCOUNTANT
-  VIEW_ONLY
-  EMPLOYEE
   OWNER
+  EMPLOYEE
+  ADMIN
+
+  @@map("UserRole")
 }
 
 enum OrganizationType {

@@ -100,7 +100,7 @@ export class OrganizationBootstrapService {
         this.logger.log('Step 4: Assigning admin role to user');
         const adminRole = defaultRoles.find((r: any) => r.code === 'ADMIN');
         if (adminRole) {
-          await tx.userRole.create({
+          await tx.userRoleAssignment.create({
             data: {
               userId: adminUser.id,
               roleId: adminRole.id,
