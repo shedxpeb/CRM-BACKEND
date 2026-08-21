@@ -95,7 +95,7 @@ async function main() {
       skipped++;
       continue;
     }
-    const existing = await prisma.userRole.findUnique({
+    const existing = await prisma.userRoleAssignment.findUnique({
       where: {
         userId_roleId_organizationId: {
           userId: u.id,
@@ -106,7 +106,7 @@ async function main() {
       select: { id: true },
     });
     if (!existing) {
-      await prisma.userRole.create({
+      await prisma.userRoleAssignment.create({
         data: {
           userId: u.id,
           roleId: role.id,

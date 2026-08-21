@@ -307,7 +307,7 @@ export class PermissionInheritanceService {
     organizationId: string,
   ): Promise<string[]> {
     // Get user's roles
-    const userRoles = await this.prisma.userRole.findMany({
+    const userRoles = await this.prisma.userRoleAssignment.findMany({
       where: { userId, organizationId },
       include: {
         role: {
@@ -501,7 +501,7 @@ export class PermissionInheritanceService {
    */
   private async invalidateRolePermissionCache(roleId: string): Promise<void> {
     // Get all users with this role
-    const userRoles = await this.prisma.userRole.findMany({
+    const userRoles = await this.prisma.userRoleAssignment.findMany({
       where: { roleId },
       select: { userId: true },
     });

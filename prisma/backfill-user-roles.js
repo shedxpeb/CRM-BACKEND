@@ -28,7 +28,7 @@ async function backfill(target) {
       noOrg++;
       continue;
     }
-    const existing = await prisma.userRole.count({
+    const existing = await prisma.userRoleAssignment.count({
       where: { userId: user.id, organizationId: user.organizationId },
     });
     if (existing > 0) {
@@ -44,7 +44,7 @@ async function backfill(target) {
       console.log(`NO ROLE for ${user.email} (${user.role}) in org ${user.organizationId}`);
       continue;
     }
-    await prisma.userRole.create({
+    await prisma.userRoleAssignment.create({
       data: {
         userId: user.id,
         roleId: role.id,
