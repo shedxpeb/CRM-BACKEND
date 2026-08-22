@@ -2,7 +2,6 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsEnum,
   MinLength,
   MaxLength,
   Matches,
@@ -39,8 +38,9 @@ export class CreateUserDto {
   @MaxLength(100)
   designation?: string;
 
-  @IsEnum(UserRoleEnum)
-  role: UserRoleEnum;
+  @IsString()
+  @MaxLength(50)
+  role: string;
 
   @IsOptional()
   @IsString()

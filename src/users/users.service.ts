@@ -12,6 +12,9 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { GetUsersDto } from './dto/get-users.dto';
 
+/** Valid CrmUserRole values accepted by the Prisma enum. */
+const VALID_CRM_ROLES = new Set(['SUPER_ADMIN', 'OWNER', 'EMPLOYEE', 'ADMIN']);
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -119,6 +122,12 @@ export class UsersService {
     const password = dto.password || this.generateTempPassword();
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // Map role to a valid CrmUserRole for the Prisma enum.
+    // The frontend may send custom role names (e.g. from the Role table).
+    const roleValue = VALID_CRM_ROLES.has(dto.role?.toUpperCase())
+      ? (dto.role.toUpperCase() as any)
+      : ('EMPLOYEE' as any);
+
     const user = await this.prisma.user.create({
       data: {
         organizationId,
@@ -127,8 +136,7 @@ export class UsersService {
         mobile: dto.mobile,
         department: dto.department,
         designation: dto.designation,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        role: dto.role as any,
+        role: roleValue,
         password: passwordHash,
         isActive: dto.isActive ?? true,
         isVerified: true,

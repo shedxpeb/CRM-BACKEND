@@ -74,12 +74,16 @@ export class SessionService {
     }
     const now = new Date();
     if (now > session.expiresAt) {
-      this.logger.debug(`Session ${sessionId} expired (expiresAt=${session.expiresAt.toISOString()})`);
+      this.logger.debug(
+        `Session ${sessionId} expired (expiresAt=${session.expiresAt.toISOString()})`,
+      );
       await this.revokeSession(session.id);
       return null;
     }
     if (now > session.idleExpiresAt) {
-      this.logger.debug(`Session ${sessionId} idle expired (idleExpiresAt=${session.idleExpiresAt.toISOString()}, lastActivity=${session.lastActivity.toISOString()})`);
+      this.logger.debug(
+        `Session ${sessionId} idle expired (idleExpiresAt=${session.idleExpiresAt.toISOString()}, lastActivity=${session.lastActivity.toISOString()})`,
+      );
       await this.revokeSession(session.id);
       return null;
     }
