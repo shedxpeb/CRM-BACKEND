@@ -387,10 +387,14 @@ export class AuthService {
       include: { session: true, user: true },
     });
 
-    if (!storedToken) throw new UnauthorizedException('Invalid refresh token');
+    if (!storedToken) {
+      this.logger.warn(`Refresh rejected: token not found in DB`);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
     // Replay protection with grace for concurrent multi-tab / dual-caller refresh
     if (storedToken.isRevoked) {
+      this.logger.debug(`Refresh: token ${tokenHash.slice(0, 8)}... is revoked (revokedAt=${storedToken.revokedAt?.toISOString()}, replacedBy=${storedToken.replacedByTokenHash ? 'yes' : 'no'})`);
       const graceMs = parseInt(process.env.REFRESH_REUSE_GRACE_MS || '10000', 10);
       const revokedRecently =
         storedToken.revokedAt &&
@@ -427,9 +431,12 @@ export class AuthService {
       await this.sessionService.revokeAllUserSessions(storedToken.userId);
       throw new UnauthorizedException('Refresh token has been revoked');
     }
-    if (new Date() > storedToken.expiresAt)
+    if (new Date() > storedToken.expiresAt) {
+      this.logger.warn(`Refresh rejected: token expired (expiresAt=${storedToken.expiresAt.toISOString()}) for user ${storedToken.user.email}`);
       throw new UnauthorizedException('Refresh token has expired');
+    }
     if (storedToken.session.isRevoked) {
+      this.logger.warn(`Refresh rejected: session ${storedToken.sessionId} is revoked for user ${storedToken.user.email}`);
       await this.prisma.refreshToken.update({
         where: { id: storedToken.id },
         data: { isRevoked: true, revokedAt: new Date() },
@@ -440,6 +447,7 @@ export class AuthService {
       new Date() > storedToken.session.expiresAt ||
       new Date() > storedToken.session.idleExpiresAt
     ) {
+      this.logger.warn(`Refresh rejected: session ${storedToken.sessionId} expired for user ${storedToken.user.email} (expiresAt=${storedToken.session.expiresAt.toISOString()}, idleExpiresAt=${storedToken.session.idleExpiresAt.toISOString()})`);
       await this.sessionService.revokeSession(storedToken.sessionId);
       throw new UnauthorizedException('Session has expired');
     }

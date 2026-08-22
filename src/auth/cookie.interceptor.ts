@@ -11,7 +11,7 @@ export class CookieInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const res = context.switchToHttp().getResponse<FastifyReply>();
     const name = this.config.get<string>('cookie.refreshName') || 'refreshToken';
-    const path = this.config.get<string>('cookie.path') || '/auth';
+    const path = this.config.get<string>('cookie.path') || '/';
     const sameSite = (this.config.get<string>('cookie.sameSite') || 'lax') as
       | 'lax'
       | 'strict'
@@ -21,23 +21,43 @@ export class CookieInterceptor implements NestInterceptor {
     const rememberDays = this.config.get<number>('session.rememberMeDays') || 30;
     const absoluteDays = this.config.get<number>('session.absoluteDays') || 1;
 
+    // Derive cookie domain from the frontend URL so the cookie is shared across
+    // buildxcrm.com ↔ api.buildxcrm.com. Falls back to no domain (request-scoped).
+    const frontendUrl = this.config.get<string>('frontendUrl') || '';
+    let cookieDomain: string | undefined;
+    try {
+      const host = new URL(frontendUrl).hostname;
+      cookieDomain = host.replace(/^www\./, '');
+    } catch {
+      // Invalid URL — leave domain undefined so it defaults to request host
+    }
+
     return next.handle().pipe(
       map((data) => {
         if (data?.refreshToken) {
           const maxAge = (data.rememberMe ? rememberDays : absoluteDays) * 24 * 60 * 60;
-          res.setCookie(name, data.refreshToken, {
+          const cookieOpts: Record<string, unknown> = {
             path,
             httpOnly: true,
             secure,
             sameSite,
             signed,
             maxAge,
-          });
+          };
+          if (cookieDomain) cookieOpts.domain = cookieDomain;
+          res.setCookie(name, data.refreshToken, cookieOpts);
           const { refreshToken: _refreshToken, rememberMe: _rememberMe, ...rest } = data;
           return rest;
         }
         if (data?.clearRefreshCookie) {
-          res.clearCookie(name, { path, httpOnly: true, secure, sameSite });
+          const clearOpts: Record<string, unknown> = {
+            path,
+            httpOnly: true,
+            secure,
+            sameSite,
+          };
+          if (cookieDomain) clearOpts.domain = cookieDomain;
+          res.clearCookie(name, clearOpts);
           const { clearRefreshCookie: _clearRefreshCookie, ...rest } = data;
           return Object.keys(rest).length
             ? rest

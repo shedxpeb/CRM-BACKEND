@@ -40,33 +40,6 @@ export class ProjectService extends BaseQueryService {
     });
   }
 
-  /**
-   * Return users who can be assigned as project managers.
-   * Scoped to the authenticated user's organization.
-   * Uses project:read permission (not user:list).
-   */
-  async getManagers(organizationId: string) {
-    if (!organizationId) {
-      throw new ForbiddenException('Organization context is required');
-    }
-    const users = await this.prisma.user.findMany({
-      where: {
-        organizationId,
-        isActive: true,
-        isDeleted: false,
-        isLocked: false,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-      orderBy: { name: 'asc' },
-    });
-    return users;
-  }
-
   async findAll(query: GetProjectsDto, organizationId?: string) {
     if (!organizationId) {
       throw new ForbiddenException('Organization context is required');
