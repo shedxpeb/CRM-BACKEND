@@ -17,18 +17,6 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
-  /**
-   * Return assignable project managers for the current organization.
-   * Uses project:read permission (already granted to employees who can create projects)
-   * instead of user:list which EMPLOYEEs do not have.
-   */
-  @Get('managers')
-  @RequirePermissions('project:read')
-  async getManagers(@CurrentUser('organizationId') organizationId: string) {
-    const data = await this.projectService.getManagers(organizationId);
-    return { message: 'Project managers fetched successfully.', data };
-  }
-
   @Get()
   @RequirePermissions('project:list')
   async findAll(

@@ -68,9 +68,18 @@ export class SessionService {
 
   async validateSessionById(sessionId: string) {
     const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
-    if (!session || session.isRevoked) return null;
+    if (!session || session.isRevoked) {
+      this.logger.debug(`Session ${sessionId} invalid: ${!session ? 'not found' : 'revoked'}`);
+      return null;
+    }
     const now = new Date();
-    if (now > session.expiresAt || now > session.idleExpiresAt) {
+    if (now > session.expiresAt) {
+      this.logger.debug(`Session ${sessionId} expired (expiresAt=${session.expiresAt.toISOString()})`);
+      await this.revokeSession(session.id);
+      return null;
+    }
+    if (now > session.idleExpiresAt) {
+      this.logger.debug(`Session ${sessionId} idle expired (idleExpiresAt=${session.idleExpiresAt.toISOString()}, lastActivity=${session.lastActivity.toISOString()})`);
       await this.revokeSession(session.id);
       return null;
     }
