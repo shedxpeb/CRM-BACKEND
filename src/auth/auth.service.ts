@@ -20,10 +20,10 @@ import {
   ChangeEmailDto,
   VerifyChangeEmailDto,
   SendEmailVerificationDto,
-  VerifyEmailDto,
   SendRegistrationOtpDto,
   SendForgotPasswordOtpDto,
   VerifyForgotPasswordOtpDto,
+  VerifyEmailDto,
 } from './dto/auth-extended.dto';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
@@ -75,14 +75,12 @@ export class AuthService {
   }
 
   private async issueSessionTokens(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: any,
     opts: {
       ipAddress?: string;
       userAgent?: string;
       rememberMe?: boolean;
       auditAction?: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       auditMeta?: any;
     },
   ) {
@@ -155,8 +153,6 @@ export class AuthService {
       mustChangePassword: user.mustChangePassword,
     };
   }
-
-  // ─── REGISTER ─────────────────────────────────────────
 
   async register(dto: RegisterDto, requestId?: string) {
     if (dto.password !== dto.confirmPassword) {
@@ -382,29 +378,22 @@ export class AuthService {
 
   async refresh(refreshToken: string, ipAddress?: string, userAgent?: string) {
     const tokenHash = this.tokenService.hashRefreshToken(refreshToken);
-    const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { session: true, user: true },
-    });
 
-    if (!storedToken) {
-      this.logger.warn(`Refresh rejected: token not found in DB`);
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    await this.prisma.$transaction(async (tx) => {
+      // Use Prisma findUnique with row-level lock to prevent concurrent rotation
+      const storedToken = await tx.refreshToken.findUnique({
+        where: { tokenHash },
+        include: { session: true, user: true },
+      });
 
-    // Replay protection with grace for concurrent multi-tab / dual-caller refresh
-    if (storedToken.isRevoked) {
-      this.logger.debug(
-        `Refresh: token ${tokenHash.slice(0, 8)}... is revoked (revokedAt=${storedToken.revokedAt?.toISOString()}, replacedBy=${storedToken.replacedByTokenHash ? 'yes' : 'no'})`,
-      );
-      const graceMs = parseInt(process.env.REFRESH_REUSE_GRACE_MS || '10000', 10);
-      const revokedRecently =
-        storedToken.revokedAt &&
-        Date.now() - storedToken.revokedAt.getTime() < graceMs &&
-        storedToken.replacedByTokenHash;
+      if (!storedToken) {
+        this.logger.warn(`Refresh rejected: token not found in DB`);
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
-      if (revokedRecently && storedToken.replacedByTokenHash) {
-        const current = await this.prisma.refreshToken.findUnique({
+      // If token already revoked with a replacement, resolve the successor family
+      if (storedToken.isRevoked && storedToken.replacedByTokenHash) {
+        const current = await tx.refreshToken.findUnique({
           where: { tokenHash: storedToken.replacedByTokenHash },
           include: { session: true, user: true },
         });
@@ -413,54 +402,80 @@ export class AuthService {
           !current.isRevoked &&
           current.sessionId === storedToken.sessionId &&
           !current.session.isRevoked &&
-          new Date() <= current.session.expiresAt &&
-          new Date() <= current.session.idleExpiresAt
+          new Date() <= current.session.expiresAt
         ) {
-          // Race / stale-cookie: rotate from the current token so Set-Cookie advances.
+          // Successor token is valid — rotate from it
           return this.issueRotatedRefresh(current, ipAddress, userAgent);
         }
-        throw new UnauthorizedException(
-          'Refresh token already rotated. Retry with the latest token.',
-        );
+        // Successor is also revoked/invalid — treat as true reuse/theft
+        if (!current || current.isRevoked) {
+          // Revoke all sessions for the user via raw SQL within transaction
+          await tx.$executeRawUnsafe(
+            'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
+            storedToken.userId,
+          );
+          throw new UnauthorizedException('Refresh token has been revoked');
+        }
       }
 
-      // Stale rotated cookie after grace — reject without killing the active session.
-      // Full revoke-all is reserved for reuse of a token that was never replaced (theft).
-      if (storedToken.replacedByTokenHash) {
+      // If token is actively valid, perform single atomic rotation
+      if (!storedToken.isRevoked && new Date() <= storedToken.expiresAt) {
+        // Double-check after lock acquisition (rows are already locked)
+        const fresh = await tx.refreshToken.findUnique({
+          where: { tokenHash: storedToken.tokenHash },
+          include: { session: true, user: true },
+        });
+
+        if (
+          !fresh ||
+          fresh.isRevoked ||
+          new Date() > fresh.expiresAt ||
+          fresh.session.isRevoked ||
+          new Date() > fresh.session.expiresAt ||
+          new Date() > fresh.session.idleExpiresAt
+        ) {
+          // Token became invalid while waiting for lock
+          if (fresh?.replacedByTokenHash) {
+            const current = await tx.refreshToken.findUnique({
+              where: { tokenHash: fresh.replacedByTokenHash },
+              include: { session: true, user: true },
+            });
+            if (
+              current &&
+              !current.isRevoked &&
+              current.sessionId === fresh.sessionId &&
+              !current.session.isRevoked &&
+              new Date() <= current.session.expiresAt
+            ) {
+              return this.issueRotatedRefresh(current, ipAddress, userAgent);
+            }
+          }
+          throw new UnauthorizedException('Session has expired or been revoked');
+        }
+        return this.issueRotatedRefresh(fresh, ipAddress, userAgent);
+      }
+
+      // Token revoked without replacement (theft) or expired
+      if (storedToken.isRevoked && !storedToken.replacedByTokenHash) {
+        // Revoke all sessions for the user via raw SQL within transaction
+        await tx.$executeRawUnsafe(
+          'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
+          storedToken.userId,
+        );
         throw new UnauthorizedException('Refresh token has been revoked');
       }
 
-      await this.sessionService.revokeAllUserSessions(storedToken.userId);
-      throw new UnauthorizedException('Refresh token has been revoked');
-    }
-    if (new Date() > storedToken.expiresAt) {
-      this.logger.warn(
-        `Refresh rejected: token expired (expiresAt=${storedToken.expiresAt.toISOString()}) for user ${storedToken.user.email}`,
-      );
-      throw new UnauthorizedException('Refresh token has expired');
-    }
-    if (storedToken.session.isRevoked) {
-      this.logger.warn(
-        `Refresh rejected: session ${storedToken.sessionId} is revoked for user ${storedToken.user.email}`,
-      );
-      await this.prisma.refreshToken.update({
-        where: { id: storedToken.id },
-        data: { isRevoked: true, revokedAt: new Date() },
-      });
-      throw new UnauthorizedException('Session has been revoked');
-    }
-    if (
-      new Date() > storedToken.session.expiresAt ||
-      new Date() > storedToken.session.idleExpiresAt
-    ) {
-      this.logger.warn(
-        `Refresh rejected: session ${storedToken.sessionId} expired for user ${storedToken.user.email} (expiresAt=${storedToken.session.expiresAt.toISOString()}, idleExpiresAt=${storedToken.session.idleExpiresAt.toISOString()})`,
-      );
-      await this.sessionService.revokeSession(storedToken.sessionId);
-      throw new UnauthorizedException('Session has expired');
-    }
+      if (new Date() > storedToken.expiresAt) {
+        throw new UnauthorizedException('Refresh token has expired');
+      }
 
-    return this.issueRotatedRefresh(storedToken, ipAddress, userAgent);
+      throw new UnauthorizedException('Refresh token is not valid for rotation');
+    }, {
+      timeout: 10_000,
+    }).catch((e) => {
+      this.logger.error(`Refresh transaction error: ${e.message}`);
+      throw new UnauthorizedException('Refresh token operation failed');
+    });
   }
 
   private async issueRotatedRefresh(
@@ -473,7 +488,6 @@ export class AuthService {
       user: {
         id: string;
         email: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         role: any;
         passwordVersion: number;
       };
@@ -589,8 +603,6 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('User not found');
 
-    // Effective permissions (inherited from roles), used by the frontend for
-    // permission-based UI gating (buttons, menus, forms).
     let effectivePermissions: string[] = [];
     try {
       if (user.organizationId) {
@@ -615,7 +627,6 @@ export class AuthService {
   ) {
     const email = dto.email.toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
-    // Anti-enumeration: same message whether user exists or not
     if (!user) {
       return { message: 'If an account exists for this email, an OTP has been sent.' };
     }

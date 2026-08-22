@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -90,23 +91,35 @@ export class SessionService {
     return session;
   }
 
-  async touchSession(sessionId: string) {
+  async touchSession(sessionId: string, tx?: { session: { update: (arg0: { where: { id: string }, data: { lastActivity: Date; idleExpiresAt: Date } }) => Promise<any> } }) {
     const now = new Date();
-    const session = await this.prisma.session.findUnique({
-      where: { id: sessionId },
-      select: { lastActivity: true },
-    });
-    // Throttle DB writes: only touch if last activity older than 60s
-    if (session?.lastActivity && now.getTime() - session.lastActivity.getTime() < 60_000) {
-      return;
+    const prisma = tx?.session?.update ? null : this.prisma;
+    if (tx && tx.session?.update) {
+      await tx.session.update({
+        where: { id: sessionId },
+        data: {
+          lastActivity: now,
+          idleExpiresAt: new Date(now.getTime() + this.idleMs()),
+        },
+      });
+    } else {
+      const p = prisma ?? this.prisma;
+      const session = await p.session.findUnique({
+        where: { id: sessionId },
+        select: { lastActivity: true },
+      });
+      // Throttle DB writes: only touch if last activity older than 60s
+      if (session?.lastActivity && now.getTime() - session.lastActivity.getTime() < 60_000) {
+        return;
+      }
+      await p.session.update({
+        where: { id: sessionId },
+        data: {
+          lastActivity: now,
+          idleExpiresAt: new Date(now.getTime() + this.idleMs()),
+        },
+      });
     }
-    await this.prisma.session.update({
-      where: { id: sessionId },
-      data: {
-        lastActivity: now,
-        idleExpiresAt: new Date(now.getTime() + this.idleMs()),
-      },
-    });
   }
 
   async revokeSession(sessionId: string) {
