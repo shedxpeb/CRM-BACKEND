@@ -63,11 +63,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
     // Temporary lockout (failed login protection)
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      this.logger.warn(`Auth rejected: user ${payload.email} temporarily locked until ${user.lockedUntil.toISOString()}`);
+      this.logger.warn(
+        `Auth rejected: user ${payload.email} temporarily locked until ${user.lockedUntil.toISOString()}`,
+      );
       throw new UnauthorizedException('Account is temporarily locked. Try again later.');
     }
     if (payload.passwordVersion !== undefined && payload.passwordVersion !== user.passwordVersion) {
-      this.logger.warn(`Auth rejected: user ${payload.email} passwordVersion mismatch (jwt=${payload.passwordVersion}, db=${user.passwordVersion})`);
+      this.logger.warn(
+        `Auth rejected: user ${payload.email} passwordVersion mismatch (jwt=${payload.passwordVersion}, db=${user.passwordVersion})`,
+      );
       throw new UnauthorizedException('Session is no longer valid. Please sign in again.');
     }
 
@@ -78,7 +82,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const session = await this.sessionService.validateSessionById(payload.sessionId);
     if (!session) {
-      this.logger.warn(`Auth rejected: session ${payload.sessionId} invalid for user ${payload.email} (expired or revoked)`);
+      this.logger.warn(
+        `Auth rejected: session ${payload.sessionId} invalid for user ${payload.email} (expired or revoked)`,
+      );
       throw new UnauthorizedException('Session has expired or been revoked');
     }
 
@@ -97,7 +103,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       user.organizationId &&
       payload.organizationId !== user.organizationId
     ) {
-      this.logger.warn(`Auth rejected: tenant mismatch for ${payload.email} (jwt=${payload.organizationId}, db=${user.organizationId})`);
+      this.logger.warn(
+        `Auth rejected: tenant mismatch for ${payload.email} (jwt=${payload.organizationId}, db=${user.organizationId})`,
+      );
       throw new UnauthorizedException('Tenant context mismatch detected');
     }
 
