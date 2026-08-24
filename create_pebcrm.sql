@@ -1,1 +1,1 @@
-CREATE DATABASE "peb-crm";
+CREATE DATABASE "BuildX";

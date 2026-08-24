@@ -1,10 +1,13 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable, map } from 'rxjs';
 import { FastifyReply } from 'fastify';
 
 @Injectable()
 export class CookieInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(CookieInterceptor.name);
+
   constructor(private readonly config: ConfigService) {}
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,6 +49,9 @@ export class CookieInterceptor implements NestInterceptor {
           };
           if (cookieDomain) cookieOpts.domain = cookieDomain;
           res.setCookie(name, data.refreshToken, cookieOpts);
+          this.logger.log(
+            `REFRESH_COOKIE_ISSUED: name=${name}, domain=${cookieDomain || 'none'}, path=${path}, httpOnly=true, secure=${secure}, sameSite=${sameSite}`,
+          );
           const { refreshToken: _refreshToken, rememberMe: _rememberMe, ...rest } = data;
           return rest;
         }

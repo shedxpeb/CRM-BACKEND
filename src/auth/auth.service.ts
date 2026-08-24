@@ -379,103 +379,108 @@ export class AuthService {
   async refresh(refreshToken: string, ipAddress?: string, userAgent?: string) {
     const tokenHash = this.tokenService.hashRefreshToken(refreshToken);
 
-    await this.prisma.$transaction(async (tx) => {
-      // Use Prisma findUnique with row-level lock to prevent concurrent rotation
-      const storedToken = await tx.refreshToken.findUnique({
-        where: { tokenHash },
-        include: { session: true, user: true },
-      });
+    return this.prisma
+      .$transaction(
+        async (tx) => {
+          // Use Prisma findUnique with row-level lock to prevent concurrent rotation
+          const storedToken = await tx.refreshToken.findUnique({
+            where: { tokenHash },
+            include: { session: true, user: true },
+          });
 
-      if (!storedToken) {
-        this.logger.warn(`Refresh rejected: token not found in DB`);
-        throw new UnauthorizedException('Invalid refresh token');
-      }
+          if (!storedToken) {
+            this.logger.warn(`Refresh rejected: token not found in DB`);
+            throw new UnauthorizedException('Invalid refresh token');
+          }
 
-      // If token already revoked with a replacement, resolve the successor family
-      if (storedToken.isRevoked && storedToken.replacedByTokenHash) {
-        const current = await tx.refreshToken.findUnique({
-          where: { tokenHash: storedToken.replacedByTokenHash },
-          include: { session: true, user: true },
-        });
-        if (
-          current &&
-          !current.isRevoked &&
-          current.sessionId === storedToken.sessionId &&
-          !current.session.isRevoked &&
-          new Date() <= current.session.expiresAt
-        ) {
-          // Successor token is valid — rotate from it
-          return this.issueRotatedRefresh(current, ipAddress, userAgent);
-        }
-        // Successor is also revoked/invalid — treat as true reuse/theft
-        if (!current || current.isRevoked) {
-          // Revoke all sessions for the user via raw SQL within transaction
-          await tx.$executeRawUnsafe(
-            'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
-            storedToken.userId,
-          );
-          throw new UnauthorizedException('Refresh token has been revoked');
-        }
-      }
-
-      // If token is actively valid, perform single atomic rotation
-      if (!storedToken.isRevoked && new Date() <= storedToken.expiresAt) {
-        // Double-check after lock acquisition (rows are already locked)
-        const fresh = await tx.refreshToken.findUnique({
-          where: { tokenHash: storedToken.tokenHash },
-          include: { session: true, user: true },
-        });
-
-        if (
-          !fresh ||
-          fresh.isRevoked ||
-          new Date() > fresh.expiresAt ||
-          fresh.session.isRevoked ||
-          new Date() > fresh.session.expiresAt ||
-          new Date() > fresh.session.idleExpiresAt
-        ) {
-          // Token became invalid while waiting for lock
-          if (fresh?.replacedByTokenHash) {
+          // If token already revoked with a replacement, resolve the successor family
+          if (storedToken.isRevoked && storedToken.replacedByTokenHash) {
             const current = await tx.refreshToken.findUnique({
-              where: { tokenHash: fresh.replacedByTokenHash },
+              where: { tokenHash: storedToken.replacedByTokenHash },
               include: { session: true, user: true },
             });
             if (
               current &&
               !current.isRevoked &&
-              current.sessionId === fresh.sessionId &&
+              current.sessionId === storedToken.sessionId &&
               !current.session.isRevoked &&
               new Date() <= current.session.expiresAt
             ) {
+              // Successor token is valid — rotate from it
               return this.issueRotatedRefresh(current, ipAddress, userAgent);
             }
+            // Successor is also revoked/invalid — treat as true reuse/theft
+            if (!current || current.isRevoked) {
+              // Revoke all sessions for the user via raw SQL within transaction
+              await tx.$executeRawUnsafe(
+                'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
+                storedToken.userId,
+              );
+              throw new UnauthorizedException('Refresh token has been revoked');
+            }
           }
-          throw new UnauthorizedException('Session has expired or been revoked');
-        }
-        return this.issueRotatedRefresh(fresh, ipAddress, userAgent);
-      }
 
-      // Token revoked without replacement (theft) or expired
-      if (storedToken.isRevoked && !storedToken.replacedByTokenHash) {
-        // Revoke all sessions for the user via raw SQL within transaction
-        await tx.$executeRawUnsafe(
-          'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
-          storedToken.userId,
-        );
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
+          // If token is actively valid, perform single atomic rotation
+          if (!storedToken.isRevoked && new Date() <= storedToken.expiresAt) {
+            // Double-check after lock acquisition (rows are already locked)
+            const fresh = await tx.refreshToken.findUnique({
+              where: { tokenHash: storedToken.tokenHash },
+              include: { session: true, user: true },
+            });
 
-      if (new Date() > storedToken.expiresAt) {
-        throw new UnauthorizedException('Refresh token has expired');
-      }
+            if (
+              !fresh ||
+              fresh.isRevoked ||
+              new Date() > fresh.expiresAt ||
+              fresh.session.isRevoked ||
+              new Date() > fresh.session.expiresAt ||
+              new Date() > fresh.session.idleExpiresAt
+            ) {
+              // Token became invalid while waiting for lock
+              if (fresh?.replacedByTokenHash) {
+                const current = await tx.refreshToken.findUnique({
+                  where: { tokenHash: fresh.replacedByTokenHash },
+                  include: { session: true, user: true },
+                });
+                if (
+                  current &&
+                  !current.isRevoked &&
+                  current.sessionId === fresh.sessionId &&
+                  !current.session.isRevoked &&
+                  new Date() <= current.session.expiresAt
+                ) {
+                  return this.issueRotatedRefresh(current, ipAddress, userAgent);
+                }
+              }
+              throw new UnauthorizedException('Session has expired or been revoked');
+            }
+            return this.issueRotatedRefresh(fresh, ipAddress, userAgent);
+          }
 
-      throw new UnauthorizedException('Refresh token is not valid for rotation');
-    }, {
-      timeout: 10_000,
-    }).catch((e) => {
-      this.logger.error(`Refresh transaction error: ${e.message}`);
-      throw new UnauthorizedException('Refresh token operation failed');
-    });
+          // Token revoked without replacement (theft) or expired
+          if (storedToken.isRevoked && !storedToken.replacedByTokenHash) {
+            // Revoke all sessions for the user via raw SQL within transaction
+            await tx.$executeRawUnsafe(
+              'UPDATE "Session" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "userId" = $1 AND "isRevoked" = false',
+              storedToken.userId,
+            );
+            throw new UnauthorizedException('Refresh token has been revoked');
+          }
+
+          if (new Date() > storedToken.expiresAt) {
+            throw new UnauthorizedException('Refresh token has expired');
+          }
+
+          throw new UnauthorizedException('Refresh token is not valid for rotation');
+        },
+        {
+          timeout: 10_000,
+        },
+      )
+      .catch((e) => {
+        this.logger.error(`Refresh transaction error: ${e.message}`);
+        throw new UnauthorizedException('Refresh token operation failed');
+      });
   }
 
   private async issueRotatedRefresh(

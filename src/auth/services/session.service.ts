@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -91,7 +90,14 @@ export class SessionService {
     return session;
   }
 
-  async touchSession(sessionId: string, tx?: { session: { update: (arg0: { where: { id: string }, data: { lastActivity: Date; idleExpiresAt: Date } }) => Promise<any> } }) {
+  async touchSession(
+    sessionId: string,
+    tx?: {
+      session: {
+        update: (arg0: { where: { id: string }; data: { lastActivity: Date } }) => Promise<any>;
+      };
+    },
+  ) {
     const now = new Date();
     const prisma = tx?.session?.update ? null : this.prisma;
     if (tx && tx.session?.update) {
@@ -99,7 +105,6 @@ export class SessionService {
         where: { id: sessionId },
         data: {
           lastActivity: now,
-          idleExpiresAt: new Date(now.getTime() + this.idleMs()),
         },
       });
     } else {
@@ -116,10 +121,18 @@ export class SessionService {
         where: { id: sessionId },
         data: {
           lastActivity: now,
-          idleExpiresAt: new Date(now.getTime() + this.idleMs()),
         },
       });
     }
+  }
+
+  async txTouchSession(sessionId: string, tx: PrismaService) {
+    await tx.session.update({
+      where: { id: sessionId },
+      data: {
+        lastActivity: new Date(),
+      },
+    });
   }
 
   async revokeSession(sessionId: string) {
