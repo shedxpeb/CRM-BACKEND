@@ -810,7 +810,7 @@ export class TrackingService {
     return comments.map((c) => {
       const user = userMap.get(c.authorId);
       const authorName =
-        user?.name || (user?.email ? user.email.split('@')[0] : null) || 'Team Member';
+        (user as any)?.name || ((user as any)?.email ? (user as any).email.split('@')[0] : null) || 'Team Member';
       return {
         id: c.id,
         content: c.content,
@@ -818,8 +818,8 @@ export class TrackingService {
         updatedAt: c.updatedAt,
         parentId: c.parentId,
         authorName,
-        authorRole: user?.designation || null,
-        department: user?.department || null,
+        authorRole: (user as any)?.designation || null,
+        department: (user as any)?.department || null,
         authorId: c.authorId,
       };
     });

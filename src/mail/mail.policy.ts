@@ -37,7 +37,7 @@ const FORBIDDEN_AUDIT_KEYS = new Set([
 ]);
 
 /** Prisma-safe JSON object: only primitives (no nested secrets / HTML blobs). */
-export type MailAuditJson = Prisma.InputJsonObject;
+export type MailAuditJson = Record<string, string | number | boolean | null>;
 
 export function sanitizeMailAuditMetadata(
   input: Record<string, unknown> | null | undefined,
@@ -83,6 +83,6 @@ export function buildMailAuditMetadata(params: {
 }
 
 /** Explicit Prisma JSON cast for create/update payloads. */
-export function toPrismaJson(value: MailAuditJson): Prisma.InputJsonValue {
+export function toPrismaJson(value: MailAuditJson): any {
   return value;
 }
