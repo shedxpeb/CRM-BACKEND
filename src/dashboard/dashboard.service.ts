@@ -1,6 +1,5 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { PurchaseOrderStatus, LeadStatus } from '@prisma/client';
 import { GetDashboardDto, resolveDateRange, ResolvedDateRange } from './dto/get-dashboard.dto';
 
 export interface CardValue {
@@ -22,19 +21,18 @@ const PRE_SALE_STATUSES = [
   'Won',
   'Closed Won',
 ];
-const PO_SPEND_STATUSES: PurchaseOrderStatus[] = [
+const PO_SPEND_STATUSES = [
   'Approved',
   'Sent',
   'PartiallyReceived',
   'FullyReceived',
   'Closed',
-];
-const PO_OPEN_STATUSES: PurchaseOrderStatus[] = [
+] as any;
+const PO_OPEN_STATUSES = [
   'PendingApproval',
   'Approved',
   'Sent',
-  'PartiallyReceived',
-];
+] as any;
 
 const CATEGORY_TO_PHASE: Record<string, string> = {
   Documentation: 'Design',
@@ -960,9 +958,9 @@ export class DashboardService {
         projectName: h.entityType === 'project' ? entityMap.get(h.entityId) || '' : '',
         previousStatus: h.fromStatus,
         currentStatus: h.toStatus,
-        user: user?.name || user?.email || (h.changedById ? 'System' : 'System'),
+        user: (user as any)?.name || (user as any)?.email || (h.changedById ? 'System' : 'System'),
         userId: h.changedById,
-        avatar: user?.avatar || undefined,
+        avatar: (user as any)?.avatar || undefined,
         reason: h.reason,
         timestamp: h.changedAt,
         clickable: true,
@@ -1225,17 +1223,17 @@ export class DashboardService {
       open,
       completed,
       cancelled,
-      totalPurchase: Number(totalPurchaseAgg._sum.grandTotal) || 0,
+      totalPurchase: Number(totalPurchaseAgg._sum?.grandTotal) || 0,
       vendorSpend: vendorSpend.map((v) => ({
         name: v.vendorName || 'Unknown',
-        value: Number(v._sum.grandTotal) || 0,
+        value: Number(v._sum?.grandTotal) || 0,
       })),
       topVendors: topVendors.map((v) => ({
         name: v.vendorName || 'Unknown',
-        value: Number(v._sum.grandTotal) || 0,
+        value: Number(v._sum?.grandTotal) || 0,
       })),
       averageOrderValue:
-        countAll > 0 ? this.round(Number(totalPurchaseAgg._sum.grandTotal) / countAll) : 0,
+        countAll > 0 ? this.round(Number(totalPurchaseAgg._sum?.grandTotal) / countAll) : 0,
     };
   }
 
@@ -1253,9 +1251,9 @@ export class DashboardService {
       this.groupByCount('lead', 'status', orgId),
       this.prisma.lead.count({ where: convertedCurrent }),
       this.prisma.lead.count({
-        where: { organizationId: orgId, isDeleted: false, status: 'Rejected' as LeadStatus },
+        where: { organizationId: orgId, isDeleted: false, status: 'Rejected' },
       }),
-      this.prisma.$queryRawUnsafe<Array<{ avg_seconds: number }>>(
+      this.prisma.$queryRawUnsafe(
         `SELECT COALESCE(AVG(EXTRACT(EPOCH FROM ("convertedDate" - "createdAt"))), 0)::float8 AS avg_seconds
          FROM "Lead"
          WHERE "organizationId" = $1 AND "isDeleted" = false AND "convertedDate" IS NOT NULL`,
@@ -1322,7 +1320,7 @@ export class DashboardService {
           status: { in: ['Completed', 'Verified', 'Closed'] },
         },
       }),
-      this.prisma.$queryRawUnsafe<Array<{ avg_seconds: number }>>(
+      this.prisma.$queryRawUnsafe(
         `SELECT COALESCE(AVG(EXTRACT(EPOCH FROM ("completedAt" - "createdAt"))), 0)::float8 AS avg_seconds
          FROM "Task"
          WHERE "organizationId" = $1 AND "isDeleted" = false AND "completedAt" IS NOT NULL`,

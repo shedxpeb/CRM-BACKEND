@@ -336,10 +336,42 @@ export class LeadService extends BaseQueryService {
     }
 
     try {
+      // Convert empty strings to null for nullable fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cleanData: any = { ...data };
+      
+      // String fields that can be cleared
+      const nullableStringFields = [
+        'designation', 'website', 'alternateMobile', 'gstNumber', 'panNumber',
+        'addressLine1', 'addressLine2', 'area', 'city', 'state', 'country', 'pincode',
+        'linkedin', 'facebook', 'instagram', 'roofType', 'wallType', 'materialPreference',
+        'insulationType', 'siteLocation', 'siteAddress', 'mapCoordinates', 'soilNotes',
+        'customerNotes', 'specialRequirement', 'remarks'
+      ];
+      
+      // Number fields that can be cleared
+      const nullableNumberFields = [
+        'width', 'length', 'height', 'baySpacing', 'craneCapacity',
+        'mezzanineArea', 'mezzanineLoad', 'insulationThickness', 'score'
+      ];
+      
+      // Convert empty strings to null for nullable string fields
+      for (const field of nullableStringFields) {
+        if (cleanData[field] === '') {
+          cleanData[field] = null;
+        }
+      }
+      
+      // Convert empty strings/NaN to null for nullable number fields
+      for (const field of nullableNumberFields) {
+        if (cleanData[field] === '' || cleanData[field] === undefined) {
+          cleanData[field] = null;
+        }
+      }
+      
       const lead = await this.client.update({
         where: { id },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { ...(data as any), updatedBy: updatedById },
+        data: { ...cleanData, updatedBy: updatedById },
       });
       await this.auditService.log({
         action: 'lead.updated',

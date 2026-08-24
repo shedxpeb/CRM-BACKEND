@@ -66,6 +66,8 @@ export const SYSTEM_ROLE_DEFS = [
       'lead:read',
       'lead:create',
       'lead:update',
+      'lead:delete',
+      'lead:restore',
       'customer:list',
       'customer:read',
       'customer:create',
@@ -98,7 +100,6 @@ export const LEAD_PIPELINE = [
     label: 'New',
     order: 1,
     isInitial: true,
-    isFinal: false,
     allowedTransitions: ['Contacted', 'Rejected', 'Converted'],
     color: '#6b7280',
   },
@@ -107,7 +108,6 @@ export const LEAD_PIPELINE = [
     label: 'Contacted',
     order: 2,
     isInitial: false,
-    isFinal: false,
     allowedTransitions: ['DesignPending', 'Rejected', 'Converted'],
     color: '#3b82f6',
   },
@@ -116,7 +116,6 @@ export const LEAD_PIPELINE = [
     label: 'Design Pending',
     order: 3,
     isInitial: false,
-    isFinal: false,
     allowedTransitions: ['BOQPending', 'Rejected'],
     color: '#8b5cf6',
   },
@@ -125,7 +124,6 @@ export const LEAD_PIPELINE = [
     label: 'BOQ Pending',
     order: 4,
     isInitial: false,
-    isFinal: false,
     allowedTransitions: ['EstimateSent', 'Rejected'],
     color: '#f59e0b',
   },
@@ -134,7 +132,6 @@ export const LEAD_PIPELINE = [
     label: 'Estimate Sent',
     order: 5,
     isInitial: false,
-    isFinal: false,
     allowedTransitions: ['ProposalSent', 'Negotiation', 'Rejected'],
     color: '#10b981',
   },
@@ -143,7 +140,7 @@ export const LEAD_PIPELINE = [
     label: 'Proposal Sent',
     order: 6,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Negotiation', 'Approved', 'Rejected'],
     color: '#06b6d4',
   },
@@ -152,7 +149,7 @@ export const LEAD_PIPELINE = [
     label: 'Negotiation',
     order: 7,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Approved', 'Rejected'],
     color: '#f97316',
   },
@@ -161,7 +158,7 @@ export const LEAD_PIPELINE = [
     label: 'Approved',
     order: 8,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Converted', 'Rejected'],
     color: '#22c55e',
   },
@@ -170,7 +167,7 @@ export const LEAD_PIPELINE = [
     label: 'Rejected',
     order: 9,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['New'],
     color: '#ef4444',
   },
@@ -179,7 +176,7 @@ export const LEAD_PIPELINE = [
     label: 'Converted',
     order: 10,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['New'],
     color: '#14b8a6',
   },
@@ -191,7 +188,7 @@ export const CUSTOMER_PIPELINE = [
     label: 'Active',
     order: 1,
     isInitial: true,
-    isFinal: false,
+
     allowedTransitions: ['Inactive', 'Archived', 'Rejected'],
     color: '#22c55e',
   },
@@ -200,7 +197,7 @@ export const CUSTOMER_PIPELINE = [
     label: 'Inactive',
     order: 2,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Active', 'Archived', 'Rejected'],
     color: '#f59e0b',
   },
@@ -209,7 +206,7 @@ export const CUSTOMER_PIPELINE = [
     label: 'Archived',
     order: 3,
     isInitial: false,
-    isFinal: true,
+
     allowedTransitions: [] as string[],
     color: '#6b7280',
   },
@@ -218,7 +215,7 @@ export const CUSTOMER_PIPELINE = [
     label: 'Rejected',
     order: 4,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Active'],
     color: '#ef4444',
   },
@@ -230,7 +227,7 @@ export const PROJECT_PIPELINE = [
     label: 'New',
     order: 1,
     isInitial: true,
-    isFinal: false,
+
     allowedTransitions: ['DesignInProgress', 'OnHold', 'Cancelled'],
     color: '#6b7280',
   },
@@ -239,7 +236,7 @@ export const PROJECT_PIPELINE = [
     label: 'Design In Progress',
     order: 2,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['DesignApproved', 'OnHold', 'Cancelled'],
     color: '#3b82f6',
   },
@@ -248,7 +245,7 @@ export const PROJECT_PIPELINE = [
     label: 'Design Approved',
     order: 3,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Fabrication', 'OnHold', 'Cancelled'],
     color: '#8b5cf6',
   },
@@ -257,7 +254,7 @@ export const PROJECT_PIPELINE = [
     label: 'Fabrication',
     order: 4,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['DispatchReady', 'OnHold', 'Cancelled'],
     color: '#f59e0b',
   },
@@ -266,7 +263,7 @@ export const PROJECT_PIPELINE = [
     label: 'Dispatch Ready',
     order: 5,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Dispatched', 'OnHold'],
     color: '#f97316',
   },
@@ -275,7 +272,7 @@ export const PROJECT_PIPELINE = [
     label: 'Dispatched',
     order: 6,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Installation', 'Cancelled'],
     color: '#10b981',
   },
@@ -284,7 +281,7 @@ export const PROJECT_PIPELINE = [
     label: 'Installation',
     order: 7,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['Completed', 'OnHold', 'Cancelled'],
     color: '#14b8a6',
   },
@@ -293,7 +290,7 @@ export const PROJECT_PIPELINE = [
     label: 'Completed',
     order: 8,
     isInitial: false,
-    isFinal: true,
+
     allowedTransitions: [] as string[],
     color: '#22c55e',
   },
@@ -302,7 +299,7 @@ export const PROJECT_PIPELINE = [
     label: 'On Hold',
     order: 9,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['DesignInProgress', 'Fabrication', 'Installation', 'Cancelled'],
     color: '#f59e0b',
   },
@@ -311,7 +308,7 @@ export const PROJECT_PIPELINE = [
     label: 'Cancelled',
     order: 10,
     isInitial: false,
-    isFinal: false,
+
     allowedTransitions: ['New'],
     color: '#ef4444',
   },

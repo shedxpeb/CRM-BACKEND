@@ -38,7 +38,7 @@ export class RoleSyncService implements OnApplicationBootstrap {
         // recomputes from the freshly synced role rows instead of serving stale data.
         await this.prisma.user.updateMany({
           where: {},
-          data: { lastPermissionCalculation: null, effectivePermissions: Prisma.DbNull },
+          data: { lastPermissionCalculation: null, effectivePermissions: null as any },
         });
       }
 

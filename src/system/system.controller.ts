@@ -25,7 +25,7 @@ export class SystemController {
    */
   @Public()
   @Post('seed-admin')
-  seedAdmin(@Body() body: SeedAdminDto, @Headers('x-seed-secret') seedSecret?: string) {
+  seedAdmin(@Body() body: SeedAdminDto, @Headers('x-seed-admin-secret') seedSecret?: string) {
     return this.seed.seedAdmin(body, seedSecret);
   }
 }
