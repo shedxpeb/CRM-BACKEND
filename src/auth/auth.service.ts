@@ -379,7 +379,7 @@ export class AuthService {
   async refresh(refreshToken: string, ipAddress?: string, userAgent?: string) {
     const tokenHash = this.tokenService.hashRefreshToken(refreshToken);
 
-    await this.prisma
+    return this.prisma
       .$transaction(
         async (tx) => {
           // Use Prisma findUnique with row-level lock to prevent concurrent rotation
