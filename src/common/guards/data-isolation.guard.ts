@@ -57,25 +57,32 @@ export class DataIsolationGuard implements CanActivate {
     // Validate no organizationId manipulation in request
     this.validateNoOrganizationIdManipulation(request);
 
-    // Extract resource ID from request if applicable
-    const resource = this.extractResourceId(request);
-    if (resource?.id) {
-      // Fastify v5 exposes request.routeOptions (v4: request.route); fall back
-      // to the request URL so resource-type detection still works.
-      const routePath = request.routeOptions?.path || request.route?.path || request.url || '';
-      const hasAccess = await this.validateResourceOwnership(
-        resource.id,
-        user.organizationId,
-        user.id,
-        routePath,
-        resource.field,
-      );
-
-      if (!hasAccess) {
-        this.logger.warn(
-          `Data isolation violation: User ${user.id} attempted to access resource ${resource.id} in organization ${user.organizationId}`,
+    // Extract resource ID from request if applicable.
+    // Skip resource ID extraction for CREATE operations (POST without :id in URL)
+    // to avoid false positives when creating new resources whose referencing
+    // IDs (leadId/customerId/projectId) are metadata, not accesses.
+    const url = request.url || '';
+    const isCreateOperation = request.method === 'POST' && !url.includes('/:');
+    if (!isCreateOperation) {
+      const resource = this.extractResourceId(request);
+      if (resource?.id) {
+        // Fastify v5 exposes request.routeOptions (v4: request.route); fall back
+        // to the request URL so resource-type detection still works.
+        const routePath = request.routeOptions?.path || request.route?.path || request.url || '';
+        const hasAccess = await this.validateResourceOwnership(
+          resource.id,
+          user.organizationId,
+          user.id,
+          routePath,
+          resource.field,
         );
-        throw new ForbiddenException('Resource not found or access denied');
+
+        if (!hasAccess) {
+          this.logger.warn(
+            `Data isolation violation: User ${user.id} attempted to access resource ${resource.id} in organization ${user.organizationId}`,
+          );
+          throw new ForbiddenException('Resource not found or access denied');
+        }
       }
     }
 

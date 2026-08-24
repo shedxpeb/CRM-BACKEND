@@ -42,7 +42,6 @@ export class TaskService extends BaseQueryService {
         'status',
         'priority',
         'category',
-        'linkedModule',
         'assignedUserId',
         'projectId',
       ],
@@ -103,12 +102,6 @@ export class TaskService extends BaseQueryService {
         createdByName: createdByName,
         dueDate: new Date(dto.dueDate),
         startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        reminderDate: dto.reminderDate ? new Date(dto.reminderDate) : undefined,
-        priority: dto.priority,
-        status: dto.status || 'Pending',
-        category: dto.category,
-        linkedModule: dto.linkedModule,
-        linkedRecordId: dto.linkedRecordId,
         linkedRecordName: dto.linkedRecordName,
         projectId: dto.projectId,
         leadId: dto.leadId,
@@ -331,7 +324,6 @@ export class TaskService extends BaseQueryService {
       completedToday,
       tasksByPriority,
       tasksByStatus,
-      tasksByModule,
     ] = await Promise.all([
       this.client.count({ where: baseWhere }),
       this.client.count({ where: { ...baseWhere, status: { in: ['Pending', 'Reopened'] } } }),
@@ -365,11 +357,6 @@ export class TaskService extends BaseQueryService {
       }),
       this.client.groupBy({ by: ['priority'], where: baseWhere, _count: true }),
       this.client.groupBy({ by: ['status'], where: baseWhere, _count: true }),
-      this.client.groupBy({
-        by: ['linkedModule'],
-        where: { ...baseWhere, linkedModule: { not: null } },
-        _count: true,
-      }),
     ]);
 
     const totalPaymentValue = await this.client.aggregate({
@@ -399,12 +386,6 @@ export class TaskService extends BaseQueryService {
       statusMap[s.status] = s._count;
     });
 
-    const moduleMap: Record<string, number> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tasksByModule.forEach((m: any) => {
-      moduleMap[m.linkedModule || 'General'] = m._count;
-    });
-
     return {
       totalTasks,
       openTasks,
@@ -418,7 +399,6 @@ export class TaskService extends BaseQueryService {
       dueThisWeek,
       tasksByPriority: priorityMap,
       tasksByStatus: statusMap,
-      tasksByModule: moduleMap,
       pendingVerification,
       completedToday,
       totalPaymentValue: totalPaymentValue._sum.incentiveValue || 0,

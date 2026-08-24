@@ -24,6 +24,26 @@ export class UsersController {
     return { message: 'Users fetched successfully.', data };
   }
 
+  @Get('assignees')
+  @RequirePermissions('user:read')
+  @ApiOperation({ summary: 'Get users who can be assigned to tasks' })
+  async getAssignees(
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.usersService.findAssignees(organizationId);
+    return { message: 'Assignees fetched successfully.', data };
+  }
+
+  @Get('contacts')
+  @RequirePermissions('user:read')
+  @ApiOperation({ summary: 'Get users available for contact/customer assignment' })
+  async getContacts(
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.usersService.findContacts(organizationId);
+    return { message: 'Contacts fetched successfully.', data };
+  }
+
   @Get(':id')
   @RequirePermissions('user:read')
   @ApiOperation({ summary: 'Get user by ID' })
