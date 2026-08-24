@@ -106,6 +106,34 @@ export class UsersService {
     return user;
   }
 
+  async findAssignees(organizationId: string) {
+    const users = await this.prisma.user.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    return users;
+  }
+
+  async findContacts(organizationId: string) {
+    const users = await this.prisma.user.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    return users;
+  }
+
   async create(
     organizationId: string,
     dto: CreateUserDto,
