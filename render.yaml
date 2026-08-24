@@ -2,7 +2,7 @@
 # Only environment variables differ between Render / Hostinger / AWS / etc.
 services:
   - type: web
-    name: peb-crm-api
+    name: BuildX-api
     runtime: node
     plan: starter
     region: oregon

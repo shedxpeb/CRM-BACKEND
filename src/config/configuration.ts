@@ -39,6 +39,7 @@ export default () => {
     security: {
       bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
       passwordHistorySize: parseInt(process.env.PASSWORD_HISTORY_SIZE || '10', 10),
+      refreshReuseGraceMs: parseInt(process.env.REFRESH_REUSE_GRACE_MS || '300000', 10),
     },
     throttle: {
       ttlMs: parseInt(process.env.THROTTLE_TTL_MS || '60000', 10),
@@ -94,7 +95,7 @@ export default () => {
   };
 
   if (config.nodeEnv === 'production') {
-    const weakSecrets = ['peb-crm-jwt-secret-dev-only', 'secret', 'change-me', 'jwt-secret'];
+    const weakSecrets = ['BuildX-jwt-secret-dev-only', 'secret', 'change-me', 'jwt-secret'];
     if (weakSecrets.includes(config.jwt.secret || '')) {
       console.error('FATAL: JWT_SECRET is too weak for production. Set a strong, unique secret.');
       process.exit(1);

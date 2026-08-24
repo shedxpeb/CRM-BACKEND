@@ -24,8 +24,8 @@ export function validateEnv(): void {
       'change-this-to-a-random-secret',
       'change-this-to-a-random-secret-at-least-32-chars',
       'change-this-to-a-random-cookie-secret-at-least-32-chars',
-      'peb-crm-jwt-secret-dev-only',
-      'peb-crm-cookie-secret-dev-only',
+      'BuildX-jwt-secret-dev-only',
+      'BuildX-cookie-secret-dev-only',
       'REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS',
       'REPLACE_WITH_RANDOM_COOKIE_SECRET_AT_LEAST_32',
     ];
