@@ -7,6 +7,7 @@ import {
   MinLength,
   MaxLength,
   Min,
+  Max,
   IsDateString,
   IsArray,
   ValidateNested,
@@ -183,4 +184,19 @@ export class CreateProjectDto {
 
   @IsOptional()
   customFields?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  stage?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @Type(() => Number)
+  progress?: number;
 }

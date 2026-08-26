@@ -15,17 +15,15 @@ export class ItemMasterService extends BaseQueryService {
     private readonly workflowEngine: WorkflowEngineService,
   ) {
     super(prisma, {
-      model: 'itemMaster',
+      model: 'inventoryItem',
       searchFields: [
         'itemName',
         'itemCode',
-        'sku',
         'brand',
         'category',
-        'specification',
-        'hsnCode',
+        'description',
       ],
-      filterFields: ['status', 'category', 'brand', 'itemTypeClass', 'unit', 'taxType'],
+      filterFields: ['status', 'category', 'brand', 'itemTypeClass', 'unit'],
       sortColumns: [
         'createdAt',
         'itemName',
@@ -47,33 +45,26 @@ export class ItemMasterService extends BaseQueryService {
   async findById(id: string, organizationId?: string) {
     return super.findById(
       id,
-      {
-        variants: true,
-        inventoryItems: {
-          where: { isDeleted: false },
-          select: { id: true, itemName: true, currentStock: true, status: true },
-        },
-      },
+      {},
       organizationId,
     );
   }
 
   async create(dto: CreateItemMasterDto, createdById: string, organizationId: string) {
-    const lastItem = await this.client.findFirst({
+    // Count existing items to generate sequence number
+    const count = await this.client.inventoryItem.count({
       where: { organizationId, isDeleted: false },
-      orderBy: { itemNumber: 'desc' },
-      select: { itemNumber: true },
     });
-    const nextNumber = (lastItem?.itemNumber || 0) + 1;
+    const nextNumber = count + 1;
 
     // Generate unique SKU - check for conflicts
     let sku = dto.sku || `ITM-${String(nextNumber).padStart(4, '0')}`;
 
     // If user provided SKU, check if it already exists
     if (dto.sku) {
-      const existingSku = await this.client.findFirst({
-        where: { organizationId, sku: dto.sku, isDeleted: false },
-        select: { sku: true },
+      const existingSku = await this.client.inventoryItem.findFirst({
+        where: { organizationId, itemCode: dto.sku, isDeleted: false },
+        select: { itemCode: true },
       });
       if (existingSku) {
         throw new Error(`SKU "${dto.sku}" already exists in this organization`);
@@ -86,9 +77,9 @@ export class ItemMasterService extends BaseQueryService {
       let attempts = 0;
 
       while (skuExists && attempts < maxAttempts) {
-        const existingSku = await this.client.findFirst({
-          where: { organizationId, sku, isDeleted: false },
-          select: { sku: true },
+        const existingSku = await this.client.inventoryItem.findFirst({
+          where: { organizationId, itemCode: sku, isDeleted: false },
+          select: { itemCode: true },
         });
         if (!existingSku) {
           skuExists = false;
@@ -106,55 +97,20 @@ export class ItemMasterService extends BaseQueryService {
 
     const itemCode = dto.itemCode || sku;
 
-    const item = await this.client.create({
+    const item = await this.client.inventoryItem.create({
       data: {
         organizationId,
-        itemNumber: nextNumber,
-        sku,
         itemCode,
         itemName: dto.itemName,
         category: dto.category,
-        subCategory: dto.subCategory,
-        categoryId: dto.categoryId,
-        subcategoryId: dto.subcategoryId,
-        itemTypeId: dto.itemTypeId,
         brand: dto.brand,
-        grade: dto.grade,
-        specification: dto.specification,
-        hsnCode: dto.hsnCode,
         unit: dto.unit,
-        weight: dto.weight,
-        defaultRate: dto.defaultRate,
-        gstRate: dto.gstRate,
-        taxType: dto.taxType,
-        technicalDescription: dto.technicalDescription,
-        datasheetUrl: dto.datasheetUrl,
-        productImageUrl: dto.productImageUrl,
-        status: dto.status || 'Active',
-        tags: dto.tags || [],
-        manufacturer: dto.manufacturer,
-        countryOfOrigin: dto.countryOfOrigin,
+        defaultRate: dto.defaultRate || 0,
+        status: dto.status || 'In Stock',
         description: dto.description,
-        standardDimensions: dto.standardDimensions || undefined,
-        currency: dto.currency || 'INR',
-        images: dto.images || [],
-        preferredSupplierId: dto.preferredSupplierId,
-        preferredSupplier: dto.preferredSupplier,
-        inventoryItemId: dto.inventoryItemId,
-        notes: dto.notes,
-        internalNotes: dto.internalNotes,
+        itemNumber: nextNumber,
         itemTypeClass: dto.itemTypeClass,
-        materialGrade: dto.materialGrade,
-        isStructural: dto.isStructural || false,
-        isCladding: dto.isCladding || false,
-        isAccessory: dto.isAccessory || false,
-        isService: dto.isService || false,
-        thickness: dto.thickness,
-        length: dto.length,
-        width: dto.width,
-        customFields: dto.customFields || undefined,
         createdById,
-        createdBy: createdById,
       },
     });
 
@@ -192,39 +148,17 @@ export class ItemMasterService extends BaseQueryService {
   async update(id: string, dto: UpdateItemMasterDto, updatedById: string, organizationId: string) {
     await this.findById(id, organizationId);
 
-    const item = await this.client.update({
+    const item = await this.client.inventoryItem.update({
       where: { id },
       data: {
         ...(dto.itemName !== undefined && { itemName: dto.itemName }),
         ...(dto.category !== undefined && { category: dto.category }),
-        ...(dto.subCategory !== undefined && { subCategory: dto.subCategory }),
         ...(dto.brand !== undefined && { brand: dto.brand }),
-        ...(dto.grade !== undefined && { grade: dto.grade }),
-        ...(dto.specification !== undefined && { specification: dto.specification }),
-        ...(dto.hsnCode !== undefined && { hsnCode: dto.hsnCode }),
         ...(dto.unit !== undefined && { unit: dto.unit }),
-        ...(dto.weight !== undefined && { weight: dto.weight }),
         ...(dto.defaultRate !== undefined && { defaultRate: dto.defaultRate }),
-        ...(dto.gstRate !== undefined && { gstRate: dto.gstRate }),
-        ...(dto.taxType !== undefined && { taxType: dto.taxType }),
         ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.tags !== undefined && { tags: dto.tags }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.technicalDescription !== undefined && {
-          technicalDescription: dto.technicalDescription,
-        }),
         ...(dto.itemTypeClass !== undefined && { itemTypeClass: dto.itemTypeClass }),
-        ...(dto.materialGrade !== undefined && { materialGrade: dto.materialGrade }),
-        ...(dto.isStructural !== undefined && { isStructural: dto.isStructural }),
-        ...(dto.isCladding !== undefined && { isCladding: dto.isCladding }),
-        ...(dto.isAccessory !== undefined && { isAccessory: dto.isAccessory }),
-        ...(dto.isService !== undefined && { isService: dto.isService }),
-        ...(dto.thickness !== undefined && { thickness: dto.thickness }),
-        ...(dto.length !== undefined && { length: dto.length }),
-        ...(dto.width !== undefined && { width: dto.width }),
-        ...(dto.customFields !== undefined && { customFields: dto.customFields }),
-        ...(dto.standardDimensions !== undefined && { standardDimensions: dto.standardDimensions }),
-        ...(dto.notes !== undefined && { notes: dto.notes }),
         updatedBy: updatedById,
       },
     });
@@ -263,7 +197,7 @@ export class ItemMasterService extends BaseQueryService {
   async softDelete(id: string, deletedById: string, organizationId: string) {
     await this.findById(id, organizationId);
 
-    const item = await this.client.update({
+    const item = await this.client.inventoryItem.update({
       where: { id },
       data: { isDeleted: true, deletedAt: new Date(), deletedById },
     });
@@ -302,18 +236,18 @@ export class ItemMasterService extends BaseQueryService {
   async getStats(organizationId?: string) {
     const where = { organizationId, isDeleted: false };
     const [totalItems, activeItems, inactiveItems, discontinuedItems] = await Promise.all([
-      this.client.count({ where }),
-      this.client.count({ where: { ...where, status: 'Active' } }),
-      this.client.count({ where: { ...where, status: 'Inactive' } }),
-      this.client.count({ where: { ...where, status: 'Discontinued' } }),
+      this.client.inventoryItem.count({ where }),
+      this.client.inventoryItem.count({ where: { ...where, status: 'In Stock' } }),
+      this.client.inventoryItem.count({ where: { ...where, status: 'Out of Stock' } }),
+      this.client.inventoryItem.count({ where: { ...where, status: 'Discontinued' } }),
     ]);
 
-    const categoryAgg = await this.client.groupBy({
+    const categoryAgg = await this.client.inventoryItem.groupBy({
       by: ['category'],
       where,
       _count: { id: true },
     });
-    const brandAgg = await this.client.groupBy({
+    const brandAgg = await this.client.inventoryItem.groupBy({
       by: ['brand'],
       where: { ...where, brand: { not: null } },
       _count: { id: true },
@@ -328,7 +262,7 @@ export class ItemMasterService extends BaseQueryService {
       activeItems,
       inactiveItems,
       discontinuedItems,
-      itemsByCategory: Object.fromEntries(categoryAgg.map((c) => [c.category, c._count.id])),
+      itemsByCategory: Object.fromEntries(categoryAgg.map((c) => [c.category || 'Uncategorized', c._count.id])),
       itemsByBrand: Object.fromEntries(brandAgg.map((b) => [b.brand || '', b._count.id])),
       totalVariants,
       totalBundles,

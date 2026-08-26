@@ -23,7 +23,7 @@ export class CustomerService extends BaseQueryService {
   ) {
     super(prisma, {
       model: 'customer',
-      searchFields: ['customerName', 'companyName', 'mobile', 'email', 'gstNumber'],
+      searchFields: ['customerName', 'companyName', 'mobile', 'email', 'gstNumber', 'projectCode'],
       filterFields: [
         'status',
         'city',
@@ -32,6 +32,7 @@ export class CustomerService extends BaseQueryService {
         'assignedEmployeeId',
         'source',
         'businessType',
+        'projectCode',
       ],
       sortColumns: ['createdAt', 'companyName', 'customerName', 'status', 'customerId'],
       orgScoped: true,
@@ -46,21 +47,8 @@ export class CustomerService extends BaseQueryService {
     // Validate tenant context to prevent tenant mismatch
     this.validateTenantContext(organizationId);
 
-    const existingMobile = await this.client.findFirst({
-      where: { mobile: data.mobile, organizationId, isDeleted: false },
-    });
-    if (existingMobile) {
-      throw new BadRequestException('Customer with this mobile already exists');
-    }
-
-    if (data.email) {
-      const existingEmail = await this.client.findFirst({
-        where: { email: data.email, organizationId, isDeleted: false },
-      });
-      if (existingEmail) {
-        throw new BadRequestException('Customer with this email already exists');
-      }
-    }
+    // Duplicate mobile/email/lead are now allowed - one Lead can create multiple Customers
+    // Multiple Customers can have the same mobile or email
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,29 +59,35 @@ export class CustomerService extends BaseQueryService {
           where: { id: data.leadId, organizationId, isDeleted: false },
         });
 
-        if (lead && !lead.isConverted) {
-          customer = await this.prisma.$transaction(async (tx) => {
-            const created = await tx.customer.create({
-              data: {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data as any),
-                email: data.email || '',
-                organizationId,
-                createdById,
-                projectTitle: data.projectTitle || lead.projectTitle,
-                projectType: data.projectType || lead.projectType,
-              },
-            });
-            await tx.lead.update({
-              where: { id: lead.id },
-              data: {
-                status: 'Converted',
-                isConverted: true,
-                customerId: created.id,
-                convertedDate: new Date(),
-              },
-            });
-            return created;
+        if (lead) {
+          // One Lead can create multiple Customers - do NOT mark Lead as converted
+          // Only copy data from Lead if not already provided in the request
+          customer = await this.client.create({
+            data: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...(data as any),
+              email: data.email || lead.email || '',
+              organizationId,
+              createdById,
+              // Prefill from Lead if not provided (only fields that exist in Customer)
+              customerName: data.customerName || lead.customerName,
+              companyName: data.companyName || lead.companyName,
+              mobile: data.mobile || lead.mobile,
+              alternateMobile: data.alternateMobile || lead.alternateMobile,
+              gstNumber: data.gstNumber || lead.gstNumber,
+              panNumber: data.panNumber || lead.panNumber,
+              industry: data.industry || lead.industry,
+              businessType: data.businessType || lead.businessType,
+              website: data.website || lead.website,
+              address: data.address || lead.addressLine1 || `${lead.addressLine1 || ''} ${lead.city || ''} ${lead.state || ''}`.trim(),
+              city: data.city || lead.city,
+              state: data.state || lead.state,
+              country: data.country || lead.country,
+              pincode: data.pincode || lead.pincode,
+              projectTitle: data.projectTitle || lead.projectTitle,
+              projectType: data.projectType || lead.projectType,
+              projectCode: data.projectCode || (lead as any).projectCode,
+            },
           });
         }
       }
@@ -142,16 +136,26 @@ export class CustomerService extends BaseQueryService {
     const existing = await this.client.findFirst({ where });
     if (!existing) throw new NotFoundException(`Customer not found`);
 
-    if (data.mobile && data.mobile !== existing.mobile) {
-      const dup = await this.client.findFirst({
-        where: { mobile: data.mobile, organizationId, isDeleted: false, id: { not: id } },
-      });
-      if (dup) throw new BadRequestException('Another customer with this mobile exists');
+    // Duplicate mobile/email are now allowed - multiple Customers can have the same mobile or email
+
+    // Convert empty strings to null for optional fields to properly clear values
+    const processedData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value === '' && ['email', 'alternateMobile', 'gstNumber', 'panNumber', 'website', 'notes', 'pincode', 'country', 'accountTier', 'projectTitle', 'projectType', 'projectCode'].includes(key)) {
+        processedData[key] = null;
+      } else {
+        processedData[key] = value;
+      }
+    }
+
+    // Handle customFields - if provided, use as-is (including cleared values)
+    if (data.customFields !== undefined) {
+      processedData.customFields = data.customFields;
     }
 
     try {
-      const isStatusChangeToRejected = data.status === 'Rejected' && existing.status !== 'Rejected';
-      const isStatusChangeToActive = data.status === 'Active' && existing.status === 'Rejected';
+      const isStatusChangeToRejected = processedData.status === 'Rejected' && existing.status !== 'Rejected';
+      const isStatusChangeToActive = processedData.status === 'Active' && existing.status === 'Rejected';
       const linkedLeadId = existing.leadId || existing.convertedFromLeadId;
 
       let customer;
@@ -160,7 +164,7 @@ export class CustomerService extends BaseQueryService {
         customer = await this.prisma.$transaction(async (tx) => {
           const updatedCustomer = await tx.customer.update({
             where: { id },
-            data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
+            data: { ...processedData, updatedBy: updatedById },
           });
 
           // Update linked lead status
@@ -240,7 +244,7 @@ export class CustomerService extends BaseQueryService {
         // Regular update without lead sync
         customer = await this.client.update({
           where: { id },
-          data: { ...(data as Record<string, unknown>), updatedBy: updatedById },
+          data: { ...processedData, updatedBy: updatedById },
         });
       }
 
@@ -250,7 +254,7 @@ export class CustomerService extends BaseQueryService {
         resource: 'customer',
         resourceId: id,
         metadata: {
-          changes: Object.keys(data),
+          changes: Object.keys(processedData),
           leadSynced: (isStatusChangeToRejected || isStatusChangeToActive) && !!linkedLeadId,
         },
       });
@@ -259,7 +263,7 @@ export class CustomerService extends BaseQueryService {
         entityType: 'customer',
         entityId: id,
         eventType: 'updated',
-        data: { changes: Object.keys(data) },
+        data: { changes: Object.keys(processedData) },
         createdById: updatedById,
       });
       return customer;
@@ -370,37 +374,75 @@ export class CustomerService extends BaseQueryService {
       select: { id: true, convertedFromLeadId: true, customerName: true, customerId: true },
     });
 
-    const result = await super.softDelete(id, deletedById, organizationId);
+    // Use transaction to atomically delete customer and all related projects
+    const result = await this.prisma.$transaction(async (tx) => {
+      // First, soft delete all projects belonging to this customer
+      await tx.project.updateMany({
+        where: {
+          customerId: id,
+          organizationId,
+          isDeleted: false,
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById,
+        },
+      });
 
+      // Then soft delete the customer
+      const deletedCustomer = await tx.customer.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById,
+        },
+      });
+
+      // Handle lead conversion revert if applicable
+      if (customer?.convertedFromLeadId && organizationId) {
+        const lead = await tx.lead.findFirst({
+          where: { id: customer.convertedFromLeadId, organizationId, isDeleted: false },
+          select: { id: true, status: true, customerId: true, isConverted: true },
+        });
+
+        if (lead && lead.customerId === id && lead.isConverted) {
+          await tx.lead.update({
+            where: { id: lead.id },
+            data: {
+              customerId: null,
+              isConverted: false,
+              convertedDate: null,
+              status: 'Contacted',
+            },
+          });
+
+          await tx.statusHistory.create({
+            data: {
+              entityType: 'lead',
+              entityId: lead.id,
+              organizationId,
+              fromStatus: 'Converted',
+              toStatus: 'Contacted',
+              changedById: deletedById,
+              reason: 'Customer deleted — conversion reverted',
+            },
+          });
+        }
+      }
+
+      return deletedCustomer;
+    });
+
+    // Process workflow events after successful transaction
     if (customer?.convertedFromLeadId && organizationId) {
       const lead = await this.prisma.lead.findFirst({
         where: { id: customer.convertedFromLeadId, organizationId, isDeleted: false },
-        select: { id: true, status: true, customerId: true, isConverted: true },
+        select: { id: true },
       });
 
-      if (lead && lead.customerId === id && lead.isConverted) {
-        await this.prisma.lead.update({
-          where: { id: lead.id },
-          data: {
-            customerId: null,
-            isConverted: false,
-            convertedDate: null,
-            status: 'Contacted',
-          },
-        });
-
-        await this.prisma.statusHistory.create({
-          data: {
-            entityType: 'lead',
-            entityId: lead.id,
-            organizationId,
-            fromStatus: 'Converted',
-            toStatus: 'Contacted',
-            changedById: deletedById,
-            reason: 'Customer deleted — conversion reverted',
-          },
-        });
-
+      if (lead) {
         await this.workflowEngine.processEvent({
           organizationId,
           entityType: 'lead',
@@ -426,6 +468,7 @@ export class CustomerService extends BaseQueryService {
         customerName: customer?.customerName,
         convertedFromLeadId: customer?.convertedFromLeadId,
         leadReverted: !!customer?.convertedFromLeadId,
+        projectsDeleted: true,
       },
     });
     await this.workflowEngine.processEvent({
@@ -443,13 +486,49 @@ export class CustomerService extends BaseQueryService {
     deletedById?: string,
     organizationId?: string,
   ): Promise<{ count: number }> {
-    const result = await super.bulkDelete(ids, deletedById, organizationId);
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context is required');
+    }
+
+    // Use transaction to atomically delete customers and all related projects
+    const result = await this.prisma.$transaction(async (tx) => {
+      // First, soft delete all projects belonging to these customers
+      await tx.project.updateMany({
+        where: {
+          customerId: { in: ids },
+          organizationId,
+          isDeleted: false,
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById,
+        },
+      });
+
+      // Then soft delete the customers
+      const deleteResult = await tx.customer.updateMany({
+        where: {
+          id: { in: ids },
+          organizationId,
+          isDeleted: false,
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          deletedById,
+        },
+      });
+
+      return deleteResult;
+    });
+
     await this.auditService.log({
       action: 'customer.bulk-deleted',
       userId: deletedById,
       resource: 'customer',
       resourceId: ids.join(','),
-      metadata: { count: result.count, ids },
+      metadata: { count: result.count, ids, projectsDeleted: true },
     });
     if (organizationId) {
       for (const id of ids) {
