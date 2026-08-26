@@ -155,6 +155,11 @@ export class CreateLeadDto {
   @IsEnum(ProjectType)
   projectType: ProjectType;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  projectCode?: string;
+
   // Structure Details
   @IsEnum(StructureType)
   structureType: StructureType;

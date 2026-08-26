@@ -449,6 +449,9 @@ model Customer {
   businessType        BusinessType?
   projectTitle        String?
   projectType         String?
+  projectCode         String?
+  accountTier         String?
+  creditLimit         Float?
   organization        Organization   @relation(fields: [organizationId], references: [id])
   projects            Project[]
 
@@ -472,6 +475,7 @@ model Lead {
   city                String?
   projectTitle        String
   projectType         ProjectType
+  projectCode         String?
   structureType       StructureType
   source              LeadSource
   priority            LeadPriority
@@ -590,7 +594,7 @@ model Project {
   insulation              Boolean             @default(false)
   coveredArea             Float?
   totalWeight             Float?
-  status                  String              @default("Lead")
+  status                  String              @default("New")
   stage                   ProjectStage?
   progress                Int                 @default(0)
   designProgress          Int                 @default(0)

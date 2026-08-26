@@ -59,8 +59,8 @@ export class GetProjectsDto {
   status?: string;
 
   @IsOptional()
-  @IsEnum(ProjectStage)
-  stage?: ProjectStage;
+  @IsString()
+  stage?: string;
 
   @IsOptional()
   @IsEnum(ProjectPriority)

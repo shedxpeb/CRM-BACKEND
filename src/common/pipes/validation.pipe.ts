@@ -6,7 +6,7 @@ export class GlobalValidationPipe extends ValidationPipe {
     super({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transformOptions: {
         enableImplicitConversion: true,
       },

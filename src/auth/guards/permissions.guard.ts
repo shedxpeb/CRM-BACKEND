@@ -70,13 +70,17 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'customer:read',
     'customer:create',
     'customer:update',
+    'customer:delete',
     'project:list',
     'project:read',
+    'project:create',
     'project:update',
+    'project:delete',
     'item-master:list',
     'item-master:read',
     'item-master:create',
     'item-master:update',
+    'item-master:delete',
     'inventory:list',
     'inventory:read',
     'inventory:create',
@@ -118,6 +122,7 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'customer:read',
     'customer:create',
     'customer:update',
+    'customer:delete',
     'project:list',
     'project:read',
     'tracking:read',
@@ -128,6 +133,7 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'project:read',
     'project:create',
     'project:update',
+    'project:delete',
     'customer:list',
     'customer:read',
     'tracking:read',
@@ -194,7 +200,6 @@ export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
-    private permissionInheritance: PermissionInheritanceService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -269,10 +274,9 @@ export class PermissionsGuard implements CanActivate {
       },
     });
 
-    const effectivePermissions = await this.permissionInheritance.getEffectivePermissions(
-      user.id,
-      userRecord.organizationId,
-    );
+    const userPermissions = roles.flatMap((r) => r.permissions);
+    const effectivePermissions =
+      userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     this.logger.debug(
       `Permission check for user ${user.id} (${userRecord.role}): Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,

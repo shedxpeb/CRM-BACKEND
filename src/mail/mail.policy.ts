@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 /**
  * Production mail architecture rule:
  *

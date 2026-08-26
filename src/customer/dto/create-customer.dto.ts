@@ -118,6 +118,19 @@ export class CreateCustomerDto {
   projectType?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  projectCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  accountTier?: string;
+
+  @IsOptional()
+  creditLimit?: number;
+
+  @IsOptional()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }

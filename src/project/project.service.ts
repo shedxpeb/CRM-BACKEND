@@ -93,6 +93,11 @@ export class ProjectService extends BaseQueryService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
 
+    // Exclude projects belonging to deleted customers
+    where.customer = {
+      isDeleted: false,
+    };
+
     if (search && search.length >= 2) {
       where.OR = [
         { projectName: { contains: search, mode: 'insensitive' } },
@@ -169,6 +174,11 @@ export class ProjectService extends BaseQueryService {
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isDeleted: false, organizationId };
+
+    // Exclude projects belonging to deleted customers
+    where.customer = {
+      isDeleted: false,
+    };
 
     const [
       totalProjects,
@@ -410,15 +420,25 @@ export class ProjectService extends BaseQueryService {
       data.status === 'Cancelled' && existing.status !== 'Cancelled';
 
     const project = await this.prisma.$transaction(async (tx) => {
+      // Build update data with proper null handling for field clearing
+      const updateData: any = { ...restData, updatedBy: updatedById };
+
+      // Handle date fields - null means clear, undefined means don't change
+      if (data.startDate !== undefined) {
+        updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+      }
+      if (data.endDate !== undefined) {
+        updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+      }
+
+      // Handle customFields - null means clear, undefined means don't change
+      if (customFields !== undefined) {
+        updateData.customFields = customFields;
+      }
+
       const updated = await tx.project.update({
         where: { id },
-        data: {
-          ...restData,
-          ...(data.startDate ? { startDate: new Date(data.startDate) } : {}),
-          ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
-          updatedBy: updatedById,
-          ...(customFields !== undefined ? { customFields } : {}),
-        },
+        data: updateData,
         include: { milestones: true, teamMembers: true },
       });
 

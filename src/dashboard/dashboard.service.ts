@@ -28,11 +28,7 @@ const PO_SPEND_STATUSES = [
   'FullyReceived',
   'Closed',
 ] as any;
-const PO_OPEN_STATUSES = [
-  'PendingApproval',
-  'Approved',
-  'Sent',
-] as any;
+const PO_OPEN_STATUSES = ['PendingApproval', 'Approved', 'Sent'] as any;
 
 const CATEGORY_TO_PHASE: Record<string, string> = {
   Documentation: 'Design',
