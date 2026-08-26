@@ -79,7 +79,10 @@ export class CustomerService extends BaseQueryService {
               industry: data.industry || lead.industry,
               businessType: data.businessType || lead.businessType,
               website: data.website || lead.website,
-              address: data.address || lead.addressLine1 || `${lead.addressLine1 || ''} ${lead.city || ''} ${lead.state || ''}`.trim(),
+              address:
+                data.address ||
+                lead.addressLine1 ||
+                `${lead.addressLine1 || ''} ${lead.city || ''} ${lead.state || ''}`.trim(),
               city: data.city || lead.city,
               state: data.state || lead.state,
               country: data.country || lead.country,
@@ -141,7 +144,23 @@ export class CustomerService extends BaseQueryService {
     // Convert empty strings to null for optional fields to properly clear values
     const processedData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value === '' && ['email', 'alternateMobile', 'gstNumber', 'panNumber', 'website', 'notes', 'pincode', 'country', 'accountTier', 'projectTitle', 'projectType', 'projectCode'].includes(key)) {
+      if (
+        value === '' &&
+        [
+          'email',
+          'alternateMobile',
+          'gstNumber',
+          'panNumber',
+          'website',
+          'notes',
+          'pincode',
+          'country',
+          'accountTier',
+          'projectTitle',
+          'projectType',
+          'projectCode',
+        ].includes(key)
+      ) {
         processedData[key] = null;
       } else {
         processedData[key] = value;
@@ -154,8 +173,10 @@ export class CustomerService extends BaseQueryService {
     }
 
     try {
-      const isStatusChangeToRejected = processedData.status === 'Rejected' && existing.status !== 'Rejected';
-      const isStatusChangeToActive = processedData.status === 'Active' && existing.status === 'Rejected';
+      const isStatusChangeToRejected =
+        processedData.status === 'Rejected' && existing.status !== 'Rejected';
+      const isStatusChangeToActive =
+        processedData.status === 'Active' && existing.status === 'Rejected';
       const linkedLeadId = existing.leadId || existing.convertedFromLeadId;
 
       let customer;

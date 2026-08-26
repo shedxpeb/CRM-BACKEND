@@ -292,7 +292,10 @@ export class WorkflowEngineService {
 
     const cards: TimelineCard[] = merged.map((item) => {
       const user = item.userId ? userMap.get(item.userId) : null;
-      const performedBy = (user as any)?.name || ((user as any)?.email ? (user as any).email.split('@')[0] : null) || null;
+      const performedBy =
+        (user as any)?.name ||
+        ((user as any)?.email ? (user as any).email.split('@')[0] : null) ||
+        null;
       const safePerformedBy = performedBy && !looksLikeUuid(performedBy) ? performedBy : 'System';
 
       const title = humanizeEventTitle(entityType, item.action);

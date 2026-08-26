@@ -810,7 +810,9 @@ export class TrackingService {
     return comments.map((c) => {
       const user = userMap.get(c.authorId);
       const authorName =
-        (user as any)?.name || ((user as any)?.email ? (user as any).email.split('@')[0] : null) || 'Team Member';
+        (user as any)?.name ||
+        ((user as any)?.email ? (user as any).email.split('@')[0] : null) ||
+        'Team Member';
       return {
         id: c.id,
         content: c.content,

@@ -38,13 +38,7 @@ export class TaskService extends BaseQueryService {
     super(prisma, {
       model: 'task',
       searchFields: ['title', 'description', 'assignedUserName', 'createdByName', 'notes'],
-      filterFields: [
-        'status',
-        'priority',
-        'category',
-        'assignedUserId',
-        'projectId',
-      ],
+      filterFields: ['status', 'priority', 'category', 'assignedUserId', 'projectId'],
       sortColumns: ['createdAt', 'title', 'dueDate', 'priority', 'status', 'taskId'],
       orgScoped: true,
     });

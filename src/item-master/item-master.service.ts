@@ -16,13 +16,7 @@ export class ItemMasterService extends BaseQueryService {
   ) {
     super(prisma, {
       model: 'inventoryItem',
-      searchFields: [
-        'itemName',
-        'itemCode',
-        'brand',
-        'category',
-        'description',
-      ],
+      searchFields: ['itemName', 'itemCode', 'brand', 'category', 'description'],
       filterFields: ['status', 'category', 'brand', 'itemTypeClass', 'unit'],
       sortColumns: [
         'createdAt',
@@ -43,11 +37,7 @@ export class ItemMasterService extends BaseQueryService {
   }
 
   async findById(id: string, organizationId?: string) {
-    return super.findById(
-      id,
-      {},
-      organizationId,
-    );
+    return super.findById(id, {}, organizationId);
   }
 
   async create(dto: CreateItemMasterDto, createdById: string, organizationId: string) {
@@ -262,7 +252,9 @@ export class ItemMasterService extends BaseQueryService {
       activeItems,
       inactiveItems,
       discontinuedItems,
-      itemsByCategory: Object.fromEntries(categoryAgg.map((c) => [c.category || 'Uncategorized', c._count.id])),
+      itemsByCategory: Object.fromEntries(
+        categoryAgg.map((c) => [c.category || 'Uncategorized', c._count.id]),
+      ),
       itemsByBrand: Object.fromEntries(brandAgg.map((b) => [b.brand || '', b._count.id])),
       totalVariants,
       totalBundles,

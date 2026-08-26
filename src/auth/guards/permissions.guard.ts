@@ -276,9 +276,7 @@ export class PermissionsGuard implements CanActivate {
 
     const userPermissions = roles.flatMap((r) => r.permissions);
     const effectivePermissions =
-      userPermissions.length > 0
-        ? userPermissions
-        : DEFAULT_PERMISSIONS[userRecord.role] || [];
+      userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     this.logger.debug(
       `Permission check for user ${user.id} (${userRecord.role}): Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,

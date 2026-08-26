@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, IsEnum, Min, IsBoolean, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateProjectDto } from './create-project.dto';

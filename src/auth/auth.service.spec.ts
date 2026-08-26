@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
@@ -49,7 +51,7 @@ describe('AuthService.refresh - concurrency fix', () => {
     user: mockUser,
   };
 
-  const mockRefreshTokenData = {
+  const _mockRefreshTokenData = {
     id: 'token-1',
     tokenHash: 'abc123...hashed',
     sessionId: 'session-1',
@@ -63,7 +65,7 @@ describe('AuthService.refresh - concurrency fix', () => {
 
   beforeEach(() => {
     prisma = {
-      $transaction: jest.fn(async (input: any, options?: any) => {
+      $transaction: jest.fn(async (input: any, _options?: any) => {
         // Handle callback form: $transaction(fn, options?)
         if (typeof input === 'function') {
           return input(prisma);
@@ -100,7 +102,7 @@ describe('AuthService.refresh - concurrency fix', () => {
     } as any;
 
     sessionService = {
-      // @ts-ignore
+      // @ts-expect-error
       touchSession: jest.fn().mockResolvedValue(undefined),
       txTouchSession: jest.fn(),
       revokeSession: jest.fn(),
@@ -127,7 +129,7 @@ describe('AuthService.refresh - concurrency fix', () => {
       {} as any,
       tokenService,
       sessionService,
-      // @ts-ignore
+      // @ts-expect-error
       { log: jest.fn().mockResolvedValue(undefined) } as any,
       {} as any,
       {} as any,
@@ -137,13 +139,13 @@ describe('AuthService.refresh - concurrency fix', () => {
 
   describe('refresh with valid active token', () => {
     beforeEach(() => {
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.findUnique as jest.Mock).mockResolvedValue(mockRefreshToken);
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.update as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.create as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).session.update as jest.Mock).mockResolvedValue({});
     });
 
@@ -182,11 +184,11 @@ describe('AuthService.refresh - concurrency fix', () => {
         session: mockSession,
         user: mockUser,
       });
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.update as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.create as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).session.update as jest.Mock).mockResolvedValue({});
     });
 
@@ -204,11 +206,11 @@ describe('AuthService.refresh - concurrency fix', () => {
       // Both calls return the same active token
       // @ts-ignore
       findUniqueMock.mockResolvedValue(mockRefreshToken);
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.update as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.create as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).session.update as jest.Mock).mockResolvedValue({});
     });
 
@@ -225,13 +227,13 @@ describe('AuthService.refresh - concurrency fix', () => {
 
   describe('refresh with revoked token without replacement', () => {
     beforeEach(() => {
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.findUnique as jest.Mock).mockResolvedValue({
         ...mockRefreshToken,
         isRevoked: true,
         replacedByTokenHash: null,
       });
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).$executeRawUnsafe as jest.Mock).mockResolvedValue({});
     });
 
@@ -244,7 +246,7 @@ describe('AuthService.refresh - concurrency fix', () => {
 
   describe('refresh with expired token', () => {
     beforeEach(() => {
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.findUnique as jest.Mock).mockResolvedValue({
         ...mockRefreshToken,
         expiresAt: new Date(Date.now() - 1000), // expired
@@ -260,7 +262,7 @@ describe('AuthService.refresh - concurrency fix', () => {
 
   describe('refresh with token not found', () => {
     beforeEach(() => {
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
     });
 
@@ -297,11 +299,11 @@ describe('AuthService.refresh - concurrency fix', () => {
         session: mockSession,
         user: mockUser,
       });
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.update as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.create as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).session.update as jest.Mock).mockResolvedValue({});
     });
 
@@ -320,11 +322,11 @@ describe('AuthService.refresh - concurrency fix', () => {
       // First call returns active token for both concurrent requests
       // @ts-ignore
       findUniqueMock.mockResolvedValue(mockRefreshToken);
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.update as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).refreshToken.create as jest.Mock).mockResolvedValue({});
-      // @ts-ignore
+      // @ts-expect-error
       ((prisma as any).session.update as jest.Mock).mockResolvedValue({});
 
       const promise1 = authService.refresh('some-refresh-token' as any);
