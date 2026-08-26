@@ -43,7 +43,7 @@ model Organization {
   itemBundles          ItemBundle[]
   itemMasters          ItemMaster[]
   itemVariants         ItemVariant[]
-  leads                Lead[]
+  leads                Lead[]              @relation("OrganizationLeads")
   modules              OrganizationModule[]
   projects             Project[]
   purchaseOrders       PurchaseOrder[]
@@ -545,7 +545,7 @@ model Lead {
   assignedTo          String?
   assignedToId        String?
   currentDate         String?
-  organization        Organization        @relation(fields: [organizationId], references: [id])
+  organization        Organization        @relation("OrganizationLeads", fields: [organizationId], references: [id])
 
   @@unique([organizationId, leadNumber])
   @@index([status])
