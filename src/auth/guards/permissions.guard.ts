@@ -200,7 +200,6 @@ export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
-    private permissionInheritance: PermissionInheritanceService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -275,10 +274,11 @@ export class PermissionsGuard implements CanActivate {
       },
     });
 
-    const effectivePermissions = await this.permissionInheritance.getEffectivePermissions(
-      user.id,
-      userRecord.organizationId,
-    );
+    const userPermissions = roles.flatMap((r) => r.permissions);
+    const effectivePermissions =
+      userPermissions.length > 0
+        ? userPermissions
+        : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     this.logger.debug(
       `Permission check for user ${user.id} (${userRecord.role}): Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,
