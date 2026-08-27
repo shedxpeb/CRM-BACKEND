@@ -259,7 +259,6 @@ export class LeadService extends BaseQueryService {
     const createData = {
       ...restData,
       email: data.email || '',
-      organizationId,
       createdById,
       status: data.status || LeadStatus.New,
       priority: data.priority || LeadPriority.Medium,
@@ -671,13 +670,15 @@ export class LeadService extends BaseQueryService {
 
         const finalData = {
           ...leadData,
-          organizationId,
           createdById,
           email: leadData.email || '',
           status: leadData.status || LeadStatus.New,
           isConverted: false,
           tags: leadData.tags || [],
           attachments: [],
+          organization: {
+            connect: { id: organizationId }
+          }
         };
 
         return this.client.create({ data: finalData });
