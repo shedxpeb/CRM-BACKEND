@@ -268,7 +268,6 @@ export class LeadService extends BaseQueryService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...((data as any).currentDate ? { createdAt: new Date((data as any).currentDate) } : {}),
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
-      ...(data.country ? { country: data.country } : {}),
       organization: {
         connect: { id: organizationId }
       }
@@ -677,7 +676,6 @@ export class LeadService extends BaseQueryService {
           isConverted: false,
           tags: leadData.tags || [],
           attachments: [],
-          ...(leadData.country ? { country: leadData.country } : {}),
           organization: {
             connect: { id: organizationId }
           }
