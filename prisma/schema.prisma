@@ -527,7 +527,7 @@ model Lead {
   businessType        BusinessType?
   companyLogo         String?
   companySize         String?
-  country             String              @default("India")
+  country             String?
   designation         String?
   employeeCount       Int?
   facebook            String?
