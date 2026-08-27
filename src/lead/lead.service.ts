@@ -259,7 +259,6 @@ export class LeadService extends BaseQueryService {
     const createData = {
       ...restData,
       email: data.email || '',
-      organizationId,
       createdById,
       status: data.status || LeadStatus.New,
       priority: data.priority || LeadPriority.Medium,
@@ -269,6 +268,10 @@ export class LeadService extends BaseQueryService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...((data as any).currentDate ? { createdAt: new Date((data as any).currentDate) } : {}),
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
+      ...(data.country ? { country: data.country } : {}),
+      organization: {
+        connect: { id: organizationId }
+      }
     };
 
     try {
@@ -668,13 +671,16 @@ export class LeadService extends BaseQueryService {
 
         const finalData = {
           ...leadData,
-          organizationId,
           createdById,
           email: leadData.email || '',
           status: leadData.status || LeadStatus.New,
           isConverted: false,
           tags: leadData.tags || [],
           attachments: [],
+          ...(leadData.country ? { country: leadData.country } : {}),
+          organization: {
+            connect: { id: organizationId }
+          }
         };
 
         return this.client.create({ data: finalData });
