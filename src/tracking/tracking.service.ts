@@ -15,7 +15,6 @@ const DEFAULT_PIPELINES: Record<
     label: string;
     order: number;
     isInitial?: boolean;
-    isFinal?: boolean;
     color?: string;
     allowedTransitions?: string[];
   }>
@@ -82,7 +81,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Rejected',
       label: 'Rejected',
       order: 9,
-      isFinal: false,
       color: '#ef4444',
       allowedTransitions: ['New', 'Active', 'Inactive'],
     },
@@ -90,7 +88,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Converted',
       label: 'Converted',
       order: 10,
-      isFinal: false,
       color: '#14b8a6',
       allowedTransitions: ['New'],
     },
@@ -115,7 +112,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Archived',
       label: 'Archived',
       order: 3,
-      isFinal: false,
       color: '#6b7280',
       allowedTransitions: ['Active', 'Inactive', 'Rejected'],
     },
@@ -123,7 +119,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Rejected',
       label: 'Rejected',
       order: 4,
-      isFinal: false,
       color: '#ef4444',
       allowedTransitions: ['Active'],
     },
@@ -183,7 +178,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Completed',
       label: 'Completed',
       order: 8,
-      isFinal: true,
       color: '#22c55e',
       allowedTransitions: [],
     },
@@ -198,7 +192,6 @@ const DEFAULT_PIPELINES: Record<
       status: 'Cancelled',
       label: 'Cancelled',
       order: 10,
-      isFinal: false,
       color: '#ef4444',
       allowedTransitions: ['New', 'DesignInProgress', 'Fabrication', 'Installation'],
     },
@@ -210,9 +203,9 @@ const DEFAULT_PIPELINES: Record<
     { status: 'Sent', label: 'Sent', order: 4, color: '#3b82f6' },
     { status: 'PartiallyReceived', label: 'Partially Received', order: 5, color: '#f97316' },
     { status: 'FullyReceived', label: 'Fully Received', order: 6, color: '#10b981' },
-    { status: 'Closed', label: 'Closed', order: 7, isFinal: true, color: '#059669' },
-    { status: 'Rejected', label: 'Rejected', order: 8, isFinal: true, color: '#ef4444' },
-    { status: 'Cancelled', label: 'Cancelled', order: 9, isFinal: true, color: '#94a3b8' },
+    { status: 'Closed', label: 'Closed', order: 7, color: '#059669' },
+    { status: 'Rejected', label: 'Rejected', order: 8, color: '#ef4444' },
+    { status: 'Cancelled', label: 'Cancelled', order: 9, color: '#94a3b8' },
   ],
 };
 
@@ -461,7 +454,6 @@ export class TrackingService {
           order: d.order,
           color: d.color,
           isInitial: !!d.isInitial,
-          isFinal: !!d.isFinal,
           isActive: true,
           allowedTransitions: d.allowedTransitions || [],
         })),
@@ -489,7 +481,6 @@ export class TrackingService {
           order: maxOrder + i + 1,
           color: d.color,
           isInitial: !!d.isInitial,
-          isFinal: !!d.isFinal,
           isActive: true,
           allowedTransitions: d.allowedTransitions || [],
         })),
@@ -1074,7 +1065,6 @@ export class TrackingService {
       order: s.order,
       color: s.color,
       isInitial: s.isInitial,
-      isFinal: s.isFinal,
       isCurrent,
       isPast: isCurrent ? false : isPast,
       allowedTransitions: s.allowedTransitions || [],
