@@ -7,199 +7,31 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../../common/decorators/permissions.decorator';
-import { ROLE_NAME_ALIASES } from '../../common/constants/role-aliases';
-import { PrismaService } from '../../prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { PermissionInheritanceService } from '../../permissions/permission-inheritance.service';
 
-const DEFAULT_PERMISSIONS: Record<string, string[]> = {
-  ADMIN: [
-    'dashboard:view',
-    'lead:list',
-    'lead:read',
-    'lead:create',
-    'lead:update',
-    'lead:delete',
-    'lead:restore',
-    'customer:list',
-    'customer:read',
-    'customer:create',
-    'customer:update',
-    'customer:delete',
-    'project:list',
-    'project:read',
-    'project:create',
-    'project:update',
-    'project:delete',
-    'item-master:list',
-    'item-master:read',
-    'item-master:create',
-    'item-master:update',
-    'item-master:delete',
-    'inventory:list',
-    'inventory:read',
-    'inventory:create',
-    'inventory:update',
-    'inventory:delete',
-    'user:list',
-    'user:read',
-    'user:create',
-    'user:update',
-    'role:list',
-    'role:read',
-    'organization:read',
-    'organization:update',
-    'tracking:read',
-    'tracking:update',
-    'purchase-order:approve',
-    'task:list',
-    'task:read',
-    'task:create',
-    'task:update',
-    'task:delete',
-  ],
-  COMPANY_OWNER: ['*'],
-  EMPLOYEE: [
-    'dashboard:view',
-    'lead:list',
-    'lead:read',
-    'lead:create',
-    'lead:update',
-    'lead:delete',
-    'lead:restore',
-    'customer:list',
-    'customer:read',
-    'customer:create',
-    'customer:update',
-    'customer:delete',
-    'project:list',
-    'project:read',
-    'project:create',
-    'project:update',
-    'project:delete',
-    'item-master:list',
-    'item-master:read',
-    'item-master:create',
-    'item-master:update',
-    'item-master:delete',
-    'inventory:list',
-    'inventory:read',
-    'inventory:create',
-    'inventory:update',
-    'tracking:read',
-    'tracking:update',
-    'task:list',
-    'task:read',
-    'task:create',
-    'task:update',
-  ],
-  SALES_MANAGER: [
-    'dashboard:view',
-    'lead:list',
-    'lead:read',
-    'lead:create',
-    'lead:update',
-    'lead:delete',
-    'lead:restore',
-    'customer:list',
-    'customer:read',
-    'customer:create',
-    'customer:update',
-    'customer:delete',
-    'project:list',
-    'project:read',
-    'tracking:read',
-    'tracking:update',
-  ],
-  SALES_EXECUTIVE: [
-    'dashboard:view',
-    'lead:list',
-    'lead:read',
-    'lead:create',
-    'lead:update',
-    'lead:delete',
-    'lead:restore',
-    'customer:list',
-    'customer:read',
-    'customer:create',
-    'customer:update',
-    'customer:delete',
-    'project:list',
-    'project:read',
-    'tracking:read',
-  ],
-  PROJECT_MANAGER: [
-    'dashboard:view',
-    'project:list',
-    'project:read',
-    'project:create',
-    'project:update',
-    'project:delete',
-    'customer:list',
-    'customer:read',
-    'tracking:read',
-    'tracking:update',
-  ],
-  PURCHASE_MANAGER: [
-    'dashboard:view',
-    'purchase-order:list',
-    'purchase-order:read',
-    'purchase-order:create',
-    'purchase-order:update',
-    'purchase-order:approve',
-    'vendor:list',
-    'vendor:read',
-    'vendor:create',
-    'vendor:update',
-    'inventory:list',
-    'inventory:read',
-    'inventory:create',
-    'inventory:update',
-  ],
-  INVENTORY_MANAGER: [
-    'dashboard:view',
-    'inventory:list',
-    'inventory:read',
-    'inventory:create',
-    'inventory:update',
-    'inventory:delete',
-    'item-master:list',
-    'item-master:read',
-    'item-master:create',
-    'item-master:update',
-    'warehouse:list',
-    'warehouse:read',
-    'tracking:read',
-    'tracking:update',
-  ],
-  ACCOUNTANT: [
-    'dashboard:view',
-    'purchase-order:list',
-    'purchase-order:read',
-    'purchase-order:approve',
-    'vendor:list',
-    'vendor:read',
-    'tracking:read',
-  ],
-  VIEW_ONLY: [
-    'dashboard:view',
-    'lead:list',
-    'lead:read',
-    'customer:list',
-    'customer:read',
-    'project:list',
-    'project:read',
-    'inventory:list',
-    'inventory:read',
-  ],
-};
-
+/**
+ * PermissionsGuard — centralized authorization guard.
+ *
+ * Uses PermissionInheritanceService.getEffectivePermissions() as the SINGLE
+ * authoritative source for permission resolution. This ensures:
+ * - Role permissions are the primary source of truth
+ * - UserPermission overrides (grant/deny) are respected
+ * - UserModuleAccess overrides are respected
+ * - Organization module restrictions are applied
+ * - No duplicate/conflicting permission engines exist
+ *
+ * The old inline calculation (Role.permissions + DEFAULT_PERMISSIONS fallback)
+ * has been removed. ALL permission resolution now flows through the centralized
+ * PermissionInheritanceService.
+ */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   private readonly logger = new Logger(PermissionsGuard.name);
 
   constructor(
     private reflector: Reflector,
-    private prisma: PrismaService,
+    private permissionInheritance: PermissionInheritanceService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -288,7 +120,7 @@ export class PermissionsGuard implements CanActivate {
       userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     this.logger.debug(
-      `Permission check for user ${user.id} (${userRecord.role}): Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,
+      `Permission check for user ${user.id}: Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,
     );
 
     if (effectivePermissions.includes('*')) {
@@ -300,7 +132,7 @@ export class PermissionsGuard implements CanActivate {
     if (!hasAllRequired) {
       const missing = requiredPermissions.filter((perm) => !effectivePermissions.includes(perm));
       this.logger.error(
-        `Permission denied for user ${user.id} (${userRecord.role}): Missing permissions [${missing.join(', ')}]. Required: [${requiredPermissions.join(', ')}], Effective: [${effectivePermissions.join(', ')}]`,
+        `Permission denied for user ${user.id}: Missing permissions [${missing.join(', ')}]. Required: [${requiredPermissions.join(', ')}], Effective: [${effectivePermissions.join(', ')}]`,
       );
       throw new ForbiddenException('Insufficient permissions');
     }
