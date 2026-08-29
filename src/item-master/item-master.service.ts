@@ -15,7 +15,7 @@ export class ItemMasterService extends BaseQueryService {
     private readonly workflowEngine: WorkflowEngineService,
   ) {
     super(prisma, {
-      model: 'inventoryItem',
+      model: 'itemMaster',
       searchFields: ['itemName', 'itemCode', 'brand', 'category', 'description'],
       filterFields: ['status', 'category', 'brand', 'itemTypeClass', 'unit'],
       sortColumns: [
