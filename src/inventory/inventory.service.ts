@@ -37,6 +37,9 @@ export class InventoryService extends BaseQueryService {
     const where: any = { isDeleted: false };
     if (organizationId) where.organizationId = organizationId;
 
+    // Only show items with actual stock (currentStock > 0)
+    where.currentStock = { gt: 0 };
+
     if (query.lowStock === 'true') {
       where.status = { in: ['Low Stock', 'Critical', 'Out of Stock'] };
     }

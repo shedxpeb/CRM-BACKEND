@@ -272,9 +272,18 @@ export class PermissionsGuard implements CanActivate {
         organizationId: userRecord.organizationId,
         name: { in: roleNames },
       },
+      include: {
+        rolePermissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
     });
 
-    const userPermissions = roles.flatMap((r) => r.permissions);
+    const userPermissions = roles.flatMap((r) =>
+      r.rolePermissions.map((rp) => rp.permission.key),
+    );
     const effectivePermissions =
       userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
