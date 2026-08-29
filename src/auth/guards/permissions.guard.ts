@@ -88,36 +88,11 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    const userRecord = await this.prisma.user.findUnique({
-      where: { id: user.id },
-      select: { id: true, role: true, organizationId: true },
-    });
-
-    if (!userRecord || !userRecord.organizationId) {
-      throw new ForbiddenException('User not found or missing organization');
-    }
-
-    const roleNames = ROLE_NAME_ALIASES[userRecord.role] || [userRecord.role];
-
-    const roles = await this.prisma.role.findMany({
-      where: {
-        organizationId: userRecord.organizationId,
-        name: { in: roleNames },
-      },
-      include: {
-        rolePermissions: {
-          include: {
-            permission: true,
-          },
-        },
-      },
-    });
-
-    const userPermissions = roles.flatMap((r) =>
-      r.rolePermissions.map((rp) => rp.permission.key),
+    // Use centralized PermissionInheritanceService for all permission resolution
+    const effectivePermissions = await this.permissionInheritance.getEffectivePermissions(
+      user.id,
+      user.organizationId,
     );
-    const effectivePermissions =
-      userPermissions.length > 0 ? userPermissions : DEFAULT_PERMISSIONS[userRecord.role] || [];
 
     this.logger.debug(
       `Permission check for user ${user.id}: Required [${requiredPermissions.join(', ')}], Effective [${effectivePermissions.join(', ')}]`,
