@@ -34,17 +34,12 @@ export class CreateVendorDto {
   @IsString()
   contactPerson?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsEmail()
-  email?: string;
+  @IsString()
+  email: string;
 
   @ApiProperty()
-  @IsString()
-  mobile?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsString()
   phone?: string;
 
@@ -85,14 +80,10 @@ export class CreateVendorDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
   creditLimit?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
   creditDays?: number;
 
   @ApiPropertyOptional()

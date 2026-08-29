@@ -931,7 +931,6 @@ model InventoryItem {
   supplier        Supplier?      @relation(fields: [supplierId], references: [id])
   movements       StockMovement[]
 
-  @@unique([organizationId, itemCode])
   @@index([organizationId])
   @@index([isDeleted])
   @@index([warehouseId])
@@ -973,14 +972,26 @@ model ItemBundleItem {
 model ItemMaster {
   id             String        @id @default(uuid())
   organizationId String
+  itemCode       String
+  itemName       String
   description    String?
+  category       String?
+  brand          String?
+  unit           String?
+  defaultRate    Float         @default(0)
+  status         String        @default("Active")
+  itemTypeClass  String?
+  customFields   Json?
+  tags           String[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   isDeleted      Boolean       @default(false)
-  name           String?
+  deletedAt      DateTime?
+  deletedById    String?
   organization   Organization  @relation(fields: [organizationId], references: [id])
   variants       ItemVariant[]
 
+  @@unique([organizationId, itemCode])
   @@index([organizationId])
   @@index([isDeleted])
 }
