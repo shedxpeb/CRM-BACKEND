@@ -192,7 +192,6 @@ export class VendorService {
         panNumber: dto.panNumber,
         contactPerson: dto.contactPerson,
         email: dto.email,
-        mobile: dto.mobile,
         phone: dto.phone,
         address: dto.address,
         city: dto.city,

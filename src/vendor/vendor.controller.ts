@@ -9,6 +9,8 @@ import {
   Query,
   HttpStatus,
   HttpCode,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { VendorService } from './vendor.service';
@@ -97,6 +99,7 @@ export class VendorController {
   @RequirePermissions('vendor:create')
   @ApiOperation({ summary: 'Create a new vendor' })
   @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
   async create(
     @Body() dto: CreateVendorDto,
     @CurrentUser('id') createdById: string,
