@@ -10,6 +10,7 @@ import {
   MaxLength,
   Matches,
   IsArray,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
