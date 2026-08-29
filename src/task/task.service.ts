@@ -153,6 +153,10 @@ export class TaskService extends BaseQueryService {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = { ...dto };
+    // Remove fields that don't exist in the Task model
+    delete data.linkedModule;
+    delete data.linkedRecordId;
+    delete data.linkedRecordName;
     if (dto.dueDate) data.dueDate = new Date(dto.dueDate);
     if (dto.startDate) data.startDate = new Date(dto.startDate);
     if (dto.reminderDate) data.reminderDate = new Date(dto.reminderDate);
