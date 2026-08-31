@@ -292,41 +292,12 @@ export class ModuleAccessGuard implements CanActivate {
       return true;
     }
 
-    // Get required permissions for this module and method
-    const requiredPermissions = this.getRequiredPermissions(moduleKey, method, url);
-    if (requiredPermissions.length === 0) {
-      // No specific permissions required for this endpoint
-      return true;
-    }
-
-    // Get user's effective permissions
-    const userPermissions = await this.permissionInheritance.getEffectivePermissions(
-      user.id,
-      user.organizationId,
-    );
-
-    this.logger.debug(
-      `Module access check for user ${user.id}: Module ${moduleKey}, Method ${method}, Required [${requiredPermissions.join(', ')}], UserPermissions [${userPermissions.join(', ')}]`,
-    );
-
-    // Check if user has all required permissions
-    const hasAllPermissions = requiredPermissions.every(
-      (perm) => userPermissions.includes('*') || userPermissions.includes(perm),
-    );
-
-    if (!hasAllPermissions) {
-      const missing = requiredPermissions.filter(
-        (perm) => !userPermissions.includes('*') && !userPermissions.includes(perm),
-      );
-      this.logger.error(
-        `Module access denied for user ${user.id}: Missing permissions [${missing.join(', ')}] for module ${moduleKey}. Required: [${requiredPermissions.join(', ')}], User has: [${userPermissions.join(', ')}]`,
-      );
-      throw new ForbiddenException({
-        code: 'INSUFFICIENT_PERMISSION',
-        message: 'Insufficient permissions for this module',
-      });
-    }
-
+    // Permission checking is now handled exclusively by PermissionsGuard and
+    // controller-level @RequirePermissions decorators. ModuleAccessGuard only
+    // enforces module enablement and UserModuleAccess overrides. This prevents
+    // duplicate/conflicting permission checks that caused false 403s (e.g.,
+    // vendor:list required by controller but ModuleAccessGuard also requiring
+    // vendor:read).
     return true;
   }
 
