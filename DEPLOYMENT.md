@@ -1,6 +1,6 @@
 # Deployment & Architecture Stability
 
-## Root cause of Render failures
+## Root cause of build failures
 
 `Property 'eventRule' does not exist on PrismaClient` (and similar) means:
 
@@ -43,27 +43,24 @@ Push / PR
   → Deploy Ready signal
 ```
 
-Render must **not** deploy until CI is green. Configure Render to deploy from `main` only after checks pass, or use the blueprint `buildCommand` which regenerates the client on every build.
+CI must pass before merging to `main`. Production deployment is handled on Hostinger via PM2.
 
-## Render build command (mandatory)
-
-```bash
-npm ci && npx prisma generate && npm run architecture:validate && npm run type-check && npm run build
-```
-
-Start:
+## Hostinger deployment
 
 ```bash
-node scripts/deploy-db.mjs && node dist/main.js
+# From PEB-CRM directory on Hostinger server
+pm2 restart crm-backend
 ```
 
-`deploy-db.mjs` runs `prisma migrate deploy`, then falls back to `prisma db push` if migrations are behind the schema (current state until a baseline migration is approved). Set `PRISMA_DEPLOY_MODE=push` to skip migrate and push only.
+⚠️ **NEVER run `pm2 restart all`** — always restart individual services.
 
-Health probes:
+See `PEB-CRM/deploy.sh` and `PEB-CRM/ecosystem.config.js` for full deployment details.
+
+## Health probes:
 
 | Path | Purpose |
 |------|---------|
-| `GET /live` | Liveness (Render `healthCheckPath`) |
+| `GET /live` | Liveness |
 | `GET /ready` | Readiness (DB; SMTP if `SMTP_REQUIRED=true`) |
 | `GET /health` | Deep check (DB + memory) |
 | `GET /` | Service identity |
@@ -80,7 +77,7 @@ Merge to `main` only after CI passes.
 
 ## Environment variables
 
-Never hardcode hostnames or secrets. Set per environment (Render / Hostinger / AWS):
+Never hardcode hostnames or secrets. Set per environment:
 
 See `.env.example` for the full contract. Critical keys:
 
@@ -93,56 +90,6 @@ See `.env.example` for the full contract. Critical keys:
 - Sessions: `SESSION_*`
 
 Moving hosts = change `.env` only. Switch mail providers via `MAIL_PROVIDER` + `SMTP_*` (Gmail → Zoho → Hostinger SMTP) without code changes.
-
-## Render mail / SMTP egress (critical)
-
-Two separate production failure modes appear in logs:
-
-1. **IPv6 unreachable** — DNS returns Gmail AAAA (`2607:…`), Node connects over IPv6 → `ENETUNREACH`.
-2. **SMTP egress blocked** — IPv4 resolves (`172.x…`) but TCP to `:587` / `:465` times out. Common on **Render free tier** (outbound SMTP ports 25/465/587 blocked since 2025-09).
-
-Mitigations in this codebase:
-
-- `SMTP_IP_FAMILY=4` — resolve/connect IPv4 only
-- Bounded timeouts: connection 10s / greeting 10s / socket 15s / DNS 5s
-- Recovery backoff: 5s → 15s → 30s → 1m → 5m
-- **`MAIL_PROVIDER=auto` + `RESEND_API_KEY`** — if SMTP egress fails, switch to Resend HTTPS (port 443)
-
-### Render Dashboard env (required for OTP on free / blocked SMTP)
-
-```
-MAIL_PROVIDER=auto
-RESEND_API_KEY=re_xxxxxxxx
-RESEND_FROM_EMAIL=noreply@your-verified-domain.com
-SMTP_IP_FAMILY=4
-```
-
-Create a free API key at https://resend.com — verify a sending domain (Gmail addresses cannot be used as Resend `from` without domain verify).
-
-Local/dev can keep `MAIL_PROVIDER=smtp` with Gmail App Password (SMTP works on your PC).
-
-After deploy, expect either:
-
-- `Transport Verify Result SUCCESS` with `deliveryChannel: smtp`, or
-- `Switching to Resend HTTPS fallback` → `deliveryChannel: resend` → `READY`
-
-Then `GET /mail/health` → `state: READY`.
-
-### If logs show IPv4 `resolvedAddress` but still `SMTP_TIMEOUT`
-
-IPv4 preference is working. The remaining failure is **platform egress**, not DNS:
-
-- Render **free** web services block outbound SMTP ports `25`, `465`, and `587` (since 2025-09-26).
-- Paid plans (Starter+) allow `465`/`587`; port `25` stays blocked on AWS.
-- Local PC can reach Gmail SMTP while free Render cannot.
-
-Fixes (env / plan only — no OTP code changes):
-
-1. Set `MAIL_PROVIDER=auto` + `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (HTTPS, works on free Render), **or**
-2. Upgrade the Render web service to a paid plan that allows SMTP `465`/`587`, **or**
-3. Move SMTP to Hostinger / another host that allows egress.
-
-Confirm with `GET /mail/status`: `deliveryChannel` is `smtp` or `resend`, and `mail.state=READY`.
 
 ## Architecture validation
 
