@@ -3,10 +3,9 @@ import { QuotationController } from './quotation.controller';
 import { QuotationService } from './quotation.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
-import { PdfModule } from '../pdf/pdf.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, PdfModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [QuotationController],
   providers: [QuotationService],
   exports: [QuotationService],

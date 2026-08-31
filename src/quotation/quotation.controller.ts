@@ -7,20 +7,15 @@ import {
   Param,
   Body,
   Query,
-  StreamableFile,
-  Header,
-  HttpCode,
   HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiProduces } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
-import { RequirePermissions } from '../common/decorators/permissions.decorator';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QuotationService } from './quotation.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
-
-const PDF_THROTTLE = { default: { limit: 30, ttl: 60_000 } };
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('quotations')
 @ApiBearerAuth()
@@ -28,11 +23,10 @@ const PDF_THROTTLE = { default: { limit: 30, ttl: 60_000 } };
 export class QuotationController {
   constructor(private readonly quotationService: QuotationService) {}
 
-  // ─── CRUD ─────────────────────────────────────────────────────────────────
-
   @Get()
   @RequirePermissions('document:list')
-  @ApiOperation({ summary: 'List quotations' })
+  @ApiOperation({ summary: 'Get all quotations with pagination and filters' })
+  @ApiResponse({ status: 200, description: 'Quotations fetched successfully.' })
   async findAll(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
@@ -42,10 +36,14 @@ export class QuotationController {
     @CurrentUser('organizationId') organizationId?: string,
   ) {
     const data = await this.quotationService.findAll(
+      {
+        page: page ? parseInt(page, 10) : undefined,
+        pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+        status,
+        customerId,
+        search,
+      },
       organizationId!,
-      page ? parseInt(page, 10) : 1,
-      pageSize ? parseInt(pageSize, 10) : 25,
-      { status, customerId, search },
     );
     return { message: 'Quotations fetched successfully.', data };
   }
@@ -53,6 +51,7 @@ export class QuotationController {
   @Get(':id')
   @RequirePermissions('document:read')
   @ApiOperation({ summary: 'Get quotation by ID' })
+  @ApiResponse({ status: 200, description: 'Quotation fetched.' })
   async findById(
     @Param('id') id: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -65,19 +64,21 @@ export class QuotationController {
   @RequirePermissions('document:create')
   @ApiOperation({ summary: 'Create a new quotation' })
   @HttpCode(HttpStatus.CREATED)
+  @ApiResponse({ status: 201, description: 'Quotation created successfully.' })
   async create(
     @Body() dto: CreateQuotationDto,
     @CurrentUser('id') createdById: string,
     @CurrentUser('name') createdBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.create(dto, createdById, createdBy, organizationId);
+    const data = await this.quotationService.create(dto, organizationId, createdById, createdBy);
     return { message: 'Quotation created successfully.', data };
   }
 
   @Patch(':id')
   @RequirePermissions('document:update')
   @ApiOperation({ summary: 'Update quotation' })
+  @ApiResponse({ status: 200, description: 'Quotation updated successfully.' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateQuotationDto,
@@ -85,26 +86,27 @@ export class QuotationController {
     @CurrentUser('name') updatedBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.update(id, dto, updatedById, updatedBy, organizationId);
+    const data = await this.quotationService.update(id, dto, organizationId, updatedById, updatedBy);
     return { message: 'Quotation updated successfully.', data };
   }
 
   @Patch(':id/status')
   @RequirePermissions('document:update')
   @ApiOperation({ summary: 'Update quotation status' })
+  @ApiResponse({ status: 200, description: 'Status updated.' })
   async updateStatus(
     @Param('id') id: string,
     @Body('status') status: string,
-    @CurrentUser('id') userId: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.updateStatus(id, status, userId, organizationId);
+    const data = await this.quotationService.updateStatus(id, status, organizationId);
     return { message: 'Status updated.', data };
   }
 
   @Patch(':id/convert-to-project')
   @RequirePermissions('document:update')
   @ApiOperation({ summary: 'Convert quotation to project' })
+  @ApiResponse({ status: 200, description: 'Quotation converted.' })
   async convertToProject(
     @Param('id') id: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -116,39 +118,13 @@ export class QuotationController {
   @Delete(':id')
   @RequirePermissions('document:delete')
   @ApiOperation({ summary: 'Delete quotation' })
+  @ApiResponse({ status: 200, description: 'Quotation deleted.' })
   async delete(
     @Param('id') id: string,
     @CurrentUser('id') deletedById: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.delete(id, deletedById, organizationId);
+    const data = await this.quotationService.delete(id, organizationId, deletedById);
     return { message: 'Quotation deleted successfully.', data };
-  }
-
-  // ─── PDF Generation ──────────────────────────────────────────────────────
-
-  @Throttle(PDF_THROTTLE)
-  @Get(':id/pdf')
-  @RequirePermissions('document:read')
-  @ApiOperation({ summary: 'Generate and stream Quotation PDF' })
-  @ApiProduces('application/pdf')
-  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
-  @Header('Pragma', 'no-cache')
-  @Header('Expires', '0')
-  async generatePdf(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-    @CurrentUser('id') userId: string,
-  ): Promise<StreamableFile> {
-    const pdfBuffer = await this.quotationService.generatePdf(id, organizationId);
-
-    // Safe filename from quotation number
-    const quotation = await this.quotationService.findById(id, organizationId);
-    const filename = `${(quotation.quotationNumber || 'quotation').replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`;
-
-    return new StreamableFile(Buffer.from(pdfBuffer), {
-      type: 'application/pdf',
-      disposition: `inline; filename="${filename}"`,
-    });
   }
 }
