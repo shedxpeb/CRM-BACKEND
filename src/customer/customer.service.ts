@@ -163,7 +163,9 @@ export class CustomerService extends BaseQueryService {
         ].includes(key)
       ) {
         processedData[key] = null;
-      } else if (value === null && [
+      } else if (
+        value === null &&
+        [
           'email',
           'alternateMobile',
           'gstNumber',
@@ -179,7 +181,8 @@ export class CustomerService extends BaseQueryService {
           'projectCode',
           'industry',
           'businessType',
-        ].includes(key)) {
+        ].includes(key)
+      ) {
         // Explicitly pass through null values for optional fields
         processedData[key] = null;
       } else {

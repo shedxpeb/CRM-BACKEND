@@ -269,8 +269,8 @@ export class LeadService extends BaseQueryService {
       ...((data as any).currentDate ? { createdAt: new Date((data as any).currentDate) } : {}),
       ...(customFields && Object.keys(customFields).length > 0 ? { customFields } : {}),
       organization: {
-        connect: { id: organizationId }
-      }
+        connect: { id: organizationId },
+      },
     };
 
     try {
@@ -677,8 +677,8 @@ export class LeadService extends BaseQueryService {
           tags: leadData.tags || [],
           attachments: [],
           organization: {
-            connect: { id: organizationId }
-          }
+            connect: { id: organizationId },
+          },
         };
 
         return this.client.create({ data: finalData });
