@@ -28,6 +28,7 @@ import { ItemMasterModule } from './item-master/item-master.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { VendorModule } from './vendor/vendor.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
+import { QuotationModule } from './quotation/quotation.module';
 import { PdfModule } from './pdf/pdf.module';
 import { TaskModule } from './task/task.module';
 import { DocumentModule } from './document/document.module';
@@ -65,6 +66,7 @@ import { OrganizationBootstrapModule } from './organizations/organization-bootst
     InventoryModule,
     VendorModule,
     PurchaseOrderModule,
+    QuotationModule,
     PdfModule,
     TaskModule,
     DocumentModule,

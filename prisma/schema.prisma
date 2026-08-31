@@ -47,6 +47,7 @@ model Organization {
   modules              OrganizationModule[]
   projects             Project[]
   purchaseOrders       PurchaseOrder[]
+  quotations           Quotation[]
   roles                Role[]
   salaryAdjustments    SalaryAdjustment[]
   stockMovements       StockMovement[]
@@ -1379,6 +1380,96 @@ model StatusPipeline {
   @@index([organizationId])
   @@index([isActive])
   @@index([order])
+}
+
+model Quotation {
+  id                  String           @id @default(uuid())
+  organizationId      String
+  quotationNumber     String
+  version             Int              @default(1)
+  status              String           @default("Draft")
+
+  // Source (optional — standalone quotations have null proposalId)
+  proposalId          String?
+  proposalNumber      String?
+  sourceEstimateId    String?
+  sourceEstimateNumber String?
+
+  // Customer
+  customerId          String?
+  customerName        String
+  customerEmail       String?
+  customerPhone       String?
+  customerAddress     String?
+  customerGST         String?
+
+  // Project
+  projectId           String?
+  projectName         String?
+  leadId              String?
+  leadNumber          String?
+
+  // Items stored as JSON (MaterialSelection[])
+  materialSelections  Json             @default("[]")
+
+  // Pricing
+  pricingConfiguration Json?
+  materialCost        Float            @default(0)
+  labourCost          Float            @default(0)
+  installationCost    Float            @default(0)
+  transportationCost  Float            @default(0)
+  craneCost           Float            @default(0)
+  civilCost           Float            @default(0)
+  accommodationCost   Float            @default(0)
+  erectionCost        Float            @default(0)
+  freightCost         Float            @default(0)
+  otherCosts          Float            @default(0)
+
+  // Totals
+  subtotal            Float            @default(0)
+  discountAmount      Float            @default(0)
+  discountPercentage  Float?
+  taxAmount           Float            @default(0)
+  gstType             String           @default("CGST")
+  cgstAmount          Float?
+  sgstAmount          Float?
+  igstAmount          Float?
+  cessAmount          Float?
+  grandTotal          Float            @default(0)
+  amountInWords       String?
+
+  // Terms
+  validUntil          DateTime?
+  paymentTerms        String?
+  deliveryTerms       String?
+  termsAndConditions  String?
+  notes               String?
+  internalNotes       String?
+
+  // Conversion tracking
+  convertedToProjectId String?
+  convertedAt         DateTime?
+
+  // Template
+  templateId          String?
+
+  // Timestamps & audit
+  createdById         String?
+  createdBy           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  isDeleted           Boolean          @default(false)
+  deletedAt           DateTime?
+  deletedById         String?
+
+  organization        Organization     @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, quotationNumber])
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([isDeleted])
 }
 
 model BusinessEvent {
