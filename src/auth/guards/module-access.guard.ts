@@ -171,7 +171,6 @@ export class ModuleAccessGuard implements CanActivate {
     }
 
     const url = request.url;
-    const method = request.method;
 
     // Skip module checks for auth endpoints
     if (url.startsWith('/auth') || url.startsWith('/api/auth')) {
@@ -256,23 +255,10 @@ export class ModuleAccessGuard implements CanActivate {
     }
     if (userModule && userModule.allowed) {
       // Explicit user allow overrides a disabled org module. Permission checks
-      // below still apply for non-OWNER roles.
+      // are handled exclusively by PermissionsGuard and controller-level
+      // @RequirePermissions decorators to prevent duplicate/conflicting checks.
       if (user.role === 'SUPER_ADMIN' || user.role === 'OWNER') {
         return true;
-      }
-      const allowedPerms = this.getRequiredPermissions(moduleKey, method, url);
-      const userPerms = await this.permissionInheritance.getEffectivePermissions(
-        user.id,
-        user.organizationId,
-      );
-      const hasAll = allowedPerms.every(
-        (perm) => userPerms.includes('*') || userPerms.includes(perm),
-      );
-      if (!hasAll) {
-        throw new ForbiddenException({
-          code: 'INSUFFICIENT_PERMISSION',
-          message: 'Insufficient permissions for this module',
-        });
       }
       return true;
     }

@@ -57,6 +57,7 @@ model Organization {
   userRoles            UserRoleAssignment[]
   vendors              Vendor[]
   warehouses           Warehouse[]
+  quotations           Quotation[]
 
   @@index([status])
   @@index([email])
@@ -992,7 +993,6 @@ model ItemMaster {
   organization   Organization  @relation(fields: [organizationId], references: [id])
   variants       ItemVariant[]
 
-  @@unique([organizationId, itemCode])
   @@index([organizationId])
   @@index([isDeleted])
 }
@@ -1527,6 +1527,125 @@ model StatusHistory {
   @@index([toStatus])
   @@index([createdAt])
   @@index([changedAt])
+}
+
+model Quotation {
+  id                      String   @id @default(uuid())
+  organizationId          String
+  quotationNumber         String
+  version                 Int      @default(1)
+
+  // Source documents
+  proposalId              String?
+  proposalNumber          String?
+  sourceEstimateId        String?
+  sourceEstimateNumber    String?
+
+  // Customer info (snapshot at quotation creation)
+  customerId              String?
+  customerName            String
+  customerEmail           String?
+  customerPhone           String?
+  customerAddress         String?
+  customerCity            String?
+  customerState           String?
+  customerPincode         String?
+  customerGST             String?
+
+  // Lead/Project reference
+  leadId                  String?
+  projectId               String?
+  projectName             String?
+
+  // Status
+  status                  String   @default("Draft")
+  approvalStatus          String?
+
+  // Validity
+  validUntil              DateTime?
+  paymentTerms            String   @default("")
+  deliveryTerms           String?
+
+  // Scope / inherited data (JSON blobs matching frontend types)
+  materialSelections      Json     @default("[]")
+  scopeConfiguration      Json     @default("{}")
+  technicalSpecifications Json     @default("{}")
+  inclusions              Json     @default("[]")
+  exclusions              Json     @default("[]")
+  proposalConfiguration   Json     @default("{}")
+  timeline                Json?
+
+  // Pricing configuration
+  pricingConfiguration    Json     @default("{}")
+
+  // Calculated amounts
+  materialCost            Float    @default(0)
+  labourCost              Float    @default(0)
+  installationCost        Float    @default(0)
+  transportationCost      Float    @default(0)
+  craneCost               Float    @default(0)
+  civilCost               Float    @default(0)
+  accommodationCost       Float    @default(0)
+  erectionCost            Float    @default(0)
+  freightCost             Float    @default(0)
+  otherCosts              Float    @default(0)
+  subtotal                Float    @default(0)
+  discountAmount          Float    @default(0)
+  discountPercentage      Float?
+  taxAmount               Float    @default(0)
+  gstType                 String   @default("CGST")
+  gstRate                 Float    @default(18)
+  grandTotal              Float    @default(0)
+  amountInWords           String?
+  currency                String   @default("INR")
+
+  // Terms
+  termsAndConditions      String?
+  notes                   String?
+  internalNotes           String?
+  createdBy               String?
+  createdById             String?
+
+  // Conversion tracking
+  convertedToProjectId    String?
+  convertedAt             DateTime?
+
+  // Status timestamps
+  sentAt                  DateTime?
+  viewedAt                DateTime?
+  acceptedAt              DateTime?
+  rejectedAt              DateTime?
+
+  // Template
+  templateId              String?
+
+  // Metadata
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  isDeleted               Boolean  @default(false)
+  deletedAt               DateTime?
+  deletedById             String?
+
+  organization            Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, quotationNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([customerId])
+  @@index([proposalId])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+enum QuotationStatus {
+  Draft
+  Sent
+  Viewed
+  Negotiation
+  Accepted
+  Rejected
+  Expired
+  Converted
 }
 
 enum LeadStatus {

@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commercial Proposal - {{meta.quotationNumber}}</title>
+  <style>
+    /* ─── Page Setup ─────────────────────────────────────────────────── */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Calibri', 'Segoe UI', Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      line-height: 1.4;
+      color: #1a1a1a;
+      background: white;
+    }
+
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    /* ─── Color Variables ────────────────────────────────────────────── */
+    :root {
+      --primary: {{branding.primaryColor}};
+      --secondary: {{branding.secondaryColor}};
+      --text-dark: #1a1a1a;
+      --text-muted: #5b6778;
+      --border: #d1d5db;
+      --bg-light: #f8fafc;
+      --bg-accent: #e8f0fe;
+    }
+
+    /* ─── Cover Page ─────────────────────────────────────────────────── */
+    .cover-page {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .cover-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      opacity: 0.06;
+      z-index: 0;
+    }
+
+    .cover-content {
+      position: relative;
+      z-index: 1;
+      padding: 40mm 25mm;
+    }
+
+    .cover-logo {
+      max-width: 120px;
+      max-height: 120px;
+      margin: 0 auto 30px;
+    }
+
+    .cover-title {
+      font-size: 32pt;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .cover-subtitle {
+      font-size: 14pt;
+      color: var(--text-muted);
+      margin-bottom: 50px;
+    }
+
+    .cover-meta-table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 380px;
+    }
+
+    .cover-meta-table td {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      font-size: 10pt;
+    }
+
+    .cover-meta-table .label {
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: right;
+      width: 140px;
+      background: var(--bg-light);
+    }
+
+    .cover-meta-table .value {
+      color: var(--text-dark);
+      text-align: left;
+    }
+
+    .cover-company {
+      margin-top: 60px;
+      font-size: 11pt;
+      color: var(--text-muted);
+    }
+
+    .cover-company strong {
+      color: var(--primary);
+      font-size: 13pt;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* ─── Page Container ─────────────────────────────────────────────── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 15mm 18mm 22mm 18mm;
+      position: relative;
+      page-break-after: always;
+      background: white;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    /* ─── Watermark (pages 2+) ───────────────────────────────────────── */
+    {{#if branding.watermarkImage}}
+    .page::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url('{{branding.watermarkImage}}');
+      background-repeat: no-repeat;
+      background-position: {{branding.watermarkPosition}};
+      background-size: {{branding.watermarkSize}};
+      opacity: {{branding.watermarkOpacity}};
+      z-index: 0;
+      pointer-events: none;
+    }
+    .page > * {
+      position: relative;
+      z-index: 1;
+    }
+    {{/if}}
+
+    /* ─── Header (pages 2+) ─────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .page-header-logo {
+      max-height: 28px;
+    }
+
+    .page-header-title {
+      font-size: 8pt;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .page-header-title strong {
+      color: var(--primary);
+      display: block;
+      font-size: 9pt;
+    }
+
+    /* ─── Footer (all pages) ─────────────────────────────────────────── */
+    .page-footer {
+      position: absolute;
+      bottom: 12mm;
+      left: 18mm;
+      right: 18mm;
+      border-top: 1px solid var(--primary);
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7pt;
+      color: var(--text-muted);
+    }
+
+    .page-footer .company-name {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* ─── Section Headings ───────────────────────────────────────────── */
+    .section-title {
+      font-size: 13pt;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 20px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .section-title:first-child {
+      margin-top: 0;
+    }
+
+    .subsection-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: var(--secondary);
+      margin: 14px 0 6px 0;
+    }
+
+    /* ─── Info Tables ────────────────────────────────────────────────── */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .info-table th {
+      background: var(--primary);
+      color: white;
+      font-size: 8pt;
+      font-weight: 600;
+      padding: 5px 8px;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 9pt;
+      vertical-align: top;
+    }
+
+    .info-table tr:nth-child(even) td {
+      background: var(--bg-light);
+    }
+
+    .info-table .label {
+      font-weight: 600;
+      color: var(--text-muted);
+      width: 40%;
+    }
+
+    /* ─── Two Column Layout ──────────────────────────────────────────── */
+    .two-col {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .two-col .col {
+      flex: 1;
+    }
+
+    .col-header {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 5px 10px;
+      margin-bottom: 0;
+    }
+
+    .col-body {
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 8px 10px;
+      min-height: 80px;
+      background: var(--bg-light);
+    }
+
+    .col-body .field {
+      margin-bottom: 5px;
+    }
+
+    .col-body .field-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .col-body .field-value {
+      font-size: 9pt;
+      color: var(--text-dark);
+      border-bottom: 1px solid #e5e7eb;
+      padding: 2px 0;
+    }
+
+    /* ─── Spec Grid ──────────────────────────────────────────────────── */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+      margin-bottom: 12px;
+    }
+
+    .spec-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px dotted var(--border);
+      font-size: 9pt;
+    }
+
+    .spec-item .spec-label {
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .spec-item .spec-value {
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    /* ─── Data Table ─────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 8.5pt;
+    }
+
+    .data-table thead th {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      padding: 6px 6px;
+      text-align: left;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .data-table thead th.right {
+      text-align: right;
+    }
+
+    .data-table thead th.center {
+      text-align: center;
+    }
+
+    .data-table tbody td {
+      padding: 5px 6px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+
+    .data-table tbody td.right {
+      text-align: right;
+    }
+
+    .data-table tbody td.center {
+      text-align: center;
+    }
+
+    .data-table tbody tr:nth-child(even) td {
+      background: var(--bg-light);
+    }
+
+    .data-table tbody tr:hover td {
+      background: #eef2ff;
+    }
+
+    /* ─── Summary Panel ──────────────────────────────────────────────── */
+    .summary-panel {
+      width: 320px;
+      margin-left: auto;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .summary-panel .summary-header {
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 9pt;
+      padding: 6px 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 10px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 9pt;
+    }
+
+    .summary-row .summary-label {
+      color: var(--text-muted);
+    }
+
+    .summary-row .summary-value {
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+
+    .summary-grand-total {
+      display: flex;
+      justify-content: space-between;
+      background: var(--primary);
+      color: white;
+      padding: 8px 10px;
+      font-weight: 700;
+      font-size: 10pt;
+    }
+
+    .amount-words {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      font-size: 8.5pt;
+    }
+
+    .amount-words .label {
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .amount-words .value {
+      font-style: italic;
+      color: var(--text-dark);
+    }
+
+    /* ─── Lists ──────────────────────────────────────────────────────── */
+    .content-list {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 12px;
+    }
+
+    .content-list li {
+      padding: 3px 0 3px 16px;
+      position: relative;
+      font-size: 9pt;
+      line-height: 1.5;
+    }
+
+    .content-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    /* ─── Terms Box ──────────────────────────────────────────────────── */
+    .terms-box {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 8.5pt;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* ─── Notes Box ──────────────────────────────────────────────────── */
+    .notes-box {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 8.5pt;
+    }
+
+    .notes-box .notes-title {
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    /* ─── Signature Block ────────────────────────────────────────────── */
+    .signature-block {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .signature-box {
+      width: 45%;
+      text-align: center;
+    }
+
+    .signature-box .sig-line {
+      border-top: 1px solid var(--text-dark);
+      margin: 40px 0 6px 0;
+    }
+
+    .signature-box .sig-label {
+      font-size: 8pt;
+      color: var(--text-muted);
+    }
+
+    .signature-box .sig-name {
+      font-size: 9pt;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    /* ─── Info Cards ─────────────────────────────────────────────────── */
+    .info-card {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .info-card .card-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 9.5pt;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    /* ─── Milestone Table ────────────────────────────────────────────── */
+    .milestone-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+    }
+
+    .milestone-table th {
+      background: var(--secondary);
+      color: white;
+      padding: 4px 8px;
+      text-align: left;
+      font-size: 7.5pt;
+    }
+
+    .milestone-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ─── Keep Together ──────────────────────────────────────────────── */
+    .keep-together {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .avoid-orphans {
+      orphans: 3;
+      widows: 3;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 1: COVER PAGE                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="cover-page">
+    <div class="cover-bg"></div>
+    <div class="cover-content">
+      {{#if organization.logo}}
+      <img src="{{organization.logo}}" class="cover-logo" alt="Company Logo">
+      {{/if}}
+
+      <div class="cover-title">Commercial Proposal</div>
+      <div class="cover-subtitle">Pre-Engineered Building Solutions</div>
+
+      <table class="cover-meta-table">
+        <tr>
+          <td class="label">Reference No.</td>
+          <td class="value">{{meta.quotationNumber}}</td>
+        </tr>
+        <tr>
+          <td class="label">Date</td>
+          <td class="value">{{meta.date}}</td>
+        </tr>
+        <tr>
+          <td class="label">Valid Until</td>
+          <td class="value">{{meta.validUntil}}</td>
+        </tr>
+        {{#if project.projectName}}
+        <tr>
+          <td class="label">Project</td>
+          <td class="value">{{project.projectName}}</td>
+        </tr>
+        {{/if}}
+      </table>
+
+      <div class="cover-company">
+        <strong>{{organization.name}}</strong>
+        {{#if organization.address}}{{organization.address}}{{/if}}
+        {{#if organization.city}}, {{organization.city}}{{/if}}
+        {{#if organization.state}}, {{organization.state}}{{/if}}
+        {{#if organization.pincode}} - {{organization.pincode}}{{/if}}
+        <br>
+        {{#if organization.phone}}Phone: {{organization.phone}}{{/if}}
+        {{#if organization.email}} | Email: {{organization.email}}{{/if}}
+        {{#if organization.gstin}}<br>GSTIN: {{organization.gstin}}{{/if}}
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 1 of {{meta.generatedAt}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 2: PREPARED FOR / PREPARED BY / INTRODUCTION                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Commercial Proposal
+      </div>
+    </div>
+
+    <div class="section-title">Introduction</div>
+    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6;" class="avoid-orphans">
+      Thank you for the opportunity to present our commercial proposal for your upcoming
+      {{#if project.structureType}}{{project.structureType}}{{else}}Pre-Engineered Building{{/if}}
+      project.
+      {{#if project.projectName}}The project "{{project.projectName}}"{{/if}}
+      is important to us, and we are committed to delivering a high-quality solution that meets
+      your requirements.
+    </p>
+
+    <div class="two-col">
+      <div class="col">
+        <div class="col-header">Prepared For</div>
+        <div class="col-body">
+          <div class="field">
+            <div class="field-label">Customer</div>
+            <div class="field-value">{{preparedFor.customerName}}</div>
+          </div>
+          {{#if preparedFor.companyName}}
+          <div class="field">
+            <div class="field-label">Company</div>
+            <div class="field-value">{{preparedFor.companyName}}</div>
+          </div>
+          {{/if}}
+          {{#if preparedFor.address}}
+          <div class="field">
+            <div class="field-label">Address</div>
+            <div class="field-value">{{preparedFor.address}}{{#if preparedFor.city}}, {{preparedFor.city}}{{/if}}{{#if preparedFor.state}}, {{preparedFor.state}}{{/if}}{{#if preparedFor.pincode}} - {{preparedFor.pincode}}{{/if}}</div>
+          </div>
+          {{/if}}
+          {{#if preparedFor.phone}}
+          <div class="field">
+            <div class="field-label">Phone</div>
+            <div class="field-value">{{preparedFor.phone}}</div>
+          </div>
+          {{/if}}
+          {{#if preparedFor.email}}
+          <div class="field">
+            <div class="field-label">Email</div>
+            <div class="field-value">{{preparedFor.email}}</div>
+          </div>
+          {{/if}}
+          {{#if preparedFor.gstin}}
+          <div class="field">
+            <div class="field-label">GSTIN</div>
+            <div class="field-value">{{preparedFor.gstin}}</div>
+          </div>
+          {{/if}}
+        </div>
+      </div>
+      <div class="col">
+        <div class="col-header">Prepared By</div>
+        <div class="col-body">
+          <div class="field">
+            <div class="field-label">Company</div>
+            <div class="field-value">{{preparedBy.company}}</div>
+          </div>
+          {{#if preparedBy.name}}
+          <div class="field">
+            <div class="field-label">Contact Person</div>
+            <div class="field-value">{{preparedBy.name}}</div>
+          </div>
+          {{/if}}
+          {{#if preparedBy.designation}}
+          <div class="field">
+            <div class="field-label">Designation</div>
+            <div class="field-value">{{preparedBy.designation}}</div>
+          </div>
+          {{/if}}
+          <div class="field">
+            <div class="field-label">Address</div>
+            <div class="field-value">{{organization.address}}{{#if organization.city}}, {{organization.city}}{{/if}}{{#if organization.state}}, {{organization.state}}{{/if}}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Phone</div>
+            <div class="field-value">{{organization.phone}}</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Email</div>
+            <div class="field-value">{{organization.email}}</div>
+          </div>
+          {{#if organization.gstin}}
+          <div class="field">
+            <div class="field-label">GSTIN</div>
+            <div class="field-value">{{organization.gstin}}</div>
+          </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 2 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 3: BUILDING SPECIFICATION / DESIGN CODE / DESIGN LOAD        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Building Specification
+      </div>
+    </div>
+
+    <div class="section-title">Building Specification</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Building Length</span>
+        <span class="spec-value">{{building.length}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Building Width</span>
+        <span class="spec-value">{{building.width}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Building Height</span>
+        <span class="spec-value">{{building.height}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Built-up Area</span>
+        <span class="spec-value">{{building.area}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Bay Spacing</span>
+        <span class="spec-value">{{building.baySpacing}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Roof Slope</span>
+        <span class="spec-value">{{building.roofSlope}}</span>
+      </div>
+    </div>
+
+    <div class="section-title">Design Code</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Design Code</span>
+        <span class="spec-value">{{design.designCode}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Seismic Zone</span>
+        <span class="spec-value">{{design.seismicZone}}</span>
+      </div>
+    </div>
+
+    <div class="section-title">Design Load</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Dead Load</span>
+        <span class="spec-value">{{loads.deadLoad}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Live Load</span>
+        <span class="spec-value">{{loads.liveLoad}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Wind Load</span>
+        <span class="spec-value">{{loads.windLoad}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Crane Load</span>
+        <span class="spec-value">{{loads.craneLoad}}</span>
+      </div>
+    </div>
+
+    {{#if mezzanine.required}}
+    <div class="section-title">Mezzanine</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Mezzanine Area</span>
+        <span class="spec-value">{{mezzanine.area}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Mezzanine Load</span>
+        <span class="spec-value">{{mezzanine.load}}</span>
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 3 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 4: CRANE DETAIL / ROOF ACCESSORIES                          -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Crane &amp; Accessories
+      </div>
+    </div>
+
+    {{#if crane.required}}
+    <div class="section-title">Crane Detail</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Crane Required</span>
+        <span class="spec-value">Yes</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Capacity</span>
+        <span class="spec-value">{{crane.capacity}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Type</span>
+        <span class="spec-value">{{crane.type}}</span>
+      </div>
+    </div>
+    {{else}}
+    <div class="section-title">Crane Detail</div>
+    <p style="font-size:9pt; color:var(--text-muted); margin-bottom:12px;">No crane requirement specified.</p>
+    {{/if}}
+
+    {{#if accessories.roofAccessories.length}}
+    <div class="section-title">Roof Accessories</div>
+    <ul class="content-list">
+      {{#each accessories.roofAccessories}}
+      <li>{{this}}</li>
+      {{/each}}
+    </ul>
+    {{/if}}
+
+    <div class="section-title">Cladding Details</div>
+    <div class="spec-grid">
+      <div class="spec-item">
+        <span class="spec-label">Roof Cladding</span>
+        <span class="spec-value">{{design.roofCladding}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Wall Cladding</span>
+        <span class="spec-value">{{design.wallCladding}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Insulation Type</span>
+        <span class="spec-value">{{design.insulationType}}</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Insulation Thickness</span>
+        <span class="spec-value">{{design.insulationThickness}}</span>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 4 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 5: WALL ACCESSORIES / APPLICABLE CODES / PRIMARY STRUCTURAL  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Accessories &amp; Codes
+      </div>
+    </div>
+
+    {{#if accessories.wallAccessories.length}}
+    <div class="section-title">Wall Accessories</div>
+    <ul class="content-list">
+      {{#each accessories.wallAccessories}}
+      <li>{{this}}</li>
+      {{/each}}
+    </ul>
+    {{/if}}
+
+    <div class="section-title">Applicable Codes &amp; Standards</div>
+    <div class="info-card">
+      <div class="card-title">Structural Design</div>
+      <p style="font-size:9pt; line-height:1.6;">
+        All structural members are designed in accordance with IS 800:2007 (General Construction in Steel),
+        IS 811:1987 (Cold Formed Light Gauge Steel Sections), and relevant BIS standards.
+        {{#if design.designCode}}
+        Design Code: {{design.designCode}}
+        {{/if}}
+      </p>
+    </div>
+
+    <div class="section-title">Primary Structural Members</div>
+    <p style="font-size:9pt; line-height:1.6; margin-bottom:12px;" class="avoid-orphans">
+      Primary structural members include columns, rafters, and bracing designed as per applicable
+      load combinations. All connections are designed using high-strength friction grip (HSFG) bolts
+      or as specified in the structural design.
+    </p>
+
+    <div class="section-title">Secondary Structural Members</div>
+    <p style="font-size:9pt; line-height:1.6; margin-bottom:12px;" class="avoid-orphans">
+      Secondary members include purlins, girts, eave struts, and sag rods designed to support
+      cladding loads and transfer them to primary members. All secondary members are cold-formed
+      sections as per design requirements.
+    </p>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 5 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 6: MATERIAL SPECIFICATION (TABLE)                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Material Specification
+      </div>
+    </div>
+
+    <div class="section-title">Material Specification</div>
+
+    {{#if materials.length}}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:5%">No.</th>
+          <th style="width:30%">Item</th>
+          <th style="width:25%">Specification</th>
+          <th class="right" style="width:10%">Qty</th>
+          <th style="width:8%">Unit</th>
+          <th class="right" style="width:11%">Rate</th>
+          <th class="right" style="width:11%">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each materials}}
+        <tr>
+          <td class="center">{{sno}}</td>
+          <td>{{itemName}}</td>
+          <td>{{specification}}</td>
+          <td class="right">{{quantity}}</td>
+          <td>{{unit}}</td>
+          <td class="right">{{rate}}</td>
+          <td class="right"><strong>{{amount}}</strong></td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p style="font-size:9pt; color:var(--text-muted); text-align:center; padding:20px;">
+      No material selections specified.
+    </p>
+    {{/if}}
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 6 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 7: CONTRACT PRICE / COMMERCIAL PRICING                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Contract Price
+      </div>
+    </div>
+
+    <div class="section-title">Contract Price</div>
+
+    <table class="data-table" style="width: 100%; margin-bottom:16px;">
+      <thead>
+        <tr>
+          <th style="width:60%">Description</th>
+          <th class="right" style="width:40%">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if pricing.materialCost}}
+        <tr>
+          <td>Material Cost</td>
+          <td class="right">{{pricing.materialCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.labourCost}}
+        <tr>
+          <td>Labour Cost</td>
+          <td class="right">{{pricing.labourCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.installationCost}}
+        <tr>
+          <td>Installation Cost</td>
+          <td class="right">{{pricing.installationCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.transportationCost}}
+        <tr>
+          <td>Transportation Cost</td>
+          <td class="right">{{pricing.transportationCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.craneCost}}
+        <tr>
+          <td>Crane Cost</td>
+          <td class="right">{{pricing.craneCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.civilCost}}
+        <tr>
+          <td>Civil Work</td>
+          <td class="right">{{pricing.civilCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.accommodationCost}}
+        <tr>
+          <td>Accommodation</td>
+          <td class="right">{{pricing.accommodationCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.erectionCost}}
+        <tr>
+          <td>Erection</td>
+          <td class="right">{{pricing.erectionCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.freightCost}}
+        <tr>
+          <td>Freight</td>
+          <td class="right">{{pricing.freightCost}}</td>
+        </tr>
+        {{/if}}
+        {{#if pricing.otherCosts}}
+        <tr>
+          <td>Other Charges</td>
+          <td class="right">{{pricing.otherCosts}}</td>
+        </tr>
+        {{/if}}
+      </tbody>
+    </table>
+
+    <div class="summary-panel">
+      <div class="summary-header">Pricing Summary</div>
+      <div class="summary-row">
+        <span class="summary-label">Subtotal</span>
+        <span class="summary-value">{{pricing.subtotal}}</span>
+      </div>
+      {{#if pricing.discountAmount}}
+      <div class="summary-row">
+        <span class="summary-label">Discount {{#if pricing.markupPercentage}}({{pricing.markupPercentage}} markup applied){{/if}}</span>
+        <span class="summary-value" style="color: #dc2626;">-{{pricing.discountAmount}}</span>
+      </div>
+      {{/if}}
+      <div class="summary-row">
+        <span class="summary-label">GST ({{pricing.gstRate}})</span>
+        <span class="summary-value">{{pricing.taxAmount}}</span>
+      </div>
+      <div class="summary-grand-total">
+        <span>GRAND TOTAL</span>
+        <span>{{pricing.grandTotal}}</span>
+      </div>
+    </div>
+
+    <div class="amount-words">
+      <span class="label">Amount in Words</span>
+      <span class="value">{{pricing.amountInWords}}</span>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 7 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 8: NOTES / SPECIAL ASSUMPTIONS / PAYMENT / BANK DETAILS      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Notes &amp; Payment Terms
+      </div>
+    </div>
+
+    {{#if notes}}
+    <div class="section-title">Notes</div>
+    <div class="notes-box">
+      <div class="notes-title">Important Notes</div>
+      <p style="white-space: pre-wrap;">{{notes}}</p>
+    </div>
+    {{/if}}
+
+    <div class="section-title">Special Technical Assumptions</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. All structural design is based on the building dimensions and loads specified herein.<br>
+        2. Foundation design is assumed to be on normal soil (SBC ≥ 150 kN/m²) unless otherwise specified.<br>
+        3. All steel members are manufactured to IS 2062 / IS 808 standards.<br>
+        4. Bolts are Grade 4.6 / 8.8 as per design requirements.<br>
+        5. All welds are performed by certified welders as per IS 816.
+      </p>
+    </div>
+
+    <div class="section-title">Payment Terms</div>
+    <div class="terms-box">{{payment.terms}}</div>
+
+    {{#if payment.bankName}}
+    <div class="section-title">Bank Details</div>
+    <div class="info-card">
+      <div class="spec-grid">
+        <div class="spec-item">
+          <span class="spec-label">Bank Name</span>
+          <span class="spec-value">{{payment.bankName}}</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">Account No.</span>
+          <span class="spec-value">{{payment.accountNumber}}</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">IFSC Code</span>
+          <span class="spec-value">{{payment.ifscCode}}</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">Branch</span>
+          <span class="spec-value">{{payment.branchName}}</span>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 8 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 9: EXCLUSIONS / DELIVERY / OTHER TERMS                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Exclusions &amp; Delivery
+      </div>
+    </div>
+
+    {{#if exclusions.length}}
+    <div class="section-title">Exclusions</div>
+    <ul class="content-list">
+      {{#each exclusions}}
+      <li>{{this}}</li>
+      {{/each}}
+    </ul>
+    {{/if}}
+
+    <div class="section-title">Delivery Schedule</div>
+    <div class="info-card">
+      <div class="card-title">Estimated Delivery</div>
+      <p style="font-size:9pt; margin-bottom:8px;">
+        {{#if delivery.terms}}{{delivery.terms}}{{else}}Estimated delivery: {{delivery.estimatedDuration}} from order confirmation.{{/if}}
+      </p>
+      {{#if delivery.milestones.length}}
+      <table class="milestone-table">
+        <thead>
+          <tr>
+            <th>Milestone</th>
+            <th>Estimated Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each delivery.milestones}}
+          <tr>
+            <td>{{milestone}}</td>
+            <td>{{estimatedDate}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{/if}}
+    </div>
+
+    <div class="section-title">Other Commercial Terms</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. This quotation is valid for 30 days from the date of issue.<br>
+        2. Prices are subject to change after the validity period.<br>
+        3. All taxes, duties, and levies as applicable will be charged extra unless otherwise stated.<br>
+        4. Any modifications to the scope may result in price adjustments.
+      </p>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 9 — {{meta.quotationNumber}}</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 10: CANCELLATIONS / WARRANTY / GOVERNING LAWS / SIGNATURE    -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>{{meta.quotationNumber}}</strong>
+        Terms &amp; Conditions
+      </div>
+    </div>
+
+    <div class="section-title">Cancellations</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. Cancellation after order confirmation may attract a cancellation fee of up to 25% of the order value.<br>
+        2. Materials already procured or fabricated cannot be cancelled.<br>
+        3. Cancellation requests must be submitted in writing.
+      </p>
+    </div>
+
+    <div class="section-title">Production Release</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. Production will commence upon receipt of advance payment and order confirmation.<br>
+        2. Production timeline starts from the date of full payment or agreed milestone payment.<br>
+        3. Any delays in payments may proportionally delay the delivery schedule.
+      </p>
+    </div>
+
+    <div class="section-title">Warranty</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. Structural steel work carries a warranty of 10 years against structural defects.<br>
+        2. Cladding and sheeting carries a warranty of 5 years against weather-tightness.<br>
+        3. Warranty covers manufacturing defects only and does not cover damage due to misuse, unauthorized modifications, or natural disasters beyond design specifications.<br>
+        4. Warranty claims must be reported in writing within 30 days of defect discovery.
+      </p>
+    </div>
+
+    <div class="section-title">Governing Laws</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        This agreement shall be governed by and construed in accordance with the laws of India.
+        Any disputes arising shall be subject to the exclusive jurisdiction of courts in
+        {{#if organization.state}}{{organization.state}}{{else}}Gujarat{{/if}}, India.
+      </p>
+    </div>
+
+    <div class="section-title">Taxes &amp; Duties</div>
+    <div class="info-card">
+      <p style="font-size:9pt; line-height:1.6;">
+        1. All prices are exclusive of GST unless explicitly stated otherwise.<br>
+        2. GST will be charged at the applicable rate (currently {{pricing.gstRate}}).<br>
+        3. Any future changes in tax rates will be adjusted accordingly.<br>
+        4. TDS deductions, if applicable, must be made as per IT Act provisions.
+      </p>
+    </div>
+
+    <div class="signature-block">
+      <div class="signature-box">
+        <div class="sig-line"></div>
+        <div class="sig-name">{{preparedBy.name}}</div>
+        <div class="sig-label">{{preparedBy.designation}}</div>
+        <div class="sig-label">{{preparedBy.company}}</div>
+      </div>
+      <div class="signature-box">
+        <div class="sig-line"></div>
+        <div class="sig-name">Customer Authorization</div>
+        <div class="sig-label">Authorized Signatory</div>
+        <div class="sig-label">Date: _______________</div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 10 — {{meta.quotationNumber}} — Generated on {{meta.generatedAt}}</span>
+    </div>
+  </div>
+
+</body>
+</html>

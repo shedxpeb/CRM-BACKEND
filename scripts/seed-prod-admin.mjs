@@ -1,17 +1,16 @@
 /**
  * One-time production admin seed — creates a verified OWNER who can login
- * without email OTP (useful when SMTP is blocked on Render free tier).
+ * without email OTP.
  *
- * Option A — from your PC (no Render Shell needed):
- *   set DATABASE_URL to the Render Postgres URL, then:
+ * Option A — from your PC:
+ *   set DATABASE_URL to the production Postgres URL, then:
  *   PROD_ADMIN_EMAIL=you@example.com PROD_ADMIN_PASSWORD='YourPass1!' npm run seed:prod-admin
  *
- * Option B — HTTP (after deploy with SEED_ADMIN_SECRET set on Render):
- *   curl -X POST https://YOUR-BACKEND.onrender.com/system/seed-admin \
+ * Option B — HTTP (after deploy with SEED_ADMIN_SECRET set):
+ *   curl -X POST https://api.buildxcrm.com/system/seed-admin \
  *     -H "content-type: application/json" \
  *     -H "x-seed-secret: YOUR_SECRET" \
  *     -d "{\"email\":\"you@example.com\",\"password\":\"YourPass1!\",\"name\":\"Admin\",\"companyName\":\"PEB CRM\"}"
- *   Then delete SEED_ADMIN_SECRET from Render env.
  *
  * Safe to re-run: updates password + keeps isVerified/isActive true.
  */
