@@ -7,6 +7,7 @@ import {
   MaxLength,
   Matches,
   ValidateIf,
+  IsNumber,
 } from 'class-validator';
 import { CustomerStatus } from './get-customers.dto';
 import { BusinessType } from '../../lead/dto/get-leads.dto';
@@ -33,9 +34,8 @@ export class CreateCustomerDto {
   @MaxLength(20)
   alternateMobile?: string;
 
-  @ValidateIf((obj) => obj.email !== '' && obj.email !== undefined && obj.email !== null)
   @IsEmail({}, { message: 'Invalid email format' })
-  email?: string;
+  email: string;
 
   @IsOptional()
   @IsString()
@@ -82,9 +82,10 @@ export class CreateCustomerDto {
   country?: string;
 
   @IsOptional()
+  @ValidateIf((obj) => obj.pincode !== null && obj.pincode !== undefined)
   @IsString()
   @MaxLength(10)
-  pincode?: string;
+  pincode?: string | null;
 
   @IsOptional()
   @IsString()
@@ -106,11 +107,10 @@ export class CreateCustomerDto {
   @IsString()
   leadId?: string;
 
-  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  projectTitle?: string;
+  projectTitle: string;
 
   @IsOptional()
   @IsString()
@@ -123,12 +123,14 @@ export class CreateCustomerDto {
   projectCode?: string;
 
   @IsOptional()
+  @ValidateIf((obj) => obj.accountTier !== null && obj.accountTier !== undefined)
   @IsString()
   @MaxLength(50)
-  accountTier?: string;
+  accountTier?: string | null;
 
   @IsOptional()
-  creditLimit?: number;
+  @ValidateIf((obj) => obj.creditLimit !== null && obj.creditLimit !== undefined)
+  creditLimit?: number | null;
 
   @IsOptional()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

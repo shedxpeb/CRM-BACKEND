@@ -431,7 +431,7 @@ model Customer {
   assignedEmployee    String?
   assignedEmployeeId  String?
   source              String         @default("Website")
-  status              CustomerStatus @default(Prospect)
+  status              CustomerStatus @default(Active)
   notes               String?
   attachments         String[]
   customerSince       DateTime       @default(now())
@@ -447,7 +447,7 @@ model Customer {
   deletedById         String?
   customFields        Json?
   businessType        BusinessType?
-  projectTitle        String?
+  projectTitle        String
   projectType         String?
   projectCode         String?
   accountTier         String?

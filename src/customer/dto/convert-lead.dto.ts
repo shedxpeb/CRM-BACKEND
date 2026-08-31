@@ -49,6 +49,9 @@ export class ConvertLeadDto {
   @IsOptional() @IsString() industry?: string;
   @IsOptional() @IsString() businessType?: string;
   @IsOptional() @IsString() website?: string;
+  @IsOptional() @IsString() projectTitle?: string;
+  @IsOptional() @IsString() projectType?: string;
+  @IsOptional() @IsString() projectCode?: string;
 
   @IsString()
   source: string;

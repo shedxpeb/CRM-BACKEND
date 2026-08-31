@@ -142,6 +142,7 @@ export class CustomerService extends BaseQueryService {
     // Duplicate mobile/email are now allowed - multiple Customers can have the same mobile or email
 
     // Convert empty strings to null for optional fields to properly clear values
+    // Also pass through null values explicitly sent from frontend
     const processedData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       if (
@@ -161,6 +162,25 @@ export class CustomerService extends BaseQueryService {
           'projectCode',
         ].includes(key)
       ) {
+        processedData[key] = null;
+      } else if (value === null && [
+          'email',
+          'alternateMobile',
+          'gstNumber',
+          'panNumber',
+          'website',
+          'notes',
+          'pincode',
+          'country',
+          'accountTier',
+          'creditLimit',
+          'projectTitle',
+          'projectType',
+          'projectCode',
+          'industry',
+          'businessType',
+        ].includes(key)) {
+        // Explicitly pass through null values for optional fields
         processedData[key] = null;
       } else {
         processedData[key] = value;
@@ -795,6 +815,7 @@ export class CustomerService extends BaseQueryService {
           convertedFromLeadId: lead.id,
           organizationId: orgId,
           createdById,
+          projectTitle: data.projectTitle || lead.projectTitle || '—',
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           status: (data.status || 'Active') as any,
           customFields: mergedCustomFields || undefined,
