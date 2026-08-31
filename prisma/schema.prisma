@@ -991,7 +991,6 @@ model ItemMaster {
   organization   Organization  @relation(fields: [organizationId], references: [id])
   variants       ItemVariant[]
 
-  @@unique([organizationId, itemCode])
   @@index([organizationId])
   @@index([isDeleted])
 }
