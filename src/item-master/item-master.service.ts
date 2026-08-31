@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseQueryService, serializeDecimals } from '../common/services/base-query.service';
 import { AuditService } from '../auth/services/audit.service';
@@ -44,29 +45,35 @@ export class ItemMasterService extends BaseQueryService {
     try {
       this.logger.log(`Creating item with data: ${JSON.stringify(dto)}`);
 
+      const itemCode = dto.itemCode || dto.sku;
+
+      // Check for existing active item with same itemCode
+      if (itemCode) {
+        const existingItem = await this.client.findFirst({
+          where: { organizationId, itemCode, isDeleted: false },
+          select: { id: true, itemCode: true },
+        });
+        if (existingItem) {
+          throw new ConflictException(
+            'An active item with this item code already exists in this organization',
+          );
+        }
+      }
+
       // Count existing items to generate sequence number
       const count = await this.client.count({
         where: { organizationId, isDeleted: false },
       });
       const nextNumber = count + 1;
 
-      // Generate unique SKU - check for conflicts
-      let sku = dto.sku || `ITM-${String(nextNumber).padStart(4, '0')}`;
+      // Generate unique SKU if not provided
+      let sku = itemCode || `ITM-${String(nextNumber).padStart(4, '0')}`;
 
-      // If user provided SKU, check if it already exists
-      if (dto.sku) {
-        const existingSku = await this.client.findFirst({
-          where: { organizationId, itemCode: dto.sku, isDeleted: false },
-          select: { itemCode: true },
-        });
-        if (existingSku) {
-          throw new Error(`SKU "${dto.sku}" already exists in this organization`);
-        }
-      } else {
+      if (!itemCode) {
         // Auto-generate unique SKU with conflict resolution
         let skuExists = true;
         let attemptNumber = nextNumber;
-        const maxAttempts = 100; // Prevent infinite loop
+        const maxAttempts = 100;
         let attempts = 0;
 
         while (skuExists && attempts < maxAttempts) {
@@ -84,11 +91,11 @@ export class ItemMasterService extends BaseQueryService {
         }
 
         if (skuExists) {
-          throw new Error('Unable to generate unique SKU after multiple attempts');
+          throw new ConflictException(
+            'Unable to generate unique item code after multiple attempts',
+          );
         }
       }
-
-      const itemCode = dto.itemCode || sku;
 
       // Build custom fields object for fields not in schema
       const customFields: Record<string, any> = {
@@ -183,6 +190,14 @@ export class ItemMasterService extends BaseQueryService {
       return serializeDecimals(item);
     } catch (error) {
       this.logger.error(`Error creating item: ${error.message}`);
+
+      // Handle Prisma P2002 unique constraint violation
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(
+          'An active item with this item code already exists in this organization',
+        );
+      }
+
       throw error;
     }
   }
@@ -329,6 +344,37 @@ export class ItemMasterService extends BaseQueryService {
     }
 
     return item;
+  }
+
+  async restore(id: string, organizationId?: string): Promise<any> {
+    // Find the deleted item
+    const deletedItem = await this.client.findFirst({
+      where: { id, isDeleted: true, organizationId },
+      select: { id: true, itemCode: true, organizationId: true },
+    });
+
+    if (!deletedItem) {
+      throw new NotFoundException('Item not found or not deleted');
+    }
+
+    // Check for active item with same itemCode
+    const activeDuplicate = await this.client.findFirst({
+      where: {
+        organizationId: deletedItem.organizationId,
+        itemCode: deletedItem.itemCode,
+        isDeleted: false,
+        id: { not: id }, // Exclude the item being restored
+      },
+      select: { id: true, itemCode: true },
+    });
+
+    if (activeDuplicate) {
+      throw new ConflictException(
+        'Cannot restore: an active item with this item code already exists in this organization',
+      );
+    }
+
+    return super.restore(id, organizationId);
   }
 
   async getStats(organizationId?: string) {
