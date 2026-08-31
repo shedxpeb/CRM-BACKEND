@@ -49,19 +49,11 @@ export function validateEnv(config?: Record<string, unknown>): void {
       'REPLACE_WITH_RANDOM_COOKIE_SECRET_AT_LEAST_32',
     ];
     const jwtSecret = resolve(config, 'JWT_SECRET');
-    if (
-      !jwtSecret ||
-      jwtSecret.length < 32 ||
-      weakSecrets.includes(jwtSecret)
-    ) {
+    if (!jwtSecret || jwtSecret.length < 32 || weakSecrets.includes(jwtSecret)) {
       throw new Error('JWT_SECRET must be a strong secret of at least 32 characters in production');
     }
     const cookieSecret = resolve(config, 'COOKIE_SECRET');
-    if (
-      !cookieSecret ||
-      cookieSecret.length < 32 ||
-      weakSecrets.includes(cookieSecret)
-    ) {
+    if (!cookieSecret || cookieSecret.length < 32 || weakSecrets.includes(cookieSecret)) {
       throw new Error(
         'COOKIE_SECRET must be a strong secret of at least 32 characters in production',
       );
@@ -85,7 +77,19 @@ export function validateEnv(config?: Record<string, unknown>): void {
   }
 
   // Startup diagnostics — log presence, never log values
-  const keys = ['NODE_ENV', 'PORT', 'DATABASE_URL', 'JWT_SECRET', 'COOKIE_SECRET', 'FRONTEND_URL', 'COOKIE_SECURE', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM_EMAIL'];
-  const status = keys.map(k => `${k}=${resolve(config, k) ? 'SET' : 'MISSING'}`).join('  ');
+  const keys = [
+    'NODE_ENV',
+    'PORT',
+    'DATABASE_URL',
+    'JWT_SECRET',
+    'COOKIE_SECRET',
+    'FRONTEND_URL',
+    'COOKIE_SECURE',
+    'SMTP_HOST',
+    'SMTP_USER',
+    'SMTP_PASS',
+    'SMTP_FROM_EMAIL',
+  ];
+  const status = keys.map((k) => `${k}=${resolve(config, k) ? 'SET' : 'MISSING'}`).join('  ');
   console.log(`[Config] Environment check: ${status}`);
 }

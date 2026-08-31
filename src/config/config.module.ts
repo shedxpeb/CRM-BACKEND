@@ -19,7 +19,12 @@ import { validateEnv } from './env.validation';
         validateEnv(envConfig);
         // Merge env-file values into process.env so downstream code can read them.
         for (const [key, value] of Object.entries(envConfig)) {
-          if (value !== undefined && value !== null && typeof value === 'string' && !process.env[key]) {
+          if (
+            value !== undefined &&
+            value !== null &&
+            typeof value === 'string' &&
+            !process.env[key]
+          ) {
             process.env[key] = value;
           }
         }

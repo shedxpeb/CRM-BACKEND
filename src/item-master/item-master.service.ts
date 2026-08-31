@@ -127,7 +127,7 @@ export class ItemMasterService extends BaseQueryService {
       };
 
       // Remove undefined values
-      Object.keys(customFields).forEach(key => {
+      Object.keys(customFields).forEach((key) => {
         if (customFields[key] === undefined) {
           delete customFields[key];
         }
@@ -204,7 +204,9 @@ export class ItemMasterService extends BaseQueryService {
         ...(dto.hsnCode !== undefined && { hsnCode: dto.hsnCode }),
         ...(dto.gstRate !== undefined && { gstRate: dto.gstRate }),
         ...(dto.taxType !== undefined && { taxType: dto.taxType }),
-        ...(dto.technicalDescription !== undefined && { technicalDescription: dto.technicalDescription }),
+        ...(dto.technicalDescription !== undefined && {
+          technicalDescription: dto.technicalDescription,
+        }),
         ...(dto.weight !== undefined && { weight: dto.weight }),
         ...(dto.manufacturer !== undefined && { manufacturer: dto.manufacturer }),
         ...(dto.countryOfOrigin !== undefined && { countryOfOrigin: dto.countryOfOrigin }),
@@ -221,7 +223,9 @@ export class ItemMasterService extends BaseQueryService {
         ...(dto.standardDimensions !== undefined && { standardDimensions: dto.standardDimensions }),
         ...(dto.currency !== undefined && { currency: dto.currency }),
         ...(dto.images !== undefined && { images: dto.images }),
-        ...(dto.preferredSupplierId !== undefined && { preferredSupplierId: dto.preferredSupplierId }),
+        ...(dto.preferredSupplierId !== undefined && {
+          preferredSupplierId: dto.preferredSupplierId,
+        }),
         ...(dto.preferredSupplier !== undefined && { preferredSupplier: dto.preferredSupplier }),
         ...(dto.datasheetUrl !== undefined && { datasheetUrl: dto.datasheetUrl }),
         ...(dto.productImageUrl !== undefined && { productImageUrl: dto.productImageUrl }),
@@ -230,7 +234,7 @@ export class ItemMasterService extends BaseQueryService {
       };
 
       // Remove undefined values
-      Object.keys(customFields).forEach(key => {
+      Object.keys(customFields).forEach((key) => {
         if (customFields[key] === undefined) {
           delete customFields[key];
         }

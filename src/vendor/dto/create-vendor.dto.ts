@@ -1,13 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEmail,
-  IsNumber,
-  IsArray,
-  IsObject,
-  IsBoolean,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsEmail, IsArray, IsObject, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateVendorDto {
