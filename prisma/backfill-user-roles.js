@@ -3,7 +3,7 @@
 const { PrismaClient } = require('@prisma/client');
 
 const DATASOURCES = {
-  prod: 'postgresql://peb_crm_user:CHANGE_ME_DB_PASSWORD@dpg-d9jfmu7avr4c73cebbe0-a.oregon-postgres.render.com/peb_crm',
+  prod: process.env.DATABASE_URL || 'postgresql://localhost:5432/peb_crm?sslmode=disable',
 };
 
 const ALIASES = {
