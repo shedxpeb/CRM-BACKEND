@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  NotFoundException,
-  Logger,
-  StreamableFile,
-  Header,
-} from '@nestjs/common';
+import { Controller, Get, Param, Logger, StreamableFile, Header } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiProduces } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
