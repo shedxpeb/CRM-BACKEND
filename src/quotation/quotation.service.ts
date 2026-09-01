@@ -127,7 +127,7 @@ export class QuotationService {
         projectId: dto.projectId || null,
         projectName: dto.projectName || null,
         validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
-        paymentTerms: dto.paymentTerms || null,
+        paymentTerms: dto.paymentTerms || undefined,
         deliveryTerms: dto.deliveryTerms || null,
         pricingConfiguration: pricingConfig || null,
         materialSelections,

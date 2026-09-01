@@ -35,7 +35,6 @@ import { DocumentModule } from './document/document.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { OrganizationBootstrapModule } from './organizations/organization-bootstrap.module';
-import { QuotationModule } from './quotation/quotation.module';
 
 @Module({
   imports: [
@@ -74,7 +73,6 @@ import { QuotationModule } from './quotation/quotation.module';
     DashboardModule,
     PermissionsModule,
     OrganizationBootstrapModule,
-    QuotationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
