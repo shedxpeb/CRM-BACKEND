@@ -33,21 +33,18 @@ export class HtmlPdfService implements OnModuleDestroy {
   private registerHelpers() {
     // Register helpers only if not already registered (avoid collision)
     if (!Handlebars.helpers.formatCurrency) {
-      Handlebars.registerHelper(
-        'formatCurrency',
-        (value: number, currency: string = 'INR') => {
-          if (value === null || value === undefined) return '-';
-          const num = Number(value);
-          if (isNaN(num)) return '-';
-          const formatter = new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          });
-          return formatter.format(num);
-        },
-      );
+      Handlebars.registerHelper('formatCurrency', (value: number, currency: string = 'INR') => {
+        if (value === null || value === undefined) return '-';
+        const num = Number(value);
+        if (isNaN(num)) return '-';
+        const formatter = new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        return formatter.format(num);
+      });
     }
 
     if (!Handlebars.helpers.eq) {
@@ -174,7 +171,9 @@ export class HtmlPdfService implements OnModuleDestroy {
   async generatePdf(templateName: string, data: Record<string, unknown>): Promise<Buffer> {
     const template = this.templates.get(templateName);
     if (!template) {
-      throw new Error(`Template not found: ${templateName}. Available: ${Array.from(this.templates.keys()).join(', ')}`);
+      throw new Error(
+        `Template not found: ${templateName}. Available: ${Array.from(this.templates.keys()).join(', ')}`,
+      );
     }
 
     // Acquire a page slot (blocks if at capacity)
@@ -190,7 +189,7 @@ export class HtmlPdfService implements OnModuleDestroy {
       }
 
       const browser = await this.getBrowser();
-      const context = this.browserContext || await browser.newContext();
+      const context = this.browserContext || (await browser.newContext());
       const page = await context.newPage();
 
       try {
@@ -234,12 +233,38 @@ export class HtmlPdfService implements OnModuleDestroy {
     if (isNaN(n) || n === 0) return 'Zero';
 
     const ones = [
-      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-      'Seventeen', 'Eighteen', 'Nineteen',
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen',
     ];
     const tens = [
-      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
+      '',
+      '',
+      'Twenty',
+      'Thirty',
+      'Forty',
+      'Fifty',
+      'Sixty',
+      'Seventy',
+      'Eighty',
+      'Ninety',
     ];
 
     const convertLessThanThousand = (n: number): string => {
@@ -261,13 +286,25 @@ export class HtmlPdfService implements OnModuleDestroy {
       if (n === 0) return 'Zero';
       let result = '';
       const crores = Math.floor(n / 10000000);
-      if (crores > 0) { result += convertLessThanThousand(crores) + ' Crore '; n %= 10000000; }
+      if (crores > 0) {
+        result += convertLessThanThousand(crores) + ' Crore ';
+        n %= 10000000;
+      }
       const lakhs = Math.floor(n / 100000);
-      if (lakhs > 0) { result += convertLessThanThousand(lakhs) + ' Lakh '; n %= 100000; }
+      if (lakhs > 0) {
+        result += convertLessThanThousand(lakhs) + ' Lakh ';
+        n %= 100000;
+      }
       const thousands = Math.floor(n / 1000);
-      if (thousands > 0) { result += convertLessThanThousand(thousands) + ' Thousand '; n %= 1000; }
+      if (thousands > 0) {
+        result += convertLessThanThousand(thousands) + ' Thousand ';
+        n %= 1000;
+      }
       const hundreds = Math.floor(n / 100);
-      if (hundreds > 0) { result += convertLessThanThousand(hundreds) + ' Hundred '; n %= 100; }
+      if (hundreds > 0) {
+        result += convertLessThanThousand(hundreds) + ' Hundred ';
+        n %= 100;
+      }
       if (n > 0) result += convertLessThanThousand(n);
       return result.trim();
     };
