@@ -1,0 +1,26 @@
+{
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true,
+      "decoratorsMetadata": true,
+      "dynamicImport": true
+    },
+    "transform": {
+      "legacyDecorator": true,
+      "decoratorMetadata": true
+    },
+    "target": "es2023",
+    "keepClassNames": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "module": {
+    "type": "commonjs",
+    "strict": true,
+    "noInterop": false
+  },
+  "sourceMaps": true
+}

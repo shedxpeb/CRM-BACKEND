@@ -32,7 +32,7 @@ export class GetItemMastersDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   @MaxLength(100)
   search?: string;
 

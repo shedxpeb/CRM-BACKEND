@@ -12,6 +12,8 @@ import { upsertSystemRoles } from './system-bootstrap';
  *
  * Custom (non-system) roles created by tenants are left untouched — only the
  * well-known system role names are created/updated.
+ *
+ * Runs ASYNCHRONOUSLY after bootstrap — does NOT block HTTP server startup.
  */
 @Injectable()
 export class RoleSyncService implements OnApplicationBootstrap {
@@ -19,18 +21,35 @@ export class RoleSyncService implements OnApplicationBootstrap {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async onApplicationBootstrap(): Promise<void> {
+  onApplicationBootstrap(): void {
+    // Fire-and-forget: run async sync AFTER server starts accepting requests.
+    // This prevents role sync from blocking the HTTP server from becoming ready.
+    this.syncRoles().catch((error) => {
+      this.logger.error(
+        `System role sync failed: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
+    });
+  }
+
+  private async syncRoles(): Promise<void> {
     try {
       const organizations = await this.prisma.organization.findMany({
         where: { isDeleted: false },
-        select: { id: true, name: true },
+        select: { id: true },
       });
 
-      let changed = false;
-      for (const org of organizations) {
-        changed = (await upsertSystemRoles(this.prisma, org.id)) || changed;
+      if (organizations.length === 0) {
+        this.logger.log('System role sync complete (no organizations)');
+        return;
       }
 
+      // Parallel upsert for all organizations — much faster than sequential
+      const results = await Promise.all(
+        organizations.map((org) => upsertSystemRoles(this.prisma, org.id)),
+      );
+
+      const changed = results.some(Boolean);
       if (changed) {
         // Role permissions changed: drop the per-user effective-permission cache
         // (PermissionInheritanceService caches for 5 minutes) so the next request
@@ -47,7 +66,6 @@ export class RoleSyncService implements OnApplicationBootstrap {
       );
     } catch (error) {
       // Never take the application down because a sync failed; log and continue.
-      // The next restart (or a manual seed-system run) will retry the sync.
       this.logger.error(
         `System role sync failed: ${(error as Error).message}`,
         (error as Error).stack,
