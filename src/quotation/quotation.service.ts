@@ -2,6 +2,29 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
+import { Prisma } from '@prisma/client';
+
+interface MaterialRate {
+  amount?: number;
+  [key: string]: unknown;
+}
+
+interface PricingConfiguration {
+  materialRates?: MaterialRate[];
+  labourCost?: number;
+  installationCost?: number;
+  transportationCost?: number;
+  craneCost?: number;
+  civilCost?: number;
+  accommodationCost?: number;
+  erectionCost?: number;
+  freightCost?: number;
+  discountType?: string;
+  discountValue?: number;
+  gstRate?: number;
+  gstType?: string;
+  [key: string]: unknown;
+}
 
 @Injectable()
 export class QuotationService {
@@ -21,7 +44,13 @@ export class QuotationService {
   }
 
   async findAll(
-    query: { page?: number; pageSize?: number; status?: string; customerId?: string; search?: string },
+    query: {
+      page?: number;
+      pageSize?: number;
+      status?: string;
+      customerId?: string;
+      search?: string;
+    },
     organizationId: string,
   ) {
     const page = query.page || 1;
@@ -71,11 +100,16 @@ export class QuotationService {
     return quotation;
   }
 
-  async create(dto: CreateQuotationDto, organizationId: string, createdById: string, createdBy: string) {
+  async create(
+    dto: CreateQuotationDto,
+    organizationId: string,
+    createdById: string,
+    createdBy: string,
+  ) {
     const quotationNumber = await this.generateQuotationNumber(organizationId);
 
     // Calculate pricing from materialSelections in pricingConfiguration
-    const pricingConfig = dto.pricingConfiguration;
+    const pricingConfig = dto.pricingConfiguration as PricingConfiguration;
     let subtotal = 0;
     let discountAmount = 0;
     let taxAmount = 0;
@@ -83,20 +117,28 @@ export class QuotationService {
 
     if (pricingConfig) {
       const materialRates = pricingConfig.materialRates || [];
-      subtotal = materialRates.reduce((sum: number, r: { amount?: number }) => sum + (r.amount || 0), 0);
-      subtotal += (pricingConfig.labourCost || 0) +
-                  (pricingConfig.installationCost || 0) +
-                  (pricingConfig.transportationCost || 0) +
-                  (pricingConfig.craneCost || 0) +
-                  (pricingConfig.civilCost || 0) +
-                  (pricingConfig.accommodationCost || 0) +
-                  (pricingConfig.erectionCost || 0) +
-                  (pricingConfig.freightCost || 0);
+      subtotal = materialRates.reduce(
+        (sum: number, r: { amount?: number }) => sum + (r.amount || 0),
+        0,
+      );
+      subtotal +=
+        (pricingConfig.labourCost || 0) +
+        (pricingConfig.installationCost || 0) +
+        (pricingConfig.transportationCost || 0) +
+        (pricingConfig.craneCost || 0) +
+        (pricingConfig.civilCost || 0) +
+        (pricingConfig.accommodationCost || 0) +
+        (pricingConfig.erectionCost || 0) +
+        (pricingConfig.freightCost || 0);
 
       const discountType = pricingConfig.discountType || 'none';
       const discountValue = pricingConfig.discountValue || 0;
-      discountAmount = discountType === 'percentage' ? (subtotal * discountValue) / 100 :
-                       discountType === 'fixed' ? discountValue : 0;
+      discountAmount =
+        discountType === 'percentage'
+          ? (subtotal * discountValue) / 100
+          : discountType === 'fixed'
+            ? discountValue
+            : 0;
 
       const afterDiscount = subtotal - discountAmount;
       const gstRate = pricingConfig.gstRate || 0;
@@ -105,13 +147,16 @@ export class QuotationService {
     }
 
     // Build materialSelections JSON from pricingConfiguration
-    const materialSelections = pricingConfig?.materialRates?.map((r: { materialSelectionId: string; rate: number; quantity: number; amount: number }) => ({
-      id: r.materialSelectionId,
-      itemMasterId: r.materialSelectionId,
-      rate: r.rate,
-      quantity: r.quantity,
-      amount: r.amount,
-    })) || [];
+    const materialSelections =
+      pricingConfig?.materialRates?.map(
+        (r: { materialSelectionId: string; rate: number; quantity: number; amount: number }) => ({
+          id: r.materialSelectionId,
+          itemMasterId: r.materialSelectionId,
+          rate: r.rate,
+          quantity: r.quantity,
+          amount: r.amount,
+        }),
+      ) || [];
 
     const quotation = await this.prisma.quotation.create({
       data: {
@@ -127,9 +172,9 @@ export class QuotationService {
         projectId: dto.projectId || null,
         projectName: dto.projectName || null,
         validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
-        paymentTerms: dto.paymentTerms || null,
+        paymentTerms: dto.paymentTerms || undefined,
         deliveryTerms: dto.deliveryTerms || null,
-        pricingConfiguration: pricingConfig || null,
+        pricingConfiguration: pricingConfig as Prisma.InputJsonValue,
         materialSelections,
         termsAndConditions: dto.termsAndConditions || null,
         notes: dto.notes || null,
@@ -148,48 +193,64 @@ export class QuotationService {
     return quotation;
   }
 
-  async update(id: string, dto: UpdateQuotationDto, organizationId: string, updatedById: string, updatedBy: string) {
+  async update(
+    id: string,
+    dto: UpdateQuotationDto,
+    organizationId: string,
+    updatedById: string,
+    updatedBy: string,
+  ) {
     const existing = await this.findById(id, organizationId);
 
     // Recalculate pricing if configuration changed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pricingConfig = (dto as any).pricingConfiguration || existing.pricingConfiguration as any;
+    const pricingConfig =
+      (dto.pricingConfiguration as PricingConfiguration) ||
+      (existing.pricingConfiguration as PricingConfiguration);
     let subtotal = existing.subtotal;
     let discountAmount = existing.discountAmount;
     let taxAmount = existing.taxAmount;
     let grandTotal = existing.grandTotal;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let materialSelections: any[] = (existing.materialSelections as any[]) || [];
+    let materialSelections = (existing.materialSelections as unknown[]) || [];
 
     if (pricingConfig) {
       const materialRates = pricingConfig.materialRates || [];
-      subtotal = materialRates.reduce((sum: number, r: { amount?: number }) => sum + (r.amount || 0), 0);
-      subtotal += (pricingConfig.labourCost || 0) +
-                  (pricingConfig.installationCost || 0) +
-                  (pricingConfig.transportationCost || 0) +
-                  (pricingConfig.craneCost || 0) +
-                  (pricingConfig.civilCost || 0) +
-                  (pricingConfig.accommodationCost || 0) +
-                  (pricingConfig.erectionCost || 0) +
-                  (pricingConfig.freightCost || 0);
+      subtotal = materialRates.reduce(
+        (sum: number, r: { amount?: number }) => sum + (r.amount || 0),
+        0,
+      );
+      subtotal +=
+        (pricingConfig.labourCost || 0) +
+        (pricingConfig.installationCost || 0) +
+        (pricingConfig.transportationCost || 0) +
+        (pricingConfig.craneCost || 0) +
+        (pricingConfig.civilCost || 0) +
+        (pricingConfig.accommodationCost || 0) +
+        (pricingConfig.erectionCost || 0) +
+        (pricingConfig.freightCost || 0);
 
       const discountType = pricingConfig.discountType || 'none';
       const discountValue = pricingConfig.discountValue || 0;
-      discountAmount = discountType === 'percentage' ? (subtotal * discountValue) / 100 :
-                       discountType === 'fixed' ? discountValue : 0;
+      discountAmount =
+        discountType === 'percentage'
+          ? (subtotal * discountValue) / 100
+          : discountType === 'fixed'
+            ? discountValue
+            : 0;
 
       const afterDiscount = subtotal - discountAmount;
       const gstRate = pricingConfig.gstRate || 0;
       taxAmount = (afterDiscount * gstRate) / 100;
       grandTotal = afterDiscount + taxAmount;
 
-      materialSelections = materialRates.map((r: { materialSelectionId: string; rate: number; quantity: number; amount: number }) => ({
-        id: r.materialSelectionId,
-        itemMasterId: r.materialSelectionId,
-        rate: r.rate,
-        quantity: r.quantity,
-        amount: r.amount,
-      }));
+      materialSelections = materialRates.map(
+        (r: { materialSelectionId: string; rate: number; quantity: number; amount: number }) => ({
+          id: r.materialSelectionId,
+          itemMasterId: r.materialSelectionId,
+          rate: r.rate,
+          quantity: r.quantity,
+          amount: r.amount,
+        }),
+      );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,11 +272,14 @@ export class QuotationService {
     if (dto.customerGST !== undefined) updateData.customerGST = dto.customerGST;
     if (dto.projectId !== undefined) updateData.projectId = dto.projectId;
     if (dto.projectName !== undefined) updateData.projectName = dto.projectName;
-    if (dto.validUntil !== undefined) updateData.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
+    if (dto.validUntil !== undefined)
+      updateData.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
     if (dto.paymentTerms !== undefined) updateData.paymentTerms = dto.paymentTerms;
     if (dto.deliveryTerms !== undefined) updateData.deliveryTerms = dto.deliveryTerms;
-    if (dto.pricingConfiguration !== undefined) updateData.pricingConfiguration = dto.pricingConfiguration;
-    if (dto.termsAndConditions !== undefined) updateData.termsAndConditions = dto.termsAndConditions;
+    if (dto.pricingConfiguration !== undefined)
+      updateData.pricingConfiguration = dto.pricingConfiguration;
+    if (dto.termsAndConditions !== undefined)
+      updateData.termsAndConditions = dto.termsAndConditions;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
     if (dto.internalNotes !== undefined) updateData.internalNotes = dto.internalNotes;
     if (dto.templateId !== undefined) updateData.templateId = dto.templateId;

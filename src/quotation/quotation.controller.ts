@@ -52,10 +52,7 @@ export class QuotationController {
   @RequirePermissions('document:read')
   @ApiOperation({ summary: 'Get quotation by ID' })
   @ApiResponse({ status: 200, description: 'Quotation fetched.' })
-  async findById(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async findById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.quotationService.findById(id, organizationId);
     return { message: 'Quotation fetched.', data };
   }
@@ -86,7 +83,13 @@ export class QuotationController {
     @CurrentUser('name') updatedBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.update(id, dto, organizationId, updatedById, updatedBy);
+    const data = await this.quotationService.update(
+      id,
+      dto,
+      organizationId,
+      updatedById,
+      updatedBy,
+    );
     return { message: 'Quotation updated successfully.', data };
   }
 
