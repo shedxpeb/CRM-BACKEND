@@ -11,12 +11,15 @@ import * as path from 'path';
 // ─── PDF View Model Types ─────────────────────────────────────────────────────
 
 export interface PdfQuotationViewModel {
+  coverImageData: string;
   meta: {
     quotationNumber: string;
     date: string;
     validUntil: string;
     generatedAt: string;
     version: number;
+    inquiryNumber: string;
+    quotationDate: string;
   };
 
   organization: {
@@ -43,13 +46,27 @@ export interface PdfQuotationViewModel {
     pincode: string;
     phone: string;
     email: string;
-    gstin: string;
+    gstNumber: string;
   };
 
   preparedBy: {
     name: string;
     designation: string;
     company: string;
+    address: string;
+    gstin: string;
+    mobile: string;
+    email: string;
+  };
+
+  subject: string;
+  introduction: string;
+  signature: {
+    prefix: string;
+    name: string;
+    designation: string;
+    mobile: string;
+    email: string;
   };
 
   project: {
@@ -65,12 +82,31 @@ export interface PdfQuotationViewModel {
     area: string;
     baySpacing: string;
     roofSlope: string;
+    frameType: string;
+    endFrameCondition: string;
+    widthModule: string;
+    opening: string;
+    endwallBaySpacing: string;
+    brickwallCondition: string;
+    canopy: string;
+    roofSheeting: string;
+    wallSheeting: string;
+    gutter: string;
+    downTakePipe: string;
+    bracingType: string;
+    fascia: string;
+    futureExpansion: string;
   };
 
   design: {
     designCode: string;
-    windLoad: string;
+    windLoadApplication: string;
+    seismicCode: string;
+    responseFactor: string;
+    importanceFactor: string;
     seismicZone: string;
+    seismicCoefficient: string;
+    windLoad: string;
     roofCladding: string;
     wallCladding: string;
     insulationType: string;
@@ -82,6 +118,8 @@ export interface PdfQuotationViewModel {
     deadLoad: string;
     liveLoad: string;
     windLoad: string;
+    columnLoad: string;
+    collateralLoad: string;
     craneLoad: string;
     mezzanineLoad: string;
   };
@@ -89,31 +127,72 @@ export interface PdfQuotationViewModel {
   crane: {
     required: boolean;
     capacity: string;
-    type: string;
+    numberOfCranes: string;
+    span: string;
+    trolleyHoistWeight: string;
+    craneWeight: string;
+    wheelLoad: string;
+    wheelBase: string;
+    runLength: string;
+    topOfCraneBeam: string;
+    tandemOperation: string;
   };
 
   mezzanine: {
     required: boolean;
     area: string;
     load: string;
+    thicknessOfSlab: string;
+    liveLoad: string;
+    additionalLoad: string;
+    stairCase: string;
+    deflection: string;
+    topOfSlab: string;
+    shearStud: string;
   };
 
   accessories: {
-    roofAccessories: string[];
-    wallAccessories: string[];
+    roofAccessories: Array<{
+      description: string;
+      size: string;
+      quantity: string;
+      location: string;
+    }>;
+    wallAccessories: Array<{
+      description: string;
+      size: string;
+      quantity: string;
+      location: string;
+    }>;
   };
 
   materials: Array<{
     sno: number;
-    itemName: string;
+    component: string;
     specification: string;
+    make: string;
+    yieldStrength: string;
     quantity: string;
     unit: string;
     rate: string;
     amount: string;
   }>;
 
+  weightSummary: Array<{
+    description: string;
+    weight: string;
+    unit: string;
+    remarks: string;
+  }>;
+
   pricing: {
+    lineItems: Array<{
+      sno: number;
+      description: string;
+      unit: string;
+      quantity: string;
+      amount: string;
+    }>;
     materialCost: string;
     labourCost: string;
     installationCost: string;
@@ -142,6 +221,7 @@ export interface PdfQuotationViewModel {
     bankName: string;
     accountNumber: string;
     ifscCode: string;
+    address: string;
     branchName: string;
     accountType: string;
   };
@@ -159,6 +239,12 @@ export interface PdfQuotationViewModel {
   exclusions: string[];
   termsAndConditions: string;
   notes: string;
+  craneCapacityMt: string;
+  finalSignature: {
+    name: string;
+    mobile: string;
+    company: string;
+  };
 
   branding: {
     coverImage: string;
@@ -170,6 +256,35 @@ export interface PdfQuotationViewModel {
     footerLogo: string;
     primaryColor: string;
     secondaryColor: string;
+  };
+
+  templateDefaults?: {
+    subject?: string;
+    introduction?: string;
+    applicableCodes?: string[];
+    primaryStructuralMembers?: string[];
+    secondaryStructuralMembers?: string[];
+    notes?: string;
+    specialTechnicalAssumptions?: string[];
+    paymentTerms?: string;
+    bankDetails?: {
+      bankName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      address?: string;
+    };
+    exclusions?: string[];
+    deliverySchedule?: string[];
+    otherCommercialTerms?: string[];
+    cancellations?: string;
+    productionRelease?: string;
+    warranty?: string;
+    governingLaw?: string;
+    taxesAndDuties?: string;
+    signature?: {
+      name?: string;
+      designation?: string;
+    };
   };
 }
 
@@ -358,9 +473,80 @@ export class QuotationPdfService {
         return dataUri;
       }
     } catch (error) {
-      this.logger.warn(`Failed to load asset ${logoPath}: ${error.message}`);
+      this.logger.warn(`Failed to load logo from ${logoPath}: ${error}`);
     }
     return '';
+  }
+
+  /**
+   * Load the quotation cover image as a base64 data URI.
+   * The cover image is located at frontend/public/quotation-assets/first.jpg
+   */
+  loadCoverImageAsDataUri(): string {
+    const coverImagePath = path.join(process.cwd(), '..', 'frontend', 'public', 'quotation-assets', 'first.jpg');
+    
+    // Check cache
+    const cacheKey = `cover-image:${coverImagePath}`;
+    const cached = this.assetCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.dataUri;
+    }
+
+    // Load from filesystem
+    try {
+      if (!fs.existsSync(coverImagePath)) {
+        throw new Error(`Quotation cover image missing: ${coverImagePath}`);
+      }
+      
+      const buffer = fs.readFileSync(coverImagePath);
+      const dataUri = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+
+      // Cache it
+      this.assetCache.set(cacheKey, {
+        dataUri,
+        expiresAt: Date.now() + this.ASSET_CACHE_TTL_MS,
+      });
+      return dataUri;
+    } catch (error) {
+      this.logger.error(`Failed to load cover image: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Quotation cover image missing: frontend/public/quotation-assets/first.jpg`);
+    }
+  }
+
+  /**
+   * Load the watermark image as a base64 data URI.
+   * The watermark image is located at frontend/public/quotation-assets/watermark.png
+   */
+  loadWatermarkImageAsDataUri(): string {
+    const watermarkPath = path.join(process.cwd(), '..', 'frontend', 'public', 'quotation-assets', 'watermark.png');
+    
+    // Check cache
+    const cacheKey = `watermark-image:${watermarkPath}`;
+    const cached = this.assetCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.dataUri;
+    }
+
+    // Load from filesystem
+    try {
+      if (!fs.existsSync(watermarkPath)) {
+        this.logger.warn(`Watermark image not found: ${watermarkPath}`);
+        return '';
+      }
+      
+      const buffer = fs.readFileSync(watermarkPath);
+      const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
+
+      // Cache it
+      this.assetCache.set(cacheKey, {
+        dataUri,
+        expiresAt: Date.now() + this.ASSET_CACHE_TTL_MS,
+      });
+      return dataUri;
+    } catch (error) {
+      this.logger.warn(`Failed to load watermark image: ${error instanceof Error ? error.message : String(error)}`);
+      return '';
+    }
   }
 
   /**
@@ -371,22 +557,111 @@ export class QuotationPdfService {
     branding: PdfBrandingContext,
   ): PdfQuotationViewModel {
     const q = quotationData;
-    const ts = q.technicalSpecifications || {};
-    const pc = q.pricingConfiguration || {};
-    const sc = q.scopeConfiguration || {};
-    const tl = q.timeline || {};
+    const techSpecs = q.technicalSpecifications as Record<string, any> || {};
+    const scopeConfig = q.scopeConfiguration as Record<string, any> || {};
+    const pc = q.pricingConfiguration as Record<string, any> || {};
     const org = q._organization || {};
+    const templateDefaults = org.quotationTemplateDefaults || {};
+
+    // Technical specifications are stored as flat fields, not nested objects
+    const buildingSpec = {
+      frameType: techSpecs.frameType,
+      endFrameCondition: techSpecs.endFrameCondition,
+      width: techSpecs.buildingWidth,
+      length: techSpecs.buildingLength,
+      clearHeight: techSpecs.buildingHeight,
+      widthModule: techSpecs.widthModule,
+      roofSlope: techSpecs.roofSlope,
+      opening: techSpecs.opening,
+      sidewallBaySpacing: techSpecs.baySpacing,
+      endwallBaySpacing: techSpecs.endwallBaySpacing,
+      brickwallCondition: techSpecs.brickwallCondition,
+      canopy: techSpecs.canopy,
+      roofSheeting: techSpecs.roofSheeting,
+      wallSheeting: techSpecs.wallSheeting,
+      gutter: techSpecs.gutter,
+      downTakePipe: techSpecs.downTakePipe,
+      bracingType: techSpecs.bracingType,
+      fascia: techSpecs.fascia,
+      futureExpansion: techSpecs.futureExpansion,
+    };
+
+    const designCode = {
+      windLoadApplication: techSpecs.designCode,
+      seismicCode: techSpecs.seismicCode,
+      responseFactor: techSpecs.responseFactor,
+      importanceFactor: techSpecs.importanceFactor,
+      seismicZone: techSpecs.seismicZone,
+      seismicCoefficient: techSpecs.seismicCoefficient,
+    };
+
+    const designLoad = {
+      deadLoad: techSpecs.deadLoad,
+      liveLoad: techSpecs.liveLoad,
+      windSpeed: techSpecs.windLoad,
+      columnLoad: techSpecs.columnLoad,
+      collateralLoad: techSpecs.collateralLoad,
+    };
+
+    const mezzanineLoad = {
+      mezzArea: techSpecs.mezzanineArea,
+      mezzLiveLoad: techSpecs.mezzanineLoad,
+      thicknessOfSlab: techSpecs.thicknessOfSlab,
+      mezzAdditionalLoad: techSpecs.mezzanineAdditionalLoad,
+      stairCase: techSpecs.stairCase,
+      deflection: techSpecs.deflection,
+      topOfSlab: techSpecs.topOfMezzanineSlab,
+      shearStud: techSpecs.shearStud,
+    };
+
+    const craneDetail = {
+      craneCapacity: techSpecs.craneCapacity,
+      noOfCranes: techSpecs.numberOfCranes,
+      craneSpan: techSpecs.craneSpan,
+      trolleyHoistWeight: techSpecs.trolleyHoistWeight,
+      craneWeight: techSpecs.craneWeight,
+      wheelLoad: techSpecs.wheelLoad,
+      wheelBase: techSpecs.wheelBase,
+      runLength: techSpecs.runLength,
+      topOfCraneBeam: techSpecs.topOfCraneBeam,
+      tandemOperation: techSpecs.tandemOperation,
+    };
+
+    // Debug logging to trace actual data structure
+    this.logger.log('[mapToViewModel] Quotation ID:', q.id);
+    this.logger.log('[mapToViewModel] Quotation Number:', q.quotationNumber);
+    this.logger.log('[mapToViewModel] Inquiry Number:', q.inquiryNumber);
+    this.logger.log('[mapToViewModel] Date:', q.date);
+    this.logger.log('[mapToViewModel] Created At:', q.createdAt);
+    this.logger.log('[mapToViewModel] Customer Name:', q.customerName);
+    this.logger.log('[mapToViewModel] Customer Address:', q.customerAddress);
+    this.logger.log('[mapToViewModel] Customer GST:', q.customerGST);
+    this.logger.log('[mapToViewModel] Customer ID:', q.customerId);
+    this.logger.log('[mapToViewModel] Organization Name:', org.name);
+    this.logger.log('[mapToViewModel] Organization Settings:', JSON.stringify(org.settings));
+    this.logger.log('[mapToViewModel] Technical Specifications (flat):', JSON.stringify(techSpecs));
+    this.logger.log('[mapToViewModel] Material Specs:', JSON.stringify(techSpecs.materialSpecs));
+    this.logger.log('[mapToViewModel] Roof Accessories:', JSON.stringify(techSpecs.roofAccessories));
+    this.logger.log('[mapToViewModel] Wall Accessories:', JSON.stringify(techSpecs.wallAccessories));
+    this.logger.log('[mapToViewModel] Weight Rows:', JSON.stringify(techSpecs.weightRows));
+    this.logger.log('[mapToViewModel] Pricing Configuration:', JSON.stringify(pc));
 
     // Logo resolution
     const logoDataUri = this.loadLogoAsDataUri(branding.companyLogo);
 
+    // Cover image resolution
+    const coverImageDataUri = this.loadCoverImageAsDataUri();
+
     return {
+      coverImageData: coverImageDataUri,
       meta: {
         quotationNumber: q.quotationNumber || 'N/A',
-        date: this.formatDate(q.createdAt),
+        date: this.formatDate(q.date || q.createdAt),
         validUntil: q.validUntil ? this.formatDate(q.validUntil) : 'N/A',
         generatedAt: this.formatDate(new Date()),
         version: q.version || 1,
+        inquiryNumber: q.inquiryNumber || '',
+        quotationDate: this.formatDate(q.date || q.createdAt),
       },
 
       organization: {
@@ -413,13 +688,27 @@ export class QuotationPdfService {
         pincode: q.customerPincode || '',
         phone: q.customerPhone || '',
         email: q.customerEmail || '',
-        gstin: q.customerGST || '',
+        gstNumber: q.customerGST || '',
       },
 
       preparedBy: {
-        name: q.createdBy || q.salesExecutive || '',
-        designation: q.authorizedDesignation || 'Authorized Signatory',
-        company: branding.companyName || org.name || '',
+        name: q.preparedByName || q.createdBy || q.salesExecutive || '',
+        designation: q.preparedByDesignation || q.authorizedDesignation || 'Authorized Signatory',
+        company: q.preparedByCompany || branding.companyName || org.name || '',
+        address: q.preparedByAddress || org.address || '',
+        gstin: q.preparedByGstin || org.gstNumber || '',
+        mobile: q.preparedByMobile || '',
+        email: q.preparedByEmail || org.email || '',
+      },
+
+      subject: q.subject || templateDefaults?.subject || 'Techno Commercial Offer for Design Supply of PEB Building.',
+      introduction: q.introduction || templateDefaults?.introduction || 'We Thank you for valued enquiry for Pre engineering building Steel Structure and giving us opportunity to submit a Proposal to your valuable project in a cost-effective manner.\n\nThis Proposal to you is based on steels standard design criteria and specifications. However, the overall dimensions and layout are in General accordance with your enquiry or Drawings Given by you.\n\nKindly note that we have tried our utmost to assure that this proposal meets all your project requirements and specifications. However, in some case we had to make some assumptions, suggest certain deviations and exclude some items that you may have requested.\n\nWe hope you will find the same in order, awaiting your kind reply & esteemed order.',
+      signature: {
+        prefix: q.signaturePrefix || 'Sincerely Yours,',
+        name: q.signatureName || templateDefaults?.signature?.name || q.preparedByName || 'VIKAS GONDALIYA',
+        designation: q.signatureDesignation || templateDefaults?.signature?.designation || q.preparedByDesignation || 'Director For Shedx Peb LLP.',
+        mobile: q.signatureMobile || q.preparedByMobile || '6359998111',
+        email: q.signatureEmail || q.preparedByEmail || 'Sales@shedxpeb.com',
       },
 
       project: {
@@ -429,68 +718,127 @@ export class QuotationPdfService {
       },
 
       building: {
-        length: this.fmt(ts.buildingLength, 'm'),
-        width: this.fmt(ts.buildingWidth, 'm'),
-        height: this.fmt(ts.buildingHeight, 'm'),
-        area: this.fmt(ts.buildingArea, 'sqm'),
-        baySpacing: this.fmt(ts.baySpacing, 'm'),
-        roofSlope: this.fmt(ts.roofSlope, '°'),
+        length: this.normalizeString(buildingSpec.length),
+        width: this.normalizeString(buildingSpec.width),
+        height: this.normalizeString(buildingSpec.clearHeight),
+        area: '',
+        baySpacing: this.normalizeString(buildingSpec.sidewallBaySpacing),
+        roofSlope: this.normalizeString(buildingSpec.roofSlope),
+        frameType: this.normalizeString(buildingSpec.frameType),
+        endFrameCondition: this.normalizeString(buildingSpec.endFrameCondition),
+        widthModule: this.normalizeString(buildingSpec.widthModule),
+        opening: this.normalizeString(buildingSpec.opening),
+        endwallBaySpacing: this.normalizeString(buildingSpec.endwallBaySpacing),
+        brickwallCondition: this.normalizeString(buildingSpec.brickwallCondition),
+        canopy: this.normalizeString(buildingSpec.canopy),
+        roofSheeting: this.normalizeString(buildingSpec.roofSheeting),
+        wallSheeting: this.normalizeString(buildingSpec.wallSheeting),
+        gutter: this.normalizeString(buildingSpec.gutter),
+        downTakePipe: this.normalizeString(buildingSpec.downTakePipe),
+        bracingType: this.normalizeString(buildingSpec.bracingType),
+        fascia: this.normalizeString(buildingSpec.fascia),
+        futureExpansion: this.normalizeString(buildingSpec.futureExpansion),
       },
 
       design: {
-        designCode: ts.designCode || 'IS 800:2007',
-        windLoad: this.fmt(ts.windLoad, 'kN/m²'),
-        seismicZone: ts.seismicZone || '',
-        roofCladding: ts.roofCladding || '',
-        wallCladding: ts.wallCladding || '',
-        insulationType: ts.insulationType || '',
-        insulationThickness: this.fmt(ts.insulationThickness, 'mm'),
-        roofSlope: this.fmt(ts.roofSlope, '°'),
+        designCode: this.normalizeString(designCode.windLoadApplication),
+        windLoadApplication: this.normalizeString(designCode.windLoadApplication),
+        seismicCode: this.normalizeString(designCode.seismicCode),
+        responseFactor: this.normalizeString(designCode.responseFactor),
+        importanceFactor: this.normalizeString(designCode.importanceFactor),
+        seismicZone: this.normalizeString(designCode.seismicZone),
+        seismicCoefficient: this.normalizeString(designCode.seismicCoefficient),
+        windLoad: this.normalizeString(designLoad.windSpeed),
+        roofCladding: '',
+        wallCladding: '',
+        insulationType: '',
+        insulationThickness: '',
+        roofSlope: this.normalizeString(buildingSpec.roofSlope),
       },
 
       loads: {
-        deadLoad: this.fmt(ts.deadLoad, 'kN/m²'),
-        liveLoad: this.fmt(ts.liveLoad, 'kN/m²'),
-        windLoad: this.fmt(ts.windLoad, 'kN/m²'),
-        craneLoad: q.craneCapacity ? `${q.craneCapacity} MT` : 'N/A',
-        mezzanineLoad: ts.mezzanineLoad ? `${ts.mezzanineLoad} kN/m²` : 'N/A',
+        deadLoad: this.normalizeString(designLoad.deadLoad),
+        liveLoad: this.normalizeString(designLoad.liveLoad),
+        windLoad: this.normalizeString(designLoad.windSpeed),
+        columnLoad: this.normalizeString(designLoad.columnLoad),
+        collateralLoad: this.normalizeString(designLoad.collateralLoad),
+        craneLoad: craneDetail?.craneCapacity ? `${this.normalizeString(craneDetail.craneCapacity)} MT` : 'N/A',
+        mezzanineLoad: mezzanineLoad?.mezzLiveLoad ? `${this.normalizeString(mezzanineLoad.mezzLiveLoad)} kN/m²` : 'N/A',
       },
 
       crane: {
-        required: q.craneRequired || sc.crane?.state === 'Included' || false,
-        capacity: q.craneCapacity ? `${q.craneCapacity} MT` : 'N/A',
-        type: q.craneType || 'Electric Overhead Traveling (EOT)',
+        required: !!craneDetail,
+        capacity: this.normalizeString(craneDetail?.craneCapacity) || 'N/A',
+        numberOfCranes: this.normalizeString(craneDetail?.noOfCranes) || 'N/A',
+        span: this.normalizeString(craneDetail?.craneSpan) || 'N/A',
+        trolleyHoistWeight: this.normalizeString(craneDetail?.trolleyHoistWeight) || '-',
+        craneWeight: this.normalizeString(craneDetail?.craneWeight) || '-',
+        wheelLoad: this.normalizeString(craneDetail?.wheelLoad) || '-',
+        wheelBase: this.normalizeString(craneDetail?.wheelBase) || '-',
+        runLength: this.normalizeString(craneDetail?.runLength) || '-',
+        topOfCraneBeam: this.normalizeString(craneDetail?.topOfCraneBeam) || 'L/600',
+        tandemOperation: this.normalizeString(craneDetail?.tandemOperation) || '-',
       },
 
       mezzanine: {
-        required: q.mezzanine || sc.civilWork?.state === 'Included' || false,
-        area: this.fmt(q.mezzanineArea || ts.mezzanineArea, 'sqm'),
-        load: this.fmt(ts.mezzanineLoad, 'kN/m²'),
+        required: !!mezzanineLoad,
+        area: this.normalizeString(mezzanineLoad?.mezzArea),
+        load: this.normalizeString(mezzanineLoad?.mezzLiveLoad),
+        thicknessOfSlab: this.normalizeString(mezzanineLoad?.thicknessOfSlab),
+        liveLoad: this.normalizeString(mezzanineLoad?.mezzLiveLoad),
+        additionalLoad: this.normalizeString(mezzanineLoad?.mezzAdditionalLoad),
+        stairCase: this.normalizeString(mezzanineLoad?.stairCase),
+        deflection: this.normalizeString(mezzanineLoad?.deflection),
+        topOfSlab: this.normalizeString(mezzanineLoad?.topOfSlab),
+        shearStud: this.normalizeString(mezzanineLoad?.shearStud),
       },
 
       accessories: {
-        roofAccessories: this.buildAccessoriesList(ts, 'roof'),
-        wallAccessories: this.buildAccessoriesList(ts, 'wall'),
+        roofAccessories: (q.inclusions as any[] || []).map((item: any) => ({
+          description: this.normalizeString(item.description),
+          size: this.normalizeString(item.size),
+          quantity: this.normalizeString(item.quantity),
+          location: this.normalizeString(item.location),
+        })),
+        wallAccessories: (q.exclusions as any[] || []).map((item: any) => ({
+          description: this.normalizeString(item.description),
+          size: this.normalizeString(item.size),
+          quantity: this.normalizeString(item.quantity),
+          location: this.normalizeString(item.location),
+        })),
       },
 
-      materials: this.mapMaterials(q.materialSelections || [], pc),
+      materials: this.mapMaterials(techSpecs.materialSpecs || [], pc),
+
+      weightSummary: (techSpecs.weightRows || []).map((item: any, index: number) => ({
+        description: this.normalizeString(item.description),
+        weight: this.normalizeString(item.weight),
+        unit: this.normalizeString(item.unit) || 'MT',
+        remarks: this.normalizeString(item.remarks),
+      })),
 
       pricing: {
-        materialCost: this.fmtCurrency(
-          pc.materialRates?.reduce((s: number, m: any) => s + (m.amount || 0), 0) || q.materialCost,
-        ),
-        labourCost: this.fmtCurrency(pc.labourCost || q.labourCost),
-        installationCost: this.fmtCurrency(pc.installationCost || q.installationCost),
-        transportationCost: this.fmtCurrency(pc.transportationCost || q.transportationCost),
-        craneCost: this.fmtCurrency(pc.craneCost || q.craneCost),
-        civilCost: this.fmtCurrency(pc.civilCost || q.civilCost),
-        accommodationCost: this.fmtCurrency(pc.accommodationCost || q.accommodationCost),
-        erectionCost: this.fmtCurrency(pc.erectionCost || q.erectionCost),
-        freightCost: this.fmtCurrency(pc.freightCost || q.freightCost),
-        otherCosts: this.fmtCurrency(
-          (pc.additionalServiceCosts || []).reduce((s: number, c: any) => s + (c.cost || 0), 0) +
-            (q.otherCosts || 0),
-        ),
+        lineItems: [
+          { sno: 1, description: 'Material Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.materialCost), amount: this.fmtCurrency(q.materialCost) },
+          { sno: 2, description: 'Labour Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.labourCost), amount: this.fmtCurrency(q.labourCost) },
+          { sno: 3, description: 'Installation Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.installationCost), amount: this.fmtCurrency(q.installationCost) },
+          { sno: 4, description: 'Transportation Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.transportationCost), amount: this.fmtCurrency(q.transportationCost) },
+          { sno: 5, description: 'Crane Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.craneCost), amount: this.fmtCurrency(q.craneCost) },
+          { sno: 6, description: 'Civil Work', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.civilCost), amount: this.fmtCurrency(q.civilCost) },
+          { sno: 7, description: 'Accommodation', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.accommodationCost), amount: this.fmtCurrency(q.accommodationCost) },
+          { sno: 8, description: 'Erection', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.erectionCost), amount: this.fmtCurrency(q.erectionCost) },
+          { sno: 9, description: 'Freight', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.freightCost), amount: this.fmtCurrency(q.freightCost) },
+        ].filter(item => item.amount !== '₹ 0.00'),
+        materialCost: this.fmtCurrency(q.materialCost),
+        labourCost: this.fmtCurrency(q.labourCost),
+        installationCost: this.fmtCurrency(q.installationCost),
+        transportationCost: this.fmtCurrency(q.transportationCost),
+        craneCost: this.fmtCurrency(q.craneCost),
+        civilCost: this.fmtCurrency(q.civilCost),
+        accommodationCost: this.fmtCurrency(q.accommodationCost),
+        erectionCost: this.fmtCurrency(q.erectionCost),
+        freightCost: this.fmtCurrency(q.freightCost),
+        otherCosts: this.fmtCurrency(q.otherCosts),
         subtotal: this.fmtCurrency(q.subtotal),
         markupPercentage: pc.markupPercentage ? `${pc.markupPercentage}%` : '',
         discountType: pc.discountType || q.discountType || 'none',
@@ -505,42 +853,67 @@ export class QuotationPdfService {
       },
 
       payment: {
-        terms: q.paymentTerms || 'As per agreement',
-        bankName: q.bankName || '',
-        accountNumber: q.accountNumber || '',
-        ifscCode: q.ifscCode || '',
-        branchName: q.bankBranch || '',
-        accountType: q.accountType || 'Current Account',
+        terms: q.paymentTerms || templateDefaults.paymentTerms || 'As per agreement',
+        bankName: templateDefaults.bankDetails?.bankName || q.bankName || '',
+        accountNumber: templateDefaults.bankDetails?.accountNumber || q.accountNumber || '',
+        ifscCode: templateDefaults.bankDetails?.ifscCode || q.ifscCode || '',
+        address: templateDefaults.bankDetails?.address || q.address || '',
+        branchName: templateDefaults.bankDetails?.branchName || q.bankBranch || '',
+        accountType: templateDefaults.bankDetails?.accountType || q.accountType || 'Current Account',
+      },
+
+      craneCapacityMt: this.normalizeString(techSpecs.craneDetail?.craneCapacity?.replace(/[^0-9]/g, '') || '10'),
+
+      finalSignature: {
+        name: this.normalizeString(q.finalSignatureName || templateDefaults.signature?.name || 'VIKAS GONDALIYA'),
+        mobile: this.normalizeString(q.finalSignatureMobile || templateDefaults.signature?.mobile || '+91 6359998111'),
+        company: this.normalizeString(q.finalSignatureCompany || templateDefaults.signature?.company || 'Shedx Peb LLP'),
       },
 
       delivery: {
         terms: q.deliveryTerms || '',
-        estimatedDuration: tl.estimatedDuration
-          ? `${tl.estimatedDuration} ${tl.unit || 'weeks'}`
-          : '4-6 weeks',
-        milestones: (tl.milestones || []).map((m: any) => ({
-          milestone: m.milestone || '',
-          estimatedDate: m.estimatedDate ? this.formatDate(m.estimatedDate) : '',
-        })),
+        estimatedDuration: '4-6 weeks',
+        milestones: [],
       },
 
-      inclusions: q.inclusions || [],
-      exclusions: q.exclusions || [],
-      termsAndConditions: q.termsAndConditions || '',
-      notes: q.notes || '',
+      inclusions: templateDefaults.inclusions || q.inclusions || [],
+      exclusions: templateDefaults.exclusions || q.exclusions || [],
+      termsAndConditions: templateDefaults.termsAndConditions || q.termsAndConditions || '',
+      notes: templateDefaults.notes || q.notes || '',
 
       branding: {
-        coverImage: branding.coverImage ? this.loadLogoAsDataUri(branding.coverImage) : '',
-        watermarkImage: branding.watermarkImage
+        coverImage: this.normalizeString(branding.coverImage ? this.loadLogoAsDataUri(branding.coverImage) : this.loadCoverImageAsDataUri()),
+        watermarkImage: this.normalizeString(branding.watermarkImage
           ? this.loadLogoAsDataUri(branding.watermarkImage)
-          : '',
-        watermarkOpacity: branding.watermarkOpacity,
-        watermarkSize: branding.watermarkSize,
-        watermarkPosition: branding.watermarkPosition,
-        headerLogo: branding.headerLogo ? this.loadLogoAsDataUri(branding.headerLogo) : '',
-        footerLogo: branding.footerLogo ? this.loadLogoAsDataUri(branding.footerLogo) : '',
-        primaryColor: branding.primaryColor,
-        secondaryColor: branding.secondaryColor,
+          : this.loadWatermarkImageAsDataUri()),
+        watermarkOpacity: branding.watermarkOpacity || 0.05,
+        watermarkSize: this.normalizeString(branding.watermarkSize),
+        watermarkPosition: this.normalizeString(branding.watermarkPosition),
+        headerLogo: this.normalizeString(branding.headerLogo ? this.loadLogoAsDataUri(branding.headerLogo) : ''),
+        footerLogo: this.normalizeString(branding.footerLogo ? this.loadLogoAsDataUri(branding.footerLogo) : ''),
+        primaryColor: this.normalizeString(branding.primaryColor),
+        secondaryColor: this.normalizeString(branding.secondaryColor),
+      },
+
+      templateDefaults: {
+        subject: templateDefaults.subject || 'Techno Commercial Offer for Design Supply of PEB Building.',
+        introduction: templateDefaults.introduction || '',
+        applicableCodes: templateDefaults.applicableCodes || [],
+        primaryStructuralMembers: templateDefaults.primaryStructuralMembers || [],
+        secondaryStructuralMembers: templateDefaults.secondaryStructuralMembers || [],
+        notes: templateDefaults.notes || '',
+        specialTechnicalAssumptions: templateDefaults.specialTechnicalAssumptions || [],
+        paymentTerms: templateDefaults.paymentTerms || '',
+        bankDetails: templateDefaults.bankDetails || {},
+        exclusions: templateDefaults.exclusions || [],
+        deliverySchedule: templateDefaults.deliverySchedule || [],
+        otherCommercialTerms: templateDefaults.otherCommercialTerms || [],
+        cancellations: templateDefaults.cancellations || '',
+        productionRelease: templateDefaults.productionRelease || '',
+        warranty: templateDefaults.warranty || '',
+        governingLaw: templateDefaults.governingLaw || '',
+        taxesAndDuties: templateDefaults.taxesAndDuties || '',
+        signature: templateDefaults.signature || {},
       },
     };
   }
@@ -587,11 +960,27 @@ export class QuotationPdfService {
         pincode: true,
         gstNumber: true,
         website: true,
+        quotationTemplateDefaults: true,
       },
     });
   }
 
   // ─── Helper Methods ───────────────────────────────────────────────────────
+
+  private normalizeString(value: any): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'boolean') return String(value);
+    // Prevent [object Object] rendering
+    if (typeof value === 'object') {
+      // If it's a nested object with a value property, extract it
+      if (value.value !== undefined) return this.normalizeString(value.value);
+      // Otherwise return empty string to avoid [object Object]
+      return '';
+    }
+    return String(value);
+  }
 
   private formatDate(date: Date | string | null | undefined): string {
     if (!date) return '';
@@ -638,8 +1027,10 @@ export class QuotationPdfService {
       const rate = pricingConfig?.materialRates?.find((m: any) => m.materialSelectionId === s.id);
       return {
         sno: idx + 1,
-        itemName: s.itemName || s.name || '',
+        component: s.component || s.itemName || s.name || '',
         specification: s.specification || s.customDescription || '',
+        make: s.make || '',
+        yieldStrength: s.yieldStrength || '',
         quantity: s.quantity ? String(s.quantity) : '',
         unit: s.unit || '',
         rate: rate?.rate ? this.fmtCurrency(rate.rate) : s.rate ? this.fmtCurrency(s.rate) : '',

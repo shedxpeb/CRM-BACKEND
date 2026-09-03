@@ -25,6 +25,7 @@ model Organization {
   maxStorageGb         Int                  @default(10)
   subscriptionTier     String               @default("free")
   settings             Json?
+  quotationTemplateDefaults Json?
   createdById          String?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -1465,6 +1466,28 @@ model Quotation {
   leadId                  String?
   projectId               String?
   projectName             String?
+
+  // Inquiry and Date
+  inquiryNumber           String?
+  date                    DateTime?
+
+  // Page 2: Prepared By snapshot
+  preparedByCompany       String?
+  preparedByAddress       String?
+  preparedByGstin         String?
+  preparedByName          String?
+  preparedByDesignation   String?
+  preparedByMobile        String?
+  preparedByEmail         String?
+
+  // Page 2: Document content
+  subject                 String?
+  introduction            String?
+  signaturePrefix         String?
+  signatureName           String?
+  signatureDesignation    String?
+  signatureMobile         String?
+  signatureEmail          String?
 
   // Status
   status                  String   @default("Draft")

@@ -1,0 +1,145 @@
+{
+  "quotation": {
+    "id": "20f5aa03-caf8-489d-9f74-4b0bac478b81",
+    "quotationNumber": "QUO000002",
+    "inquiryNumber": "shx-02-001",
+    "date": "2026-09-02T00:00:00.000Z",
+    "customerName": "Vikas Gondaliya",
+    "customerAddress": "438, Vishala Supreme, Sardar Patel Ring Rd, Nikol, Ahmedabad",
+    "customerGST": "sgdfbhbnfg"
+  },
+  "organization": {
+    "name": "PEB CRM Admin",
+    "address": null,
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "gstNumber": null
+  },
+  "technicalSpecifications": {
+    "canopy": "AS PER DESIGN",
+    "fascia": "N/A",
+    "gutter": "Standard Eave Gutter",
+    "opening": "AS PER DESIGN",
+    "deadLoad": "4",
+    "liveLoad": "7",
+    "windLoad": "4",
+    "craneSpan": "",
+    "frameType": "PEB Frame",
+    "roofSlope": "1:10",
+    "runLength": "",
+    "shearStud": "",
+    "stairCase": "",
+    "wheelBase": "",
+    "wheelLoad": "",
+    "baySpacing": "AS PER DESIGN",
+    "columnLoad": "1",
+    "deflection": "",
+    "designCode": "MBMA-2012, Design According to AISC-2010",
+    "weightRows": [
+      {
+        "id": "96e1be3c-bfe4-4e73-b246-3e4972461237",
+        "unit": "MT",
+        "weight": "8",
+        "remarks": "76",
+        "description": "ghcm"
+      }
+    ],
+    "bracingType": "X Bracing",
+    "craneWeight": "",
+    "seismicCode": "IS 1893:2005 (Part-I)",
+    "seismicZone": "Z-III",
+    "widthModule": "AS PER DESIGN",
+    "buildingArea": "",
+    "downTakePipe": "PVC",
+    "roofSheeting": "0.5 mm Bare PPGL",
+    "wallSheeting": "0.5 mm Color PPGL",
+    "buildingWidth": "10",
+    "craneCapacity": "",
+    "materialSpecs": [
+      {
+        "id": "bc3052a0-f57b-42ef-aeac-fdf060d25036",
+        "make": "hghg",
+        "component": "hm",
+        "specification": "hjfg",
+        "yieldStrength": "75"
+      }
+    ],
+    "mezzanineArea": "",
+    "mezzanineLoad": "",
+    "buildingHeight": "4",
+    "buildingLength": "5",
+    "collateralLoad": "741",
+    "numberOfCranes": 1,
+    "responseFactor": "4",
+    "topOfCraneBeam": "",
+    "futureExpansion": "14",
+    "roofAccessories": [
+      {
+        "id": "748a1ae2-347c-488d-891e-99f6ace9d3db",
+        "size": "74",
+        "location": "lh",
+        "quantity": "1",
+        "description": "jhv,"
+      }
+    ],
+    "thicknessOfSlab": "",
+    "wallAccessories": [
+      {
+        "id": "31f62c8f-2ead-4e04-bfbd-8c7266bf79a3",
+        "size": "4",
+        "location": "jhd",
+        "quantity": "1",
+        "description": "kh"
+      }
+    ],
+    "importanceFactor": "1",
+    "endFrameCondition": "Non-Expandable",
+    "endwallBaySpacing": "AS PER DESIGN",
+    "brickwallCondition": "hguj",
+    "seismicCoefficient": "0.16",
+    "topOfMezzanineSlab": "",
+    "trolleyHoistWeight": "",
+    "mezzanineAdditionalLoad": ""
+  },
+  "scopeConfiguration": {
+    "width": "10",
+    "canopy": "AS PER DESIGN",
+    "fascia": "N/A",
+    "gutter": "Standard Eave Gutter",
+    "length": "5",
+    "opening": "AS PER DESIGN",
+    "frameType": "PEB Frame",
+    "roofSlope": "1:10",
+    "bracingType": "X Bracing",
+    "clearHeight": "4",
+    "widthModule": "AS PER DESIGN",
+    "downTakePipe": "PVC",
+    "roofSheeting": "0.5 mm Bare PPGL",
+    "wallSheeting": "0.5 mm Color PPGL",
+    "futureExpansion": "14",
+    "endFrameCondition": "Non-Expandable",
+    "endwallBaySpacing": "AS PER DESIGN",
+    "brickwallCondition": "hguj",
+    "sidewallBaySpacing": "AS PER DESIGN"
+  },
+  "materialSelections": [],
+  "pricingConfiguration": {
+    "gstRate": 18,
+    "gstType": "CGST",
+    "cessRate": 0,
+    "civilCost": 4,
+    "craneCost": 6,
+    "labourCost": 7,
+    "freightCost": 16,
+    "discountType": "percentage",
+    "erectionCost": 10,
+    "discountValue": 7,
+    "materialRates": [],
+    "roundingMethod": "nearest",
+    "installationCost": 12,
+    "markupPercentage": 0,
+    "accommodationCost": 6,
+    "transportationCost": 4,
+    "additionalServiceCosts": []
+  }
+}

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { normalizeModuleKey } from '../common/utils/module-key.util';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { QuotationTemplateDefaults } from '../quotation/interfaces/quotation-template-defaults.interface';
 
 @Injectable()
 export class OrganizationService {
@@ -101,5 +102,30 @@ export class OrganizationService {
       where: { id },
       data: { isDeleted: true, deletedAt: new Date() },
     });
+  }
+
+  async getQuotationTemplateDefaults(organizationId: string): Promise<QuotationTemplateDefaults> {
+    const org = await this.prisma.organization.findFirst({
+      where: { id: organizationId, isDeleted: false },
+    }) as any;
+    if (!org) throw new NotFoundException(`Organization with ID ${organizationId} not found`);
+    return (org.quotationTemplateDefaults as QuotationTemplateDefaults) || {};
+  }
+
+  async updateQuotationTemplateDefaults(
+    organizationId: string,
+    defaults: QuotationTemplateDefaults,
+  ): Promise<QuotationTemplateDefaults> {
+    const org = await this.prisma.organization.findFirst({
+      where: { id: organizationId, isDeleted: false },
+    });
+    if (!org) throw new NotFoundException(`Organization with ID ${organizationId} not found`);
+    
+    const updated = await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { quotationTemplateDefaults: defaults as any },
+    }) as any;
+    
+    return updated.quotationTemplateDefaults as QuotationTemplateDefaults;
   }
 }
