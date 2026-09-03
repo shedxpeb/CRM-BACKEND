@@ -96,4 +96,13 @@ export class QuotationPdfController {
       disposition: `inline; filename="${filename}"`,
     });
   }
+
+  // Temporary development endpoint to reload templates
+  @Get('reload-templates')
+  @ApiOperation({ summary: 'Reload PDF templates (development only)' })
+  async reloadTemplates() {
+    this.logger.log('[DEV] Template reload requested');
+    this.quotationPdfService.reloadTemplates();
+    return { success: true, message: 'Templates reloaded' };
+  }
 }

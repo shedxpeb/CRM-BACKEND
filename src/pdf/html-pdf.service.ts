@@ -86,8 +86,10 @@ export class HtmlPdfService implements OnModuleDestroy {
    * Force-reload templates (useful after template changes in development).
    */
   reloadTemplates() {
+    this.logger.log('[TEMPLATE RELOAD] Clearing template cache and reloading...');
     this.templates.clear();
     this.loadTemplates();
+    this.logger.log(`[TEMPLATE RELOAD] Templates reloaded. Available: ${Array.from(this.templates.keys()).join(', ')}`);
   }
 
   // ─── Browser Pooling ──────────────────────────────────────────────────────
@@ -167,6 +169,11 @@ export class HtmlPdfService implements OnModuleDestroy {
   // ─── PDF Generation ───────────────────────────────────────────────────────
 
   async generatePdf(templateName: string, data: Record<string, unknown>): Promise<Buffer> {
+    // Force reload template in development to reflect changes immediately
+    if (process.env.NODE_ENV !== 'production') {
+      this.reloadTemplates();
+    }
+
     const template = this.templates.get(templateName);
     if (!template) {
       throw new Error(
@@ -195,6 +202,17 @@ export class HtmlPdfService implements OnModuleDestroy {
 
       try {
         await page.setContent(html, { waitUntil: 'networkidle' });
+
+        // Diagnostic: Count page containers before PDF generation
+        const pageContainerCount = await page.locator('.page, .quotation-page, .cover-page').count();
+        this.logger.log(`[PDF DEBUG] HTML page containers: ${pageContainerCount}`);
+
+        // Diagnostic: Check for Design Weight Summary
+        const hasDesignWeight = await page.locator('body').evaluate(() => {
+          const bodyText = document.body.innerText;
+          return bodyText.includes('Design Weight Summary');
+        });
+        this.logger.log(`[PDF DEBUG] Has Design Weight Summary: ${hasDesignWeight}`);
 
         const pdfBuffer = await page.pdf({
           format: 'A4',

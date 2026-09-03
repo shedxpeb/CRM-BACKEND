@@ -23,9 +23,9 @@
 
     body {
       font-family: 'Calibri', 'Segoe UI', Arial, Helvetica, sans-serif;
-      font-size: 10pt;
-      line-height: 1.4;
-      color: #1a1a1a;
+      font-size: 11.5pt;
+      line-height: 1.35;
+      color: #000000;
       background: white;
     }
 
@@ -40,7 +40,7 @@
     :root {
       --primary: {{branding.primaryColor}};
       --secondary: {{branding.secondaryColor}};
-      --text-dark: #1a1a1a;
+      --text-dark: #000000;
       --text-muted: #5b6778;
       --border: #d1d5db;
       --bg-light: #f8fafc;
@@ -50,7 +50,7 @@
     body {
       --primary: {{branding.primaryColor}};
       --secondary: {{branding.secondaryColor}};
-      --text-dark: #1a1a1a;
+      --text-dark: #000000;
       --text-muted: #5b6778;
       --border: #d1d5db;
       --bg-light: #f8fafc;
@@ -86,6 +86,16 @@
       background: white;
     }
 
+    /* Page 3 specific - reduce padding to fit all content */
+    .page.page-3 {
+      padding: 10mm 18mm 18mm 18mm;
+    }
+
+    /* Page 3 compact line-height */
+    .page.page-3 .page3-table {
+      line-height: 1.25;
+    }
+
     .page:last-child {
       page-break-after: auto;
     }
@@ -99,8 +109,8 @@
       background-image: url('{{branding.watermarkImage}}');
       background-repeat: no-repeat;
       background-position: center;
-      background-size: 150mm 150mm;
-      opacity: 0.03;
+      background-size: 340mm 300mm;
+      opacity: 0.08;
       z-index: 0;
       pointer-events: none;
     }
@@ -115,31 +125,42 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 8pt;
+      font-size: 11pt;
     }
 
     .page3-table th,
     .page3-table td {
       border: 1px solid black;
-      padding: 3px 6px;
+      padding: 2px 4px;
       text-align: left;
       vertical-align: top;
+    }
+
+    /* Page 3 compact layout - reduce spacing to fit all content on one page */
+    .page.page-3 .page3-compact th,
+    .page.page-3 .page3-compact .page3-table td {
+      padding: 2px 4px;
+    }
+
+    .page.page-3 .page3-compact .page3-header-yellow,
+    .page.page-3 .page3-compact .page3-header-gray {
+      padding: 2px;
     }
 
     .page3-header-yellow {
       background-color: #fffacd;
       font-weight: bold;
       text-align: center;
-      font-size: 9pt;
-      padding: 4px;
+      font-size: 11pt;
+      padding: 2px;
     }
 
     .page3-header-gray {
       background-color: #e0e0e0;
       font-weight: bold;
       text-align: center;
-      font-size: 9pt;
-      padding: 4px;
+      font-size: 11pt;
+      padding: 2px;
     }
 
     .page3-col-no {
@@ -168,13 +189,13 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 8pt;
+      font-size: 11.5pt;
     }
 
     .page4-accessories-table th,
     .page4-accessories-table td {
       border: 1px solid black;
-      padding: 3px 6px;
+      padding: 4px 6px;
       text-align: left;
       vertical-align: top;
     }
@@ -207,13 +228,13 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 8pt;
+      font-size: 11.5pt;
     }
 
     .page6-material-table th,
     .page6-material-table td {
       border: 1px solid black;
-      padding: 4px 6px;
+      padding: 5px 6px;
       text-align: left;
       vertical-align: top;
     }
@@ -247,13 +268,13 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 8pt;
+      font-size: 13pt;
     }
 
     .page7-price-table th,
     .page7-price-table td {
       border: 1px solid black;
-      padding: 4px 6px;
+      padding: 5px 6px;
       text-align: left;
       vertical-align: top;
     }
@@ -317,9 +338,25 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 12px;
       padding-bottom: 8px;
       border-bottom: 2px solid var(--primary);
-      margin-bottom: 16px;
+    }
+
+    /* Page 3 header - reduce margin and size */
+    .page.page-3 .page-header {
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+    }
+
+    /* Page 3 logo - reduce height */
+    .page.page-3 .page-header-logo {
+      max-height: 20px;
+    }
+
+    /* Page 3 header title - reduce font */
+    .page.page-3 .page-header-title strong {
+      font-size: 9pt;
     }
 
     .page-header-logo {
@@ -327,7 +364,7 @@
     }
 
     .page-header-title {
-      font-size: 8pt;
+      font-size: 9.5pt;
       color: var(--text-muted);
       text-align: right;
     }
@@ -335,22 +372,27 @@
     .page-header-title strong {
       color: var(--primary);
       display: block;
-      font-size: 9pt;
+      font-size: 10pt;
     }
 
     /* ─── Footer (all pages) ─────────────────────────────────────────── */
     .page-footer {
       position: absolute;
-      bottom: 12mm;
+      bottom: 18mm;
       left: 18mm;
       right: 18mm;
-      border-top: 1px solid var(--primary);
-      padding-top: 6px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      font-size: 7pt;
+      font-size: 8pt;
       color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    /* Page 3 footer - adjust position */
+    .page.page-3 .page-footer {
+      bottom: 16mm;
+      padding-top: 4px;
     }
 
     .page-footer .company-name {
@@ -360,7 +402,7 @@
 
     /* ─── Section Headings ───────────────────────────────────────────── */
     .section-title {
-      font-size: 13pt;
+      font-size: 13.5pt;
       font-weight: 700;
       color: var(--primary);
       margin: 20px 0 10px 0;
@@ -368,15 +410,114 @@
       border-bottom: 2px solid var(--primary);
     }
 
+    .section-title.no-border {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
     .section-title:first-child {
       margin-top: 0;
     }
 
     .subsection-title {
-      font-size: 10.5pt;
+      font-size: 11pt;
       font-weight: 700;
       color: var(--secondary);
       margin: 14px 0 6px 0;
+    }
+
+    /* ─── Reference PDF Visual Hierarchy ───────────────────────────────── */
+    
+    /* STYLE-02: Table Section Headers (black bold, centered) */
+    .table-section-header {
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+    }
+    
+    /* STYLE-03: Blue Section Headings (dark blue, bold, underlined) */
+    .blue-section-heading {
+      color: #1e3a8a;
+      font-weight: 700;
+      text-decoration: underline;
+      margin: 14px 0 8px 0;
+      font-size: 11pt;
+    }
+    
+    /* STYLE-04: Table Headers (black, bold, centered) */
+    .table-header-cell {
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+    }
+    
+    /* STYLE-05: Field Labels (black, bold) */
+    .field-label-bold {
+      font-weight: 700;
+      color: #000000;
+    }
+    
+    /* STYLE-06: Normal Values (black, regular) */
+    .value-normal {
+      font-weight: 400;
+      color: #000000;
+    }
+    
+    /* STYLE-07: Important Red Values (red, bold) */
+    .value-red {
+      font-weight: 700;
+      color: #D00000;
+    }
+    
+    /* STYLE-08: Body Text (black, regular) */
+    .body-text {
+      font-weight: 400;
+      color: #000000;
+    }
+    
+    /* STYLE-09: Emphasized Term (black, bold) */
+    .term-emphasis {
+      font-weight: 700;
+      color: #000000;
+    }
+    
+    /* STYLE-10: Special Note (red, bold) */
+    .special-note {
+      font-weight: 700;
+      color: #D00000;
+    }
+    
+    /* STYLE-11: Design Weight (dark blue title, yellow highlight row, red grand total) */
+    .design-weight-title {
+      font-weight: 700;
+      color: #1e3a8a;
+      text-align: center;
+    }
+    
+    .design-weight-highlight {
+      background-color: #fef08a;
+    }
+    
+    .design-weight-grand-total {
+      font-weight: 700;
+      color: #000000;
+    }
+    
+    /* STYLE-12: Signature (Page 2 black bold, Page 11 black bold) */
+    .signature-page2 {
+      font-weight: 700;
+      color: #000000;
+    }
+    
+    .signature-page11 {
+      font-weight: 700;
+      color: #000000;
+    }
+    
+    /* Page 2 Date (blue, bold) */
+    .date-blue {
+      font-weight: 700;
+      color: #1e3a8a;
     }
 
     /* ─── Info Tables ────────────────────────────────────────────────── */
@@ -389,7 +530,7 @@
     .info-table th {
       background: var(--primary);
       color: white;
-      font-size: 8pt;
+      font-size: 10pt;
       font-weight: 600;
       padding: 5px 8px;
       text-align: left;
@@ -400,7 +541,7 @@
     .info-table td {
       padding: 5px 8px;
       border-bottom: 1px solid var(--border);
-      font-size: 9pt;
+      font-size: 11pt;
       vertical-align: top;
     }
 
@@ -428,9 +569,9 @@
     .col-header {
       background: var(--primary);
       color: white;
-      font-weight: 600;
-      font-size: 9pt;
-      padding: 5px 10px;
+      font-weight: 700;
+      font-size: 12pt;
+      padding: 6px 10px;
       margin-bottom: 0;
     }
 
@@ -447,7 +588,7 @@
     }
 
     .col-body .field-label {
-      font-size: 7.5pt;
+      font-size: 11pt;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -455,10 +596,10 @@
     }
 
     .col-body .field-value {
-      font-size: 9pt;
-      color: var(--text-dark);
+      font-size: 12pt;
+      color: #000000;
       border-bottom: 1px solid #e5e7eb;
-      padding: 2px 0;
+      padding: 3px 0;
     }
 
     /* ─── Spec Grid ──────────────────────────────────────────────────── */
@@ -474,7 +615,7 @@
       justify-content: space-between;
       padding: 4px 0;
       border-bottom: 1px dotted var(--border);
-      font-size: 9pt;
+      font-size: 10.5pt;
     }
 
     .spec-item .spec-label {
@@ -483,7 +624,7 @@
     }
 
     .spec-item .spec-value {
-      color: var(--text-dark);
+      color: #000000;
       font-weight: 500;
     }
 
@@ -492,7 +633,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 12px;
-      font-size: 8.5pt;
+      font-size: 11pt;
     }
 
     .data-table thead th {
@@ -501,7 +642,7 @@
       font-weight: 600;
       padding: 6px 6px;
       text-align: left;
-      font-size: 7.5pt;
+      font-size: 10pt;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
@@ -515,7 +656,7 @@
     }
 
     .data-table tbody td {
-      padding: 5px 6px;
+      padding: 6px 6px;
       border-bottom: 1px solid #e5e7eb;
       vertical-align: top;
     }
@@ -548,7 +689,7 @@
       background: var(--primary);
       color: white;
       font-weight: 700;
-      font-size: 9pt;
+      font-size: 10pt;
       padding: 6px 10px;
     }
 
@@ -557,7 +698,7 @@
       justify-content: space-between;
       padding: 4px 10px;
       border-bottom: 1px solid #f0f0f0;
-      font-size: 9pt;
+      font-size: 10pt;
     }
 
     .summary-row .summary-label {
@@ -566,7 +707,7 @@
 
     .summary-row .summary-value {
       font-weight: 500;
-      color: var(--text-dark);
+      color: #000000;
     }
 
     .summary-grand-total {
@@ -576,7 +717,7 @@
       color: white;
       padding: 8px 10px;
       font-weight: 700;
-      font-size: 10pt;
+      font-size: 11pt;
     }
 
     .amount-words {
@@ -584,13 +725,13 @@
       padding: 8px 10px;
       background: var(--bg-light);
       border: 1px solid var(--border);
-      font-size: 8.5pt;
+      font-size: 10pt;
     }
 
     .amount-words .label {
       font-weight: 700;
       color: var(--text-muted);
-      font-size: 7.5pt;
+      font-size: 8pt;
       text-transform: uppercase;
       display: block;
       margin-bottom: 3px;
@@ -598,7 +739,7 @@
 
     .amount-words .value {
       font-style: italic;
-      color: var(--text-dark);
+      color: #000000;
     }
 
     /* ─── Lists ──────────────────────────────────────────────────────── */
@@ -609,9 +750,9 @@
     }
 
     .content-list li {
-      padding: 3px 0 3px 16px;
+      padding: 4px 0 4px 16px;
       position: relative;
-      font-size: 9pt;
+      font-size: 11pt;
       line-height: 1.5;
     }
 
@@ -627,9 +768,9 @@
     .terms-box {
       background: var(--bg-light);
       border: 1px solid var(--border);
-      padding: 10px 12px;
+      padding: 12px 12px;
       margin-bottom: 12px;
-      font-size: 8.5pt;
+      font-size: 11pt;
       line-height: 1.6;
       white-space: pre-wrap;
     }
@@ -638,9 +779,9 @@
     .notes-box {
       background: #fef3c7;
       border: 1px solid #f59e0b;
-      padding: 10px 12px;
+      padding: 12px 12px;
       margin-bottom: 12px;
-      font-size: 8.5pt;
+      font-size: 11pt;
     }
 
     .notes-box .notes-title {
@@ -669,14 +810,14 @@
     }
 
     .signature-box .sig-label {
-      font-size: 8pt;
+      font-size: 9.5pt;
       color: var(--text-muted);
     }
 
     .signature-box .sig-name {
-      font-size: 9pt;
+      font-size: 10.5pt;
       font-weight: 600;
-      color: var(--text-dark);
+      color: #000000;
     }
 
     /* ─── Info Cards ─────────────────────────────────────────────────── */
@@ -691,7 +832,7 @@
     .info-card .card-title {
       font-weight: 700;
       color: var(--primary);
-      font-size: 9.5pt;
+      font-size: 10.5pt;
       margin-bottom: 6px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 4px;
@@ -701,15 +842,15 @@
     .milestone-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 8.5pt;
+      font-size: 10.5pt;
     }
 
     .milestone-table th {
-      background: var(--secondary);
+      background: var(--primary);
       color: white;
       padding: 4px 8px;
       text-align: left;
-      font-size: 7.5pt;
+      font-size: 9.5pt;
     }
 
     .milestone-table td {
@@ -746,17 +887,17 @@
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
         <strong>Inq. No. {{meta.inquiryNumber}}</strong>
-        Commercial Proposal
+        <!-- __QUOTATION_RUNTIME_TEMPLATE_TEST_2026__ -->
       </div>
     </div>
 
-    <div style="margin-bottom: 20px;">
+    <div style="margin-bottom: 12px;">
       <div style="display: inline-block; margin-right: 30px;">
-        <strong>DATE:</strong> {{meta.quotationDate}}
+        <strong class="date-blue"></strong>DATE:</strong> <span style="color: #000000; font-weight: 700;">{{meta.quotationDate}}</span>
       </div>
     </div>
 
-    <div class="two-col" style="margin-bottom: 20px;">
+    <div class="two-col" style="margin-bottom: 12px;">
       <div class="col">
         <div class="col-header" style="background: var(--primary); color: white;">Prepared For</div>
         <div class="col-body">
@@ -795,36 +936,36 @@
       </div>
     </div>
 
-    <div class="section-title">Subject</div>
-    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6;">{{subject}}</p>
+    <div class="section-title no-border" style="margin-bottom: 8px;"><span class="field-label-bold">Subject:</span></div>
+    <p style="font-size:12pt; margin-bottom:12px; line-height:1.5;" class="field-label-bold">{{subject}}</p>
 
-    <div class="section-title">Introduction</div>
-    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6; white-space: pre-wrap;" class="avoid-orphans">
+    <div class="section-title no-border" style="margin-bottom: 8px;"><span class="field-label-bold">Introduction:</span></div>
+    <p style="font-size:12pt; margin-bottom:12px; line-height:1.5; white-space: pre-wrap;" class="avoid-orphans field-label-bold">
       {{introduction}}
     </p>
 
-    <div style="margin-top: 30px;">
-      <p style="font-size:9pt; margin-bottom: 10px;">{{signature.prefix}}</p>
-      <p style="font-size:9pt; font-weight: bold; margin-bottom: 5px;">{{signature.name}}</p>
-      <p style="font-size:9pt; margin-bottom: 5px;">{{signature.designation}}</p>
+    <div style="margin-top: 20px;">
+      <p style="font-size:12pt; margin-bottom: 8px;" class="signature-page2">{{signature.prefix}}</p>
+      <p style="font-size:12pt; margin-bottom: 4px;" class="signature-page2">{{signature.name}}</p>
+      <p style="font-size:12pt; margin-bottom: 4px;" class="signature-page2">{{signature.designation}}</p>
       {{#if signature.mobile}}
-      <p style="font-size:9pt; margin-bottom: 5px;">Mo.: {{signature.mobile}}</p>
+      <p style="font-size:12pt; margin-bottom: 4px;" class="signature-page2">Mo.: {{signature.mobile}}</p>
       {{/if}}
       {{#if signature.email}}
-      <p style="font-size:9pt;">Email: {{signature.email}}</p>
+      <p style="font-size:12pt;" class="signature-page2">Email: {{signature.email}}</p>
       {{/if}}
     </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 2 of 10</span>
+      <span>Page 2 of 11</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- PAGE 3: BUILDING SPECIFICATION / DESIGN CODE / DESIGN LOAD        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="page">
+  <div class="page page-3">
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
@@ -833,7 +974,7 @@
     </div>
 
     <!-- BUILDING SPECIFICATION TABLE -->
-    <table class="page3-table" style="margin-bottom: 12px;">
+    <table class="page3-table page3-compact" style="margin-bottom: 4px;">
       <thead>
         <tr>
           <th colspan="4" class="page3-header-yellow">BUILDING SPECIFICATION</th>
@@ -863,7 +1004,7 @@
     </table>
 
     <!-- DESIGN CODE TABLE -->
-    <table class="page3-table" style="margin-bottom: 12px;">
+    <table class="page3-table page3-compact" style="margin-bottom: 4px;">
       <thead>
         <tr>
           <th colspan="4" class="page3-header-gray">DESIGN CODE</th>
@@ -876,45 +1017,45 @@
     </table>
 
     <!-- DESIGN LOAD TABLE -->
-    <table class="page3-table" style="margin-bottom: 12px;">
+    <table class="page3-table page3-compact" style="margin-bottom: 4px;">
       <thead>
         <tr>
           <th colspan="4" class="page3-header-gray">DESIGN LOAD</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td class="page3-col-no">1</td><td>Dead Load</td><td class="page3-col-sep">:</td><td>{{loads.deadLoad}}</td></tr>
-        <tr><td class="page3-col-no">2</td><td>Column Load</td><td class="page3-col-sep">:</td><td>{{loads.columnLoad}}</td></tr>
-        <tr><td class="page3-col-no">3</td><td>Wind Speed</td><td class="page3-col-sep">:</td><td>{{loads.windLoad}}</td></tr>
-        <tr><td class="page3-col-no">4</td><td>Live Load</td><td class="page3-col-sep">:</td><td>{{loads.liveLoad}}</td></tr>
-        <tr><td class="page3-col-no">5</td><td>Mezzanine Load</td><td class="page3-col-sep">:</td><td>{{loads.mezzanineLoad}}</td></tr>
-        <tr><td class="page3-col-no">6</td><td>Collateral Load</td><td class="page3-col-sep">:</td><td>{{loads.collateralLoad}}</td></tr>
-        <tr><td class="page3-col-no">7</td><td>Seismic Zone</td><td class="page3-col-sep">:</td><td>{{design.seismicZone}}</td></tr>
+        <tr><td class="page3-col-no">1</td><td>Dead Load</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.deadLoad}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>Column Load</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.columnLoad}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>Wind Speed</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.windLoad}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>Live Load</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.liveLoad}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>Mezzanine Load</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.mezzanineLoad}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>Collateral Load</td><td class="page3-col-sep">:</td><td class="value-red">{{loads.collateralLoad}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>Seismic Zone</td><td class="page3-col-sep">:</td><td class="value-red">{{design.seismicZone}}</td></tr>
       </tbody>
     </table>
 
     <!-- MEZZANINE LOAD TABLE -->
-    <table class="page3-table" style="margin-bottom: 12px;">
+    <table class="page3-table page3-compact" style="margin-bottom: 4px;">
       <thead>
         <tr>
           <th colspan="4" class="page3-header-gray">MEZZANINE LOAD</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td class="page3-col-no">1</td><td>Mezz Area</td><td class="page3-col-sep">:</td><td>{{mezzanine.area}}</td></tr>
-        <tr><td class="page3-col-no">2</td><td>Thickness Of Slab</td><td class="page3-col-sep">:</td><td>{{mezzanine.thicknessOfSlab}}</td></tr>
-        <tr><td class="page3-col-no">3</td><td>Mezz. Live Load</td><td class="page3-col-sep">:</td><td>{{mezzanine.load}}</td></tr>
-        <tr><td class="page3-col-no">4</td><td>Mezz. Additional Load</td><td class="page3-col-sep">:</td><td>{{mezzanine.additionalLoad}}</td></tr>
-        <tr><td class="page3-col-no">5</td><td>Stair case</td><td class="page3-col-sep">:</td><td>{{mezzanine.stairCase}}</td></tr>
-        <tr><td class="page3-col-no">6</td><td>Deflection</td><td class="page3-col-sep">:</td><td>{{mezzanine.deflection}}</td></tr>
-        <tr><td class="page3-col-no">7</td><td>TOP OF MEZZANINE SLAB</td><td class="page3-col-sep">:</td><td>{{mezzanine.topOfSlab}}</td></tr>
-        <tr><td class="page3-col-no">8</td><td>Shear Stud</td><td class="page3-col-sep">:</td><td>{{mezzanine.shearStud}}</td></tr>
+        <tr><td class="page3-col-no">1</td><td>Mezz Area</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.area}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>Thickness Of Slab</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.thicknessOfSlab}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>Mezz. Live Load</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.load}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>Mezz. Additional Load</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.additionalLoad}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>Stair case</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.stairCase}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>Deflection</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.deflection}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>TOP OF MEZZANINE SLAB</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.topOfSlab}}</td></tr>
+        <tr><td class="page3-col-no">8</td><td>Shear Stud</td><td class="page3-col-sep">:</td><td class="value-red">{{mezzanine.shearStud}}</td></tr>
       </tbody>
     </table>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 3 of 10</span>
+      <span>Page 3 of 11</span>
     </div>
   </div>
 
@@ -937,21 +1078,21 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td class="page3-col-no">1</td><td>CRANE CAPACITY</td><td class="page3-col-sep">:</td><td>{{crane.capacity}}</td></tr>
-        <tr><td class="page3-col-no">2</td><td>NO. OF CRANES</td><td class="page3-col-sep">:</td><td>{{crane.numberOfCranes}}</td></tr>
-        <tr><td class="page3-col-no">3</td><td>CRANE SPAN</td><td class="page3-col-sep">:</td><td>{{crane.span}}</td></tr>
-        <tr><td class="page3-col-no">4</td><td>TROLLEY/ HOIST WEIGHT</td><td class="page3-col-sep">:</td><td>{{crane.trolleyHoistWeight}}</td></tr>
-        <tr><td class="page3-col-no">5</td><td>CRANE WEIGHT</td><td class="page3-col-sep">:</td><td>{{crane.craneWeight}}</td></tr>
-        <tr><td class="page3-col-no">6</td><td>WHEEL LOAD</td><td class="page3-col-sep">:</td><td>{{crane.wheelLoad}}</td></tr>
-        <tr><td class="page3-col-no">7</td><td>WHEEL BASE</td><td class="page3-col-sep">:</td><td>{{crane.wheelBase}}</td></tr>
-        <tr><td class="page3-col-no">8</td><td>RUN LENGTH</td><td class="page3-col-sep">:</td><td>{{crane.runLength}}</td></tr>
-        <tr><td class="page3-col-no">9</td><td>TOP OF CRANE BEAM</td><td class="page3-col-sep">:</td><td>{{crane.topOfCraneBeam}}</td></tr>
-        <tr><td class="page3-col-no">10</td><td>TANDEM OPERATION</td><td class="page3-col-sep">:</td><td>{{crane.tandemOperation}}</td></tr>
+        <tr><td class="page3-col-no">1</td><td>CRANE CAPACITY</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.capacity}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>NO. OF CRANES</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.numberOfCranes}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>CRANE SPAN</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.span}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>TROLLEY/ HOIST WEIGHT</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.trolleyHoistWeight}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>CRANE WEIGHT</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.craneWeight}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>WHEEL LOAD</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.wheelLoad}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>WHEEL BASE</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.wheelBase}}</td></tr>
+        <tr><td class="page3-col-no">8</td><td>RUN LENGTH</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.runLength}}</td></tr>
+        <tr><td class="page3-col-no">9</td><td>TOP OF CRANE BEAM</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.topOfCraneBeam}}</td></tr>
+        <tr><td class="page3-col-no">10</td><td>TANDEM OPERATION</td><td class="page3-col-sep">:</td><td class="value-red">{{crane.tandemOperation}}</td></tr>
       </tbody>
     </table>
 
     <!-- CRANE NOTE -->
-    <p style="font-size: 8pt; margin-bottom: 12px; font-style: italic;">
+    <p style="font-size: 12pt; margin-bottom: 12px; font-style: italic;" class="special-note">
       Note: Above crane data to be confirmed by client for final design.
     </p>
 
@@ -984,7 +1125,7 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 4 of 10</span>
+      <span>Page 4 of 11</span>
     </div>
   </div>
 
@@ -1035,9 +1176,9 @@
 
     <!-- APPLICABLE CODES -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Applicable Codes</div>
-      <p style="font-size: 8pt; line-height: 1.5; margin-bottom: 4px;">All Structural included in this proposal are designed in accordance with the following codes:</p>
-      <ol style="font-size: 8pt; line-height: 1.5; margin-left: 18px; margin-bottom: 4px;">
+      <div class="blue-section-heading">❖ Applicable Codes</div>
+      <p style="font-size: 11pt; line-height: 1.5; margin-bottom: 4px;">All Structural included in this proposal are designed in accordance with the following codes:</p>
+      <ol style="font-size: 11pt; line-height: 1.5; margin-left: 18px; margin-bottom: 4px;">
         <li>Loads on the building are applied in accordance with: <strong>MBMA & AISC-2012</strong></li>
         <li>Hot rolled Sections and built-up Sections are designed in accordance with: <strong>AISC-1989; AWS D1.1 M 2006</strong></li>
         <li>Cold formed members are designed in accordance with: <strong>AISI</strong></li>
@@ -1049,8 +1190,8 @@
 
     <!-- PRIMARY STRUCTURAL MEMBERS -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Primary Structural Members</div>
-      <p style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Primary Structural Members</div>
+      <p style="font-size: 11pt; line-height: 1.5;">
         Paint Application: Epoxy DTM Paint with Airless Spray System - <strong>100 Micron DFT</strong><br />
         MS Bolt (Black unpainted).
       </p>
@@ -1058,7 +1199,7 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 5 of 10</span>
+      <span>Page 5 of 11</span>
     </div>
   </div>
 
@@ -1075,15 +1216,15 @@
 
     <!-- SECONDARY STRUCTURAL MEMBERS -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Secondary Structural Members</div>
-      <p style="font-size: 8pt; line-height: 1.5; margin-left: 20px;">
+      <div class="blue-section-heading">❖ Secondary Structural Members</div>
+      <p style="font-size: 11pt; line-height: 1.5; margin-left: 20px;">
         ➢ Pre-galvanized.
       </p>
     </div>
 
     <!-- MATERIAL SPECIFICATION FOR BUILDING -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Material Specification for Building</div>
+      <div class="blue-section-heading">❖ Material Specification for Building</div>
       
       {{#if materialSpecs.length}}
       <table class="page6-material-table" style="margin-top: 8px;">
@@ -1142,12 +1283,60 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 6 of 10</span>
+      <span>Page 6 of 11</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 7: CONTRACT PRICE / COMMERCIAL PRICING                       -->
+  <!-- PAGE 7: DESIGN WEIGHT SUMMARY                                          -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
+      <div class="page-header-title">
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
+      </div>
+    </div>
+
+    <!-- DESIGN WEIGHT SUMMARY -->
+    <div style="margin-bottom: 12px;">
+      <div class="design-weight-title">Design Weight Summary</div>
+    </div>
+
+    <!-- DESIGN WEIGHT TABLE -->
+    <table class="page7-price-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th style="border: 1px solid #000; padding: 6px; font-size: 13pt; font-weight: bold; background-color: #f5f5f5;">Description</th>
+          <th style="border: 1px solid #000; padding: 6px; font-size: 13pt; font-weight: bold; background-color: #f5f5f5;">Weight in MT</th>
+          <th style="border: 1px solid #000; padding: 6px; font-size: 13pt; font-weight: bold; background-color: #f5f5f5;">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each designWeightSummary}}
+        <tr{{#if (eq description 'Roof Sheeting')}} class="design-weight-highlight"{{/if}}>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;">{{description}}</td>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;">{{weightInMT}}</td>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;">{{remarks}}</td>
+        </tr>
+        {{/each}}
+        <!-- GRAND TOTAL ROW -->
+        <tr>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;" class="design-weight-grand-total">Grand Total</td>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;" class="design-weight-grand-total">{{designWeightGrandTotal}}</td>
+          <td style="border: 1px solid #000; padding: 6px; font-size: 13pt;">MT (Weight Variation ± 5%)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-footer">
+      <span class="company-name">{{organization.name}}</span>
+      <span>Page 7 of 11</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 8: CONTRACT PRICE / COMMERCIAL PRICING                       -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="page">
     <div class="page-header">
@@ -1159,8 +1348,8 @@
 
     <!-- CONTRACT PRICE -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Contract Price</div>
-      <p style="font-size: 8pt; line-height: 1.5; margin-bottom: 12px;">
+      <div class="blue-section-heading">❖ Contract Price</div>
+      <p style="font-size: 13pt; line-height: 1.5; margin-bottom: 12px;">
         The total contract price for design, production, painting, supply, & erection of parts of structure described in the offer for project is follows.
       </p>
     </div>
@@ -1185,15 +1374,10 @@
           <td class="page7-col-unit">{{unit}}</td>
           <td class="page7-col-qty">{{quantity}}</td>
           <td class="page7-col-rate">{{rate}}</td>
-          <td class="page7-col-amount">{{amount}}</td>
+          <td class="page7-col-amount">{{formatIndianCurrency amount}}/-</td>
         </tr>
         {{/each}}
-      </tbody>
-    </table>
-
-    <!-- TOTALS -->
-    <table class="page7-price-table" style="margin-bottom: 12px;">
-      <tbody>
+        <!-- TOTALS ROWS -->
         <tr>
           <td colspan="5" class="page7-total-label">TOTAL</td>
           <td class="page7-total-value">INR. {{formatIndianCurrency contractPrice.basicTotal}}/-</td>
@@ -1211,7 +1395,7 @@
 
     <!-- SPECIAL NOTE -->
     <div style="margin-bottom: 12px;">
-      <p style="font-size: 8pt; line-height: 1.5; color: #dc2626;">
+      <p style="font-size: 13pt; line-height: 1.5;" class="special-note">
         <strong>Special Note:</strong><br />
         Above rates are considered based on the prevailing steel prices. Any price increase/decrease in the material rates will have commercial implication at the time of finalization meeting. The rates are volatile due to the unpredictable steel market.
       </p>
@@ -1219,12 +1403,12 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 7 of 10</span>
+      <span>Page 8 of 11</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 8: NOTES / SPECIAL ASSUMPTIONS / PAYMENT / BANK DETAILS      -->
+  <!-- PAGE 9: NOTES / SPECIAL ASSUMPTIONS / PAYMENT / BANK DETAILS      -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="page">
     <div class="page-header">
@@ -1237,7 +1421,7 @@
     <!-- NOTE -->
     <div style="margin-bottom: 12px;">
       <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Note:</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div style="font-size: 12pt; line-height: 1.5;">
         <p style="margin-bottom: 6px;">• The above prices are Inclusive of GST Taxes. Any Change in the Taxes during the supply of Structural/Sheeting and during erection will be applicable accordingly. TCS Tax will be extra at actuals.</p>
         <p style="margin-bottom: 6px;">• Packing-Forwarding-Transportation up to site by Shedx Peb LLP scope.</p>
         <p style="margin-bottom: 6px;">• The prices offered are fixed as long as the project schedules are maintained by both the parties. Shedx peb LLP will be allowed for price & delivery escalation for reasons not attributable to Shedx peb LLP as under:</p>
@@ -1249,8 +1433,8 @@
 
     <!-- SPECIAL TECHNICAL ASSUMPTION -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Special Technical Assumption</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Special Technical Assumption</div>
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">1) Crane {{craneCapacityMt}}MT EOT Considered in both of the module and Running in Full length.</p>
         <p style="margin-bottom: 4px;">2) Crane Data need to be confirmed before Finalised with Crane Vendor.</p>
         <p style="margin-bottom: 4px;">3) 1 Nos. Cage ladder considered for Roof Access.</p>
@@ -1260,8 +1444,8 @@
 
     <!-- PAYMENT TERMS -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Payment Terms</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Payment Terms</div>
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 6px;"><strong>Supply Payment Terms:</strong></p>
         <p style="margin-bottom: 6px;">(1) 30 % advance with your confirm Work Order, 30 % against GA drawing approval & 35 % against dispatch of structure from our work shop, 05 % after Handover the Project.</p>
         <p style="margin-bottom: 6px;">(2) Change orders/revisions will be negotiated separately.</p>
@@ -1271,7 +1455,7 @@
     <!-- BANK DETAILS -->
     <div style="margin-bottom: 12px;">
       <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">BANK DETAILS:</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">Bank Name: {{payment.bankName}}</p>
         <p style="margin-bottom: 4px;">CC Account No.: {{payment.accountNumber}}</p>
         <p style="margin-bottom: 4px;">ISFC Code: {{payment.ifscCode}}</p>
@@ -1281,12 +1465,12 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 8 of 10</span>
+      <span>Page 9 of 11</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 9: EXCLUSIONS / DELIVERY / OTHER TERMS                      -->
+  <!-- PAGE 10: EXCLUSIONS / DELIVERY / OTHER TERMS                      -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="page">
     <div class="page-header">
@@ -1298,8 +1482,8 @@
 
     <!-- EXCLUSION -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Exclusion</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Exclusion</div>
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">• Any Kind of Roof accessories like Roof Monitor unless otherwise mentioned above</p>
         <p style="margin-bottom: 4px;">• Cable tray, cable tray supporting structure, ventilation duct, pipe support structure unless mentioned</p>
         <p style="margin-bottom: 4px;">• Any support structure for additional load consideration.</p>
@@ -1315,8 +1499,8 @@
 
     <!-- DELIVERY SCHEDULE -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Delivery Schedule</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Delivery Schedule</div>
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">1. The starting date will be considered either the date on which the general Arrangement drawing of the building approved by the client or the date of advance payment whichever is later.</p>
         <p style="margin-bottom: 4px;">2. Total time schedule to complete work will be finalization at the time of final negotiation with you</p>
         <p style="margin-bottom: 4px;">3. We won't be responsible in delivering material in time if incase of unavoidable circumstances such as Worker's strike, Electric supply, Natural hazards Etc...</p>
@@ -1327,8 +1511,8 @@
 
     <!-- OTHER COMMERCIAL TERMS -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Other Commercial Terms</div>
-      <div style="font-size: 8pt; line-height: 1.5;">
+      <div class="blue-section-heading">❖ Other Commercial Terms</div>
+      <div style="font-size: 11pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;"><strong>1. Proposal Validity:</strong> This proposal will be valid for 20 days only from the date of this proposal.</p>
         <p style="margin-bottom: 4px;"><strong>2. Variation:</strong> Any changes and /or revision of the above stated scope of supply MAY lead to a variation in price and the delivery period</p>
         <p style="margin-bottom: 4px;"><strong>3. Permits:</strong> SELLER shall not be responsible or liable for the obtaining of permits to erect or install any product</p>
@@ -1340,12 +1524,12 @@
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 9 of 10</span>
+      <span>Page 10 of 11</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 10: CANCELLATIONS / WARRANTY / GOVERNING LAWS / SIGNATURE    -->
+  <!-- PAGE 11: CANCELLATIONS / WARRANTY / GOVERNING LAWS / SIGNATURE    -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="page">
     <div class="page-header">
@@ -1355,7 +1539,7 @@
       </div>
     </div>
 
-    <div style="font-size: 8pt; line-height: 1.5;">
+    <div style="font-size: 11pt; line-height: 1.5;">
       <p style="margin-bottom: 6px;"><strong>7. CANCELLATIONS:</strong> BUYER CANNOT cancel order, without first reaching an Agreement in writing with SELLER covering all the damages. If cancellations or modifications is agreed to by SELLER, BUYER agrees to pay all engineering and other expenses, Incurred by SELLER and in any case not less than 5% of the agreement price in case of cancellations</p>
       <p style="margin-bottom: 6px;"><strong>8. PRODUCTION RELEASE:</strong> That portion of the order that is not shipped within 2 months from the date of contract / Purchase order will be subject to price increase.</p>
       <p style="margin-bottom: 6px;"><strong>9. WARRANTY:</strong> ASSL products are warranted against any failure due to defective material or workmanship for a period of ONE year.</p>
@@ -1366,24 +1550,24 @@
 
       <!-- TAXES & DUTIES -->
       <div style="margin-bottom: 12px;">
-        <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ TAXES & DUTIES</div>
+        <div class="blue-section-heading">❖ TAXES & DUTIES</div>
         <p style="margin-bottom: 4px;">• The above price for the building is for Design, Engineering, and Preparation of erection drawings, manufacture, supply, transportation and erection of the Pre-Engineered Building.</p>
         <p style="margin-bottom: 4px;">• Supply Charges will be inclusive of erection and freight, however G.S.T @ 18% will be charged on the above supply value. Any Change in GST Structure at the time of billing shall Govern.</p>
         <p style="margin-bottom: 4px;">• Octroi and entry tax, if any will have been borne by the BUYER as per actual however if there is any change in G.S.T or any new statutory levies are introduced by the appropriate Government (state and central) at the time of shipment such additional charges will have to be borne by the BUYER as per actual.</p>
       </div>
 
       <!-- THANK YOU -->
-      <div style="margin-bottom: 12px;">
-        <div style="font-size: 9pt; font-weight: bold;">Thank you</div>
-        <p style="margin-bottom: 4px;">{{finalSignature.name}}</p>
-        <p style="margin-bottom: 4px;">{{finalSignature.mobile}}</p>
-        <p style="margin-bottom: 4px;">{{finalSignature.company}}</p>
+      <div style="margin-bottom: 12px; text-align: right;">
+        <div style="font-size: 11pt; font-weight: bold;" class="signature-page11">Thank you</div>
+        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.name}}</p>
+        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.mobile}}</p>
+        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.company}}</p>
       </div>
     </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 10 of 10</span>
+      <span>Page 11 of 11</span>
     </div>
   </div>
 

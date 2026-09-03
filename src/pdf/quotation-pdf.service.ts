@@ -185,6 +185,13 @@ export interface PdfQuotationViewModel {
     remarks: string;
   }>;
 
+  designWeightSummary: Array<{
+    id: string;
+    description: string;
+    weightInMT: string;
+    remarks: string;
+  }>;
+
   pricing: {
     lineItems: Array<{
       sno: number;
@@ -722,7 +729,7 @@ export class QuotationPdfService {
     // Cover image resolution
     const coverImageDataUri = this.loadCoverImageAsDataUri();
 
-    return {
+    const viewModel = {
       coverImageData: coverImageDataUri,
       meta: {
         quotationNumber: q.quotationNumber || 'N/A',
@@ -976,12 +983,32 @@ export class QuotationPdfService {
         amount: row.amount || 0,
       })),
 
-      contractPrice: {
-        basicTotal: q.contractPrice?.basicTotal || 0,
-        gstRate: q.contractPrice?.gstRate || 18,
-        gstAmount: q.contractPrice?.gstAmount || 0,
-        grandTotal: q.contractPrice?.grandTotal || 0,
-      },
+      // Calculate totals from contractPriceRows
+      contractPrice: (() => {
+        const rows = q.contractPriceRows || [];
+        const basicTotal = rows.reduce((sum: number, row: any) => {
+          const amount = typeof row.amount === 'number' ? row.amount : 0;
+          return sum + amount;
+        }, 0);
+        const gstRate = 18; // Default GST rate
+        const gstAmount = (basicTotal * gstRate) / 100;
+        const grandTotal = basicTotal + gstAmount;
+
+        return {
+          basicTotal,
+          gstRate,
+          gstAmount,
+          grandTotal,
+        };
+      })(),
+
+      // Design Weight Summary for Page 7
+      designWeightSummary: (q.designWeightSummary || []).map((row: any) => ({
+        id: row.id || '',
+        description: this.normalizeString(row.description || ''),
+        weightInMT: this.normalizeString(String(row.weightInMT || '')),
+        remarks: this.normalizeString(row.remarks || ''),
+      })),
 
       delivery: {
         terms: q.deliveryTerms || '',
@@ -1029,6 +1056,14 @@ export class QuotationPdfService {
         signature: templateDefaults.signature || {},
       },
     };
+
+    // Diagnostic: Log designWeightSummary data
+    this.logger.log(`[PDF DEBUG] designWeightSummary rows in view model: ${viewModel.designWeightSummary.length}`);
+    if (viewModel.designWeightSummary.length > 0) {
+      this.logger.log(`[PDF DEBUG] First designWeight row: ${JSON.stringify(viewModel.designWeightSummary[0])}`);
+    }
+
+    return viewModel;
   }
 
   /**
@@ -1039,6 +1074,14 @@ export class QuotationPdfService {
       'quotation-v1',
       viewModel as unknown as Record<string, unknown>,
     );
+  }
+
+  /**
+   * Reload PDF templates (delegates to HtmlPdfService).
+   * Useful for development after template changes.
+   */
+  reloadTemplates() {
+    this.htmlPdfService.reloadTemplates();
   }
 
   /**
@@ -1066,7 +1109,8 @@ export class QuotationPdfService {
       this.logger.log(`[fetchQuotation] === PROPOSAL CONFIGURATION ===`);
       this.logger.log(`[fetchQuotation] Contract Price Rows (from proposalConfiguration): ${Array.isArray(proposalConfig.contractPriceRows) ? proposalConfig.contractPriceRows.length : 0}`);
       this.logger.log(`[fetchQuotation] Material Specs (from proposalConfiguration): ${Array.isArray(proposalConfig.materialSpecs) ? proposalConfig.materialSpecs.length : 0}`);
-      
+      this.logger.log(`[fetchQuotation] Design Weight Summary count: ${Array.isArray(techSpecs.designWeightSummary) ? techSpecs.designWeightSummary.length : 0}`);
+
       // Log contract price rows details if present
       if (Array.isArray(techSpecs.contractPriceRows) && techSpecs.contractPriceRows.length > 0) {
         this.logger.log(`[fetchQuotation] Contract Price Rows from technicalSpecifications:`);
