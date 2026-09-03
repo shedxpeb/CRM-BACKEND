@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DocumentService } from './document.service';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -33,5 +33,27 @@ export class DocumentController {
   async getDashboard(@CurrentUser('organizationId') organizationId: string) {
     const data = await this.documentService.getDashboard(organizationId);
     return { message: 'Document dashboard fetched successfully.', data };
+  }
+
+  @Get(':id/activities')
+  @RequirePermissions('document:list')
+  @ApiOperation({ summary: 'Get document activities' })
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.documentService.getActivities(id, organizationId);
+    return { message: 'Document activities fetched successfully.', data };
+  }
+
+  @Get(':id')
+  @RequirePermissions('document:read')
+  @ApiOperation({ summary: 'Get document by ID' })
+  async getById(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    const data = await this.documentService.getById(id, organizationId);
+    return { message: 'Document fetched successfully.', data };
   }
 }

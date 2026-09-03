@@ -11,6 +11,10 @@
       margin: 0;
     }
 
+    @page :first {
+      margin: 0;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -43,91 +47,32 @@
       --bg-accent: #e8f0fe;
     }
 
-    /* ─── Cover Page ─────────────────────────────────────────────────── */
+    body {
+      --primary: {{branding.primaryColor}};
+      --secondary: {{branding.secondaryColor}};
+      --text-dark: #1a1a1a;
+      --text-muted: #5b6778;
+      --border: #d1d5db;
+      --bg-light: #f8fafc;
+      --bg-accent: #e8f0fe;
+    }
+
+    /* ─── Cover Page (Image-Based) ───────────────────────────────────────── */
     .cover-page {
       width: 210mm;
       height: 297mm;
       position: relative;
       overflow: hidden;
       page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
+      margin: 0;
+      padding: 0;
     }
 
-    .cover-bg {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-      opacity: 0.06;
-      z-index: 0;
-    }
-
-    .cover-content {
-      position: relative;
-      z-index: 1;
-      padding: 40mm 25mm;
-    }
-
-    .cover-logo {
-      max-width: 120px;
-      max-height: 120px;
-      margin: 0 auto 30px;
-    }
-
-    .cover-title {
-      font-size: 32pt;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 8px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .cover-subtitle {
-      font-size: 14pt;
-      color: var(--text-muted);
-      margin-bottom: 50px;
-    }
-
-    .cover-meta-table {
-      margin: 0 auto;
-      border-collapse: collapse;
-      width: 380px;
-    }
-
-    .cover-meta-table td {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      font-size: 10pt;
-    }
-
-    .cover-meta-table .label {
-      font-weight: 600;
-      color: var(--text-muted);
-      text-align: right;
-      width: 140px;
-      background: var(--bg-light);
-    }
-
-    .cover-meta-table .value {
-      color: var(--text-dark);
-      text-align: left;
-    }
-
-    .cover-company {
-      margin-top: 60px;
-      font-size: 11pt;
-      color: var(--text-muted);
-    }
-
-    .cover-company strong {
-      color: var(--primary);
-      font-size: 13pt;
+    .cover-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
       display: block;
-      margin-bottom: 4px;
     }
 
     /* ─── Page Container ─────────────────────────────────────────────── */
@@ -137,6 +82,7 @@
       padding: 15mm 18mm 22mm 18mm;
       position: relative;
       page-break-after: always;
+      page-break-inside: avoid;
       background: white;
     }
 
@@ -152,9 +98,9 @@
       top: 0; left: 0; right: 0; bottom: 0;
       background-image: url('{{branding.watermarkImage}}');
       background-repeat: no-repeat;
-      background-position: {{branding.watermarkPosition}};
-      background-size: {{branding.watermarkSize}};
-      opacity: {{branding.watermarkOpacity}};
+      background-position: center;
+      background-size: 120mm 120mm;
+      opacity: 0.03;
       z-index: 0;
       pointer-events: none;
     }
@@ -163,6 +109,208 @@
       z-index: 1;
     }
     {{/if}}
+
+    /* ─── Page 3 Table Styling ─────────────────────────────────────────── */
+    .page3-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid black;
+      font-size: 8pt;
+    }
+
+    .page3-table th,
+    .page3-table td {
+      border: 1px solid black;
+      padding: 3px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .page3-header-yellow {
+      background-color: #fffacd;
+      font-weight: bold;
+      text-align: center;
+      font-size: 9pt;
+      padding: 4px;
+    }
+
+    .page3-header-gray {
+      background-color: #e0e0e0;
+      font-weight: bold;
+      text-align: center;
+      font-size: 9pt;
+      padding: 4px;
+    }
+
+    .page3-col-no {
+      width: 30px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .page3-col-field {
+      width: 140px;
+      font-weight: bold;
+    }
+
+    .page3-col-sep {
+      width: 15px;
+      text-align: center;
+    }
+
+    .page3-col-value {
+      text-align: left;
+      white-space: pre-wrap;
+    }
+
+    /* ─── Page 4 Accessories Table Styling ───────────────────────────────── */
+    .page4-accessories-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid black;
+      font-size: 8pt;
+    }
+
+    .page4-accessories-table th,
+    .page4-accessories-table td {
+      border: 1px solid black;
+      padding: 3px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .page4-col-no {
+      width: 25px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .page4-col-desc {
+      width: 35%;
+      white-space: pre-wrap;
+    }
+
+    .page4-col-size {
+      width: 20%;
+    }
+
+    .page4-col-qty {
+      width: 20%;
+    }
+
+    .page4-col-loc {
+      width: 25%;
+    }
+
+    /* ─── Page 6 Material Table Styling ───────────────────────────────── */
+    .page6-material-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid black;
+      font-size: 8pt;
+    }
+
+    .page6-material-table th,
+    .page6-material-table td {
+      border: 1px solid black;
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .page6-col-sno {
+      width: 40px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .page6-col-comp {
+      width: 25%;
+      white-space: pre-wrap;
+    }
+
+    .page6-col-spec {
+      width: 35%;
+      white-space: pre-wrap;
+    }
+
+    .page6-col-make {
+      width: 20%;
+    }
+
+    .page6-col-yield {
+      width: 20%;
+    }
+
+    /* ─── Page 7 Price Table Styling ───────────────────────────────── */
+    .page7-price-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid black;
+      font-size: 8pt;
+    }
+
+    .page7-price-table th,
+    .page7-price-table td {
+      border: 1px solid black;
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .page7-col-sno {
+      width: 40px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .page7-col-desc {
+      width: 40%;
+      white-space: pre-wrap;
+    }
+
+    .page7-col-unit {
+      width: 12%;
+    }
+
+    .page7-col-qty {
+      width: 10%;
+      text-align: center;
+    }
+
+    .page7-col-rate {
+      width: 14%;
+      text-align: right;
+    }
+
+    .page7-col-amount {
+      width: 14%;
+      text-align: right;
+    }
+
+    .page7-total-label {
+      text-align: right;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+
+    .page7-total-value {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .page7-grand-label {
+      text-align: right;
+      font-weight: bold;
+      padding-right: 10px;
+      background-color: #f0f0f0;
+    }
+
+    .page7-grand-value {
+      text-align: right;
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
 
     /* ─── Header (pages 2+) ─────────────────────────────────────────── */
     .page-header {
@@ -584,164 +732,92 @@
 <body>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 1: COVER PAGE                                                -->
+  <!-- PAGE 1: SHEDX PEB COMMERCIAL PROPOSAL COVER PAGE (IMAGE-BASED)       -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="cover-page">
-    <div class="cover-bg"></div>
-    <div class="cover-content">
-      {{#if organization.logo}}
-      <img src="{{organization.logo}}" class="cover-logo" alt="Company Logo">
-      {{/if}}
-
-      <div class="cover-title">Commercial Proposal</div>
-      <div class="cover-subtitle">Pre-Engineered Building Solutions</div>
-
-      <table class="cover-meta-table">
-        <tr>
-          <td class="label">Reference No.</td>
-          <td class="value">{{meta.quotationNumber}}</td>
-        </tr>
-        <tr>
-          <td class="label">Date</td>
-          <td class="value">{{meta.date}}</td>
-        </tr>
-        <tr>
-          <td class="label">Valid Until</td>
-          <td class="value">{{meta.validUntil}}</td>
-        </tr>
-        {{#if project.projectName}}
-        <tr>
-          <td class="label">Project</td>
-          <td class="value">{{project.projectName}}</td>
-        </tr>
-        {{/if}}
-      </table>
-
-      <div class="cover-company">
-        <strong>{{organization.name}}</strong>
-        {{#if organization.address}}{{organization.address}}{{/if}}
-        {{#if organization.city}}, {{organization.city}}{{/if}}
-        {{#if organization.state}}, {{organization.state}}{{/if}}
-        {{#if organization.pincode}} - {{organization.pincode}}{{/if}}
-        <br>
-        {{#if organization.phone}}Phone: {{organization.phone}}{{/if}}
-        {{#if organization.email}} | Email: {{organization.email}}{{/if}}
-        {{#if organization.gstin}}<br>GSTIN: {{organization.gstin}}{{/if}}
-      </div>
-    </div>
-
-    <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
-      <span>Page 1 of {{meta.generatedAt}}</span>
-    </div>
+    <img src="{{coverImageData}}" class="cover-image" alt="Commercial Proposal Cover">
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- PAGE 2: PREPARED FOR / PREPARED BY / INTRODUCTION                 -->
+  <!-- PAGE 2: PREPARED FOR / PREPARED BY / DATE / INQUIRY / SUBJECT / INTRODUCTION / SIGNATURE -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="page">
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
         Commercial Proposal
       </div>
     </div>
 
-    <div class="section-title">Introduction</div>
-    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6;" class="avoid-orphans">
-      Thank you for the opportunity to present our commercial proposal for your upcoming
-      {{#if project.structureType}}{{project.structureType}}{{else}}Pre-Engineered Building{{/if}}
-      project.
-      {{#if project.projectName}}The project "{{project.projectName}}"{{/if}}
-      is important to us, and we are committed to delivering a high-quality solution that meets
-      your requirements.
-    </p>
+    <div style="margin-bottom: 20px;">
+      <div style="display: inline-block; margin-right: 30px;">
+        <strong>DATE:</strong> {{meta.quotationDate}}
+      </div>
+    </div>
 
-    <div class="two-col">
+    <div class="two-col" style="margin-bottom: 20px;">
       <div class="col">
-        <div class="col-header">Prepared For</div>
+        <div class="col-header" style="background: var(--primary); color: white;">Prepared For</div>
         <div class="col-body">
           <div class="field">
-            <div class="field-label">Customer</div>
-            <div class="field-value">{{preparedFor.customerName}}</div>
-          </div>
-          {{#if preparedFor.companyName}}
-          <div class="field">
-            <div class="field-label">Company</div>
+            <div class="field-label">COMPANY</div>
             <div class="field-value">{{preparedFor.companyName}}</div>
           </div>
-          {{/if}}
-          {{#if preparedFor.address}}
           <div class="field">
-            <div class="field-label">Address</div>
+            <div class="field-label">ADD</div>
             <div class="field-value">{{preparedFor.address}}{{#if preparedFor.city}}, {{preparedFor.city}}{{/if}}{{#if preparedFor.state}}, {{preparedFor.state}}{{/if}}{{#if preparedFor.pincode}} - {{preparedFor.pincode}}{{/if}}</div>
           </div>
-          {{/if}}
-          {{#if preparedFor.phone}}
+          {{#if preparedFor.gstNumber}}
           <div class="field">
-            <div class="field-label">Phone</div>
-            <div class="field-value">{{preparedFor.phone}}</div>
-          </div>
-          {{/if}}
-          {{#if preparedFor.email}}
-          <div class="field">
-            <div class="field-label">Email</div>
-            <div class="field-value">{{preparedFor.email}}</div>
-          </div>
-          {{/if}}
-          {{#if preparedFor.gstin}}
-          <div class="field">
-            <div class="field-label">GSTIN</div>
-            <div class="field-value">{{preparedFor.gstin}}</div>
+            <div class="field-label">GST</div>
+            <div class="field-value">{{preparedFor.gstNumber}}</div>
           </div>
           {{/if}}
         </div>
       </div>
       <div class="col">
-        <div class="col-header">Prepared By</div>
+        <div class="col-header" style="background: var(--primary); color: white;">Prepared By</div>
         <div class="col-body">
           <div class="field">
-            <div class="field-label">Company</div>
-            <div class="field-value">{{preparedBy.company}}</div>
-          </div>
-          {{#if preparedBy.name}}
-          <div class="field">
-            <div class="field-label">Contact Person</div>
-            <div class="field-value">{{preparedBy.name}}</div>
-          </div>
-          {{/if}}
-          {{#if preparedBy.designation}}
-          <div class="field">
-            <div class="field-label">Designation</div>
-            <div class="field-value">{{preparedBy.designation}}</div>
-          </div>
-          {{/if}}
-          <div class="field">
-            <div class="field-label">Address</div>
-            <div class="field-value">{{organization.address}}{{#if organization.city}}, {{organization.city}}{{/if}}{{#if organization.state}}, {{organization.state}}{{/if}}</div>
+            <div class="field-value"><strong>{{preparedBy.company}}</strong></div>
           </div>
           <div class="field">
-            <div class="field-label">Phone</div>
-            <div class="field-value">{{organization.phone}}</div>
+            <div class="field-value">{{preparedBy.address}}</div>
           </div>
-          <div class="field">
-            <div class="field-label">Email</div>
-            <div class="field-value">{{organization.email}}</div>
-          </div>
-          {{#if organization.gstin}}
+          {{#if preparedBy.gstin}}
           <div class="field">
             <div class="field-label">GSTIN</div>
-            <div class="field-value">{{organization.gstin}}</div>
+            <div class="field-value">{{preparedBy.gstin}}</div>
           </div>
           {{/if}}
         </div>
       </div>
     </div>
 
+    <div class="section-title">Subject</div>
+    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6;">{{subject}}</p>
+
+    <div class="section-title">Introduction</div>
+    <p style="font-size:9pt; margin-bottom:14px; line-height:1.6; white-space: pre-wrap;" class="avoid-orphans">
+      {{introduction}}
+    </p>
+
+    <div style="margin-top: 30px;">
+      <p style="font-size:9pt; margin-bottom: 10px;">{{signature.prefix}}</p>
+      <p style="font-size:9pt; font-weight: bold; margin-bottom: 5px;">{{signature.name}}</p>
+      <p style="font-size:9pt; margin-bottom: 5px;">{{signature.designation}}</p>
+      {{#if signature.mobile}}
+      <p style="font-size:9pt; margin-bottom: 5px;">Mo.: {{signature.mobile}}</p>
+      {{/if}}
+      {{#if signature.email}}
+      <p style="font-size:9pt;">Email: {{signature.email}}</p>
+      {{/if}}
+    </div>
+
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 2 — {{meta.quotationNumber}}</span>
+      <span>Page 2 of 10</span>
     </div>
   </div>
 
@@ -752,88 +828,117 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Building Specification
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    <div class="section-title">Building Specification</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Building Length</span>
-        <span class="spec-value">{{building.length}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Building Width</span>
-        <span class="spec-value">{{building.width}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Building Height</span>
-        <span class="spec-value">{{building.height}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Built-up Area</span>
-        <span class="spec-value">{{building.area}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Bay Spacing</span>
-        <span class="spec-value">{{building.baySpacing}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Roof Slope</span>
-        <span class="spec-value">{{building.roofSlope}}</span>
-      </div>
-    </div>
+    <!-- BUILDING SPECIFICATION TABLE -->
+    <table class="page3-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="4" class="page3-header-yellow">BUILDING SPECIFICATION</th>
+        </tr>
+        <tr>
+          <th class="page3-col-no">No.</th>
+          <th class="page3-col-field">Field</th>
+          <th class="page3-col-sep">:</th>
+          <th class="page3-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="page3-col-no">1</td><td>FRAME TYPE</td><td class="page3-col-sep">:</td><td>{{building.frameType}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>END FRAME CONDITION</td><td class="page3-col-sep">:</td><td>{{building.endFrameCondition}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>WIDTH</td><td class="page3-col-sep">:</td><td>{{building.width}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>LENGTH</td><td class="page3-col-sep">:</td><td>{{building.length}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>CLEAR HEIGHT</td><td class="page3-col-sep">:</td><td>{{building.height}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>WIDTH MODULE</td><td class="page3-col-sep">:</td><td>{{building.widthModule}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>ROOF SLOPE</td><td class="page3-col-sep">:</td><td>{{building.roofSlope}}</td></tr>
+        <tr><td class="page3-col-no">8</td><td>OPENING</td><td class="page3-col-sep">:</td><td>{{building.opening}}</td></tr>
+        <tr><td class="page3-col-no">9</td><td>SIDEWALL BAY SPACING</td><td class="page3-col-sep">:</td><td>{{building.baySpacing}}</td></tr>
+        <tr><td class="page3-col-no">10</td><td>ENDWALL BAY SPACING</td><td class="page3-col-sep">:</td><td>{{building.endwallBaySpacing}}</td></tr>
+        <tr><td class="page3-col-no">11</td><td>BRICKWALL CONDITION</td><td class="page3-col-sep">:</td><td>{{building.brickwallCondition}}</td></tr>
+        <tr><td class="page3-col-no">12</td><td>CANOPY</td><td class="page3-col-sep">:</td><td>{{building.canopy}}</td></tr>
+        <tr><td class="page3-col-no">13</td><td>ROOF SHEETING</td><td class="page3-col-sep">:</td><td>{{building.roofSheeting}}</td></tr>
+        <tr><td class="page3-col-no">14</td><td>WALL SHEETING</td><td class="page3-col-sep">:</td><td>{{building.wallSheeting}}</td></tr>
+        <tr><td class="page3-col-no">15</td><td>GUTTER</td><td class="page3-col-sep">:</td><td>{{building.gutter}}</td></tr>
+        <tr><td class="page3-col-no">16</td><td>DOWNTAKE PIPE</td><td class="page3-col-sep">:</td><td>{{building.downTakePipe}}</td></tr>
+        <tr><td class="page3-col-no">17</td><td>BRACING TYPE</td><td class="page3-col-sep">:</td><td>{{building.bracingType}}</td></tr>
+        <tr><td class="page3-col-no">18</td><td>FASCIA</td><td class="page3-col-sep">:</td><td>{{building.fascia}}</td></tr>
+        <tr><td class="page3-col-no">19</td><td>FUTURE EXPANSION</td><td class="page3-col-sep">:</td><td>{{building.futureExpansion}}</td></tr>
+      </tbody>
+    </table>
 
-    <div class="section-title">Design Code</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Design Code</span>
-        <span class="spec-value">{{design.designCode}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Seismic Zone</span>
-        <span class="spec-value">{{design.seismicZone}}</span>
-      </div>
-    </div>
+    <!-- DESIGN CODE TABLE -->
+    <table class="page3-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="4" class="page3-header-gray">DESIGN CODE</th>
+        </tr>
+        <tr>
+          <th class="page3-col-no">No.</th>
+          <th class="page3-col-field">Field</th>
+          <th class="page3-col-sep">:</th>
+          <th class="page3-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="page3-col-no">1</td><td>Design and Wind Load Application</td><td class="page3-col-sep">:</td><td>{{design.designCode}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>Seismic</td><td class="page3-col-sep">:</td><td>{{design.seismicCode}}</td></tr>
+      </tbody>
+    </table>
 
-    <div class="section-title">Design Load</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Dead Load</span>
-        <span class="spec-value">{{loads.deadLoad}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Live Load</span>
-        <span class="spec-value">{{loads.liveLoad}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Wind Load</span>
-        <span class="spec-value">{{loads.windLoad}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Crane Load</span>
-        <span class="spec-value">{{loads.craneLoad}}</span>
-      </div>
-    </div>
+    <!-- DESIGN LOAD TABLE -->
+    <table class="page3-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="4" class="page3-header-gray">DESIGN LOAD</th>
+        </tr>
+        <tr>
+          <th class="page3-col-no">No.</th>
+          <th class="page3-col-field">Field</th>
+          <th class="page3-col-sep">:</th>
+          <th class="page3-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="page3-col-no">1</td><td>Dead Load</td><td class="page3-col-sep">:</td><td>{{loads.deadLoad}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>Column Load</td><td class="page3-col-sep">:</td><td>{{loads.columnLoad}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>Wind Speed</td><td class="page3-col-sep">:</td><td>{{loads.windLoad}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>Live Load</td><td class="page3-col-sep">:</td><td>{{loads.liveLoad}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>Mezzanine Load</td><td class="page3-col-sep">:</td><td>{{loads.mezzanineLoad}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>Collateral Load</td><td class="page3-col-sep">:</td><td>{{loads.collateralLoad}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>Seismic Zone</td><td class="page3-col-sep">:</td><td>{{design.seismicZone}}</td></tr>
+      </tbody>
+    </table>
 
-    {{#if mezzanine.required}}
-    <div class="section-title">Mezzanine</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Mezzanine Area</span>
-        <span class="spec-value">{{mezzanine.area}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Mezzanine Load</span>
-        <span class="spec-value">{{mezzanine.load}}</span>
-      </div>
-    </div>
-    {{/if}}
+    <!-- MEZZANINE LOAD TABLE -->
+    <table class="page3-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="4" class="page3-header-gray">MEZZANINE LOAD</th>
+        </tr>
+        <tr>
+          <th class="page3-col-no">No.</th>
+          <th class="page3-col-field">Field</th>
+          <th class="page3-col-sep">:</th>
+          <th class="page3-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="page3-col-no">1</td><td>Mezz Area</td><td class="page3-col-sep">:</td><td>{{mezzanine.area}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>Thickness Of Slab</td><td class="page3-col-sep">:</td><td>{{mezzanine.thicknessOfSlab}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>Mezz. Live Load</td><td class="page3-col-sep">:</td><td>{{mezzanine.load}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>Mezz. Additional Load</td><td class="page3-col-sep">:</td><td>{{mezzanine.additionalLoad}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>Stair case</td><td class="page3-col-sep">:</td><td>{{mezzanine.stairCase}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>Deflection</td><td class="page3-col-sep">:</td><td>{{mezzanine.deflection}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>TOP OF MEZZANINE SLAB</td><td class="page3-col-sep">:</td><td>{{mezzanine.topOfSlab}}</td></tr>
+        <tr><td class="page3-col-no">8</td><td>Shear Stud</td><td class="page3-col-sep">:</td><td>{{mezzanine.shearStud}}</td></tr>
+      </tbody>
+    </table>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 3 — {{meta.quotationNumber}}</span>
+      <span>Page 3 of 10</span>
     </div>
   </div>
 
@@ -844,64 +949,72 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Crane &amp; Accessories
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    {{#if crane.required}}
-    <div class="section-title">Crane Detail</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Crane Required</span>
-        <span class="spec-value">Yes</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Capacity</span>
-        <span class="spec-value">{{crane.capacity}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Type</span>
-        <span class="spec-value">{{crane.type}}</span>
-      </div>
-    </div>
-    {{else}}
-    <div class="section-title">Crane Detail</div>
-    <p style="font-size:9pt; color:var(--text-muted); margin-bottom:12px;">No crane requirement specified.</p>
-    {{/if}}
+    <!-- CRANE DETAIL TABLE -->
+    <table class="page3-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="4" class="page3-header-gray">CRANE DETAIL</th>
+        </tr>
+        <tr>
+          <th class="page3-col-no">No.</th>
+          <th class="page3-col-field">Field</th>
+          <th class="page3-col-sep">:</th>
+          <th class="page3-col-value">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="page3-col-no">1</td><td>CRANE CAPACITY</td><td class="page3-col-sep">:</td><td>{{crane.capacity}}</td></tr>
+        <tr><td class="page3-col-no">2</td><td>NO. OF CRANES</td><td class="page3-col-sep">:</td><td>{{crane.numberOfCranes}}</td></tr>
+        <tr><td class="page3-col-no">3</td><td>CRANE SPAN</td><td class="page3-col-sep">:</td><td>{{crane.span}}</td></tr>
+        <tr><td class="page3-col-no">4</td><td>TROLLEY/ HOIST WEIGHT</td><td class="page3-col-sep">:</td><td>{{crane.trolleyHoistWeight}}</td></tr>
+        <tr><td class="page3-col-no">5</td><td>CRANE WEIGHT</td><td class="page3-col-sep">:</td><td>{{crane.craneWeight}}</td></tr>
+        <tr><td class="page3-col-no">6</td><td>WHEEL LOAD</td><td class="page3-col-sep">:</td><td>{{crane.wheelLoad}}</td></tr>
+        <tr><td class="page3-col-no">7</td><td>WHEEL BASE</td><td class="page3-col-sep">:</td><td>{{crane.wheelBase}}</td></tr>
+        <tr><td class="page3-col-no">8</td><td>RUN LENGTH</td><td class="page3-col-sep">:</td><td>{{crane.runLength}}</td></tr>
+        <tr><td class="page3-col-no">9</td><td>TOP OF CRANE BEAM</td><td class="page3-col-sep">:</td><td>{{crane.topOfCraneBeam}}</td></tr>
+        <tr><td class="page3-col-no">10</td><td>TANDEM OPERATION</td><td class="page3-col-sep">:</td><td>{{crane.tandemOperation}}</td></tr>
+      </tbody>
+    </table>
 
-    {{#if accessories.roofAccessories.length}}
-    <div class="section-title">Roof Accessories</div>
-    <ul class="content-list">
-      {{#each accessories.roofAccessories}}
-      <li>{{this}}</li>
-      {{/each}}
-    </ul>
-    {{/if}}
+    <!-- CRANE NOTE -->
+    <p style="font-size: 8pt; margin-bottom: 12px; font-style: italic;">
+      Note: Above crane data to be confirmed by client for final design.
+    </p>
 
-    <div class="section-title">Cladding Details</div>
-    <div class="spec-grid">
-      <div class="spec-item">
-        <span class="spec-label">Roof Cladding</span>
-        <span class="spec-value">{{design.roofCladding}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Wall Cladding</span>
-        <span class="spec-value">{{design.wallCladding}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Insulation Type</span>
-        <span class="spec-value">{{design.insulationType}}</span>
-      </div>
-      <div class="spec-item">
-        <span class="spec-label">Insulation Thickness</span>
-        <span class="spec-value">{{design.insulationThickness}}</span>
-      </div>
-    </div>
+    <!-- ROOF ACCESSORIES TABLE -->
+    <table class="page4-accessories-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="5" class="page3-header-gray">ROOF ACCESSORIES</th>
+        </tr>
+        <tr>
+          <th class="page4-col-no">No.</th>
+          <th class="page4-col-desc">Description</th>
+          <th class="page4-col-size">Size</th>
+          <th class="page4-col-qty">Quantity/Nos.</th>
+          <th class="page4-col-loc">Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each accessories.roofAccessories}}
+        <tr>
+          <td class="page4-col-no">{{@index}}</td>
+          <td class="page4-col-desc">{{description}}</td>
+          <td class="page4-col-size">{{size}}</td>
+          <td class="page4-col-qty">{{quantity}}</td>
+          <td class="page4-col-loc">{{location}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 4 — {{meta.quotationNumber}}</span>
+      <span>Page 4 of 10</span>
     </div>
   </div>
 
@@ -912,49 +1025,70 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Accessories &amp; Codes
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    {{#if accessories.wallAccessories.length}}
-    <div class="section-title">Wall Accessories</div>
-    <ul class="content-list">
-      {{#each accessories.wallAccessories}}
-      <li>{{this}}</li>
-      {{/each}}
-    </ul>
-    {{/if}}
-
-    <div class="section-title">Applicable Codes &amp; Standards</div>
-    <div class="info-card">
-      <div class="card-title">Structural Design</div>
-      <p style="font-size:9pt; line-height:1.6;">
-        All structural members are designed in accordance with IS 800:2007 (General Construction in Steel),
-        IS 811:1987 (Cold Formed Light Gauge Steel Sections), and relevant BIS standards.
-        {{#if design.designCode}}
-        Design Code: {{design.designCode}}
+    <!-- WALL ACCESSORIES TABLE -->
+    <table class="page4-accessories-table" style="margin-bottom: 12px;">
+      <thead>
+        <tr>
+          <th colspan="5" class="page3-header-gray">WALL ACCESSORIES</th>
+        </tr>
+        <tr>
+          <th class="page4-col-no">Sr. No.</th>
+          <th class="page4-col-desc">Description</th>
+          <th class="page4-col-size">Size</th>
+          <th class="page4-col-qty">Quantity</th>
+          <th class="page4-col-loc">Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if accessories.wallAccessories.length}}
+          {{#each accessories.wallAccessories}}
+          <tr>
+            <td class="page4-col-no">{{@index}}</td>
+            <td class="page4-col-desc">{{description}}</td>
+            <td class="page4-col-size">{{size}}</td>
+            <td class="page4-col-qty">{{quantity}}</td>
+            <td class="page4-col-loc">{{location}}</td>
+          </tr>
+          {{/each}}
+        {{else}}
+          <tr>
+            <td class="page4-col-no">-</td>
+            <td class="page4-col-desc" colspan="4">No wall accessories specified</td>
+          </tr>
         {{/if}}
+      </tbody>
+    </table>
+
+    <!-- APPLICABLE CODES -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Applicable Codes</div>
+      <p style="font-size: 8pt; line-height: 1.5; margin-bottom: 4px;">All Structural included in this proposal are designed in accordance with the following codes:</p>
+      <ol style="font-size: 8pt; line-height: 1.5; margin-left: 18px; margin-bottom: 4px;">
+        <li>Loads on the building are applied in accordance with: <strong>MBMA & AISC-2012</strong></li>
+        <li>Hot rolled Sections and built-up Sections are designed in accordance with: <strong>AISC-1989; AWS D1.1 M 2006</strong></li>
+        <li>Cold formed members are designed in accordance with: <strong>AISI</strong></li>
+        <li>Welding is applied in accordance with: The Edition (2006) of Structural Welding Code - Steel (AWS D1.1M: 2006) By American Welding Society (AWS)</li>
+        <li>Wind Speed is calculated in accordance with: <strong>IS 875 (Part 3): 1987</strong> Code of practice for Design Loads.</li>
+        <li>Seismic Load is calculated in accordance with: <strong>IS 1893 (Part 1): 2002</strong> Criteria for Earthquake Resistant design of structures.</li>
+      </ol>
+    </div>
+
+    <!-- PRIMARY STRUCTURAL MEMBERS -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Primary Structural Members</div>
+      <p style="font-size: 8pt; line-height: 1.5;">
+        Paint Application: Epoxy DTM Paint with Airless Spray System - <strong>100 Micron DFT</strong><br />
+        MS Bolt (Black unpainted).
       </p>
     </div>
 
-    <div class="section-title">Primary Structural Members</div>
-    <p style="font-size:9pt; line-height:1.6; margin-bottom:12px;" class="avoid-orphans">
-      Primary structural members include columns, rafters, and bracing designed as per applicable
-      load combinations. All connections are designed using high-strength friction grip (HSFG) bolts
-      or as specified in the structural design.
-    </p>
-
-    <div class="section-title">Secondary Structural Members</div>
-    <p style="font-size:9pt; line-height:1.6; margin-bottom:12px;" class="avoid-orphans">
-      Secondary members include purlins, girts, eave struts, and sag rods designed to support
-      cladding loads and transfer them to primary members. All secondary members are cold-formed
-      sections as per design requirements.
-    </p>
-
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 5 — {{meta.quotationNumber}}</span>
+      <span>Page 5 of 10</span>
     </div>
   </div>
 
@@ -965,49 +1099,69 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Material Specification
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    <div class="section-title">Material Specification</div>
+    <!-- SECONDARY STRUCTURAL MEMBERS -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Secondary Structural Members</div>
+      <p style="font-size: 8pt; line-height: 1.5; margin-left: 20px;">
+        ➢ Pre-galvanized.
+      </p>
+    </div>
 
-    {{#if materials.length}}
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th style="width:5%">No.</th>
-          <th style="width:30%">Item</th>
-          <th style="width:25%">Specification</th>
-          <th class="right" style="width:10%">Qty</th>
-          <th style="width:8%">Unit</th>
-          <th class="right" style="width:11%">Rate</th>
-          <th class="right" style="width:11%">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{#each materials}}
-        <tr>
-          <td class="center">{{sno}}</td>
-          <td>{{itemName}}</td>
-          <td>{{specification}}</td>
-          <td class="right">{{quantity}}</td>
-          <td>{{unit}}</td>
-          <td class="right">{{rate}}</td>
-          <td class="right"><strong>{{amount}}</strong></td>
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
-    {{else}}
-    <p style="font-size:9pt; color:var(--text-muted); text-align:center; padding:20px;">
-      No material selections specified.
-    </p>
-    {{/if}}
+    <!-- MATERIAL SPECIFICATION FOR BUILDING -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Material Specification for Building</div>
+      
+      {{#if materials.length}}
+      <table class="page6-material-table" style="margin-top: 8px;">
+        <thead>
+          <tr>
+            <th class="page6-col-sno">S. No.</th>
+            <th class="page6-col-comp">Component</th>
+            <th class="page6-col-spec">Specification</th>
+            <th class="page6-col-make">Make</th>
+            <th class="page6-col-yield">Yield Strength</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each materials}}
+          <tr>
+            <td class="page6-col-sno">{{sno}}</td>
+            <td class="page6-col-comp">{{component}}</td>
+            <td class="page6-col-spec">{{specification}}</td>
+            <td class="page6-col-make">{{make}}</td>
+            <td class="page6-col-yield">{{yieldStrength}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{else}}
+      <table class="page6-material-table" style="margin-top: 8px;">
+        <thead>
+          <tr>
+            <th class="page6-col-sno">S. No.</th>
+            <th class="page6-col-comp">Component</th>
+            <th class="page6-col-spec">Specification</th>
+            <th class="page6-col-make">Make</th>
+            <th class="page6-col-yield">Yield Strength</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="page6-col-sno">-</td>
+            <td class="page6-col-comp" colspan="4">No material specifications provided</td>
+          </tr>
+        </tbody>
+      </table>
+      {{/if}}
+    </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 6 — {{meta.quotationNumber}}</span>
+      <span>Page 6 of 10</span>
     </div>
   </div>
 
@@ -1018,114 +1172,73 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Contract Price
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    <div class="section-title">Contract Price</div>
+    <!-- CONTRACT PRICE -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Contract Price</div>
+      <p style="font-size: 8pt; line-height: 1.5; margin-bottom: 12px;">
+        The total contract price for design, production, painting, supply, & erection of parts of structure described in the offer for project is follows.
+      </p>
+    </div>
 
-    <table class="data-table" style="width: 100%; margin-bottom:16px;">
+    <!-- CONTRACT PRICE TABLE -->
+    <table class="page7-price-table" style="margin-bottom: 12px;">
       <thead>
         <tr>
-          <th style="width:60%">Description</th>
-          <th class="right" style="width:40%">Amount</th>
+          <th class="page7-col-sno">Sr. No.</th>
+          <th class="page7-col-desc">Description</th>
+          <th class="page7-col-unit">Unit</th>
+          <th class="page7-col-qty">Qty.</th>
+          <th class="page7-col-rate">Rate</th>
+          <th class="page7-col-amount">Amount</th>
         </tr>
       </thead>
       <tbody>
-        {{#if pricing.materialCost}}
+        {{#each pricing.lineItems}}
         <tr>
-          <td>Material Cost</td>
-          <td class="right">{{pricing.materialCost}}</td>
+          <td class="page7-col-sno">{{sno}}</td>
+          <td class="page7-col-desc">{{description}}</td>
+          <td class="page7-col-unit">{{unit}}</td>
+          <td class="page7-col-qty">{{quantity}}</td>
+          <td class="page7-col-rate">{{rate}}</td>
+          <td class="page7-col-amount">{{amount}}</td>
         </tr>
-        {{/if}}
-        {{#if pricing.labourCost}}
-        <tr>
-          <td>Labour Cost</td>
-          <td class="right">{{pricing.labourCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.installationCost}}
-        <tr>
-          <td>Installation Cost</td>
-          <td class="right">{{pricing.installationCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.transportationCost}}
-        <tr>
-          <td>Transportation Cost</td>
-          <td class="right">{{pricing.transportationCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.craneCost}}
-        <tr>
-          <td>Crane Cost</td>
-          <td class="right">{{pricing.craneCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.civilCost}}
-        <tr>
-          <td>Civil Work</td>
-          <td class="right">{{pricing.civilCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.accommodationCost}}
-        <tr>
-          <td>Accommodation</td>
-          <td class="right">{{pricing.accommodationCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.erectionCost}}
-        <tr>
-          <td>Erection</td>
-          <td class="right">{{pricing.erectionCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.freightCost}}
-        <tr>
-          <td>Freight</td>
-          <td class="right">{{pricing.freightCost}}</td>
-        </tr>
-        {{/if}}
-        {{#if pricing.otherCosts}}
-        <tr>
-          <td>Other Charges</td>
-          <td class="right">{{pricing.otherCosts}}</td>
-        </tr>
-        {{/if}}
+        {{/each}}
       </tbody>
     </table>
 
-    <div class="summary-panel">
-      <div class="summary-header">Pricing Summary</div>
-      <div class="summary-row">
-        <span class="summary-label">Subtotal</span>
-        <span class="summary-value">{{pricing.subtotal}}</span>
-      </div>
-      {{#if pricing.discountAmount}}
-      <div class="summary-row">
-        <span class="summary-label">Discount {{#if pricing.markupPercentage}}({{pricing.markupPercentage}} markup applied){{/if}}</span>
-        <span class="summary-value" style="color: #dc2626;">-{{pricing.discountAmount}}</span>
-      </div>
-      {{/if}}
-      <div class="summary-row">
-        <span class="summary-label">GST ({{pricing.gstRate}})</span>
-        <span class="summary-value">{{pricing.taxAmount}}</span>
-      </div>
-      <div class="summary-grand-total">
-        <span>GRAND TOTAL</span>
-        <span>{{pricing.grandTotal}}</span>
-      </div>
-    </div>
+    <!-- TOTALS -->
+    <table class="page7-price-table" style="margin-bottom: 12px;">
+      <tbody>
+        <tr>
+          <td colspan="5" class="page7-total-label">TOTAL</td>
+          <td class="page7-total-value">{{pricing.subtotal}}</td>
+        </tr>
+        <tr>
+          <td colspan="5" class="page7-total-label">GST ({{pricing.gstRate}})</td>
+          <td class="page7-total-value">{{pricing.taxAmount}}</td>
+        </tr>
+        <tr>
+          <td colspan="5" class="page7-grand-label">GRAND TOTAL</td>
+          <td class="page7-grand-value">{{pricing.grandTotal}}</td>
+        </tr>
+      </tbody>
+    </table>
 
-    <div class="amount-words">
-      <span class="label">Amount in Words</span>
-      <span class="value">{{pricing.amountInWords}}</span>
+    <!-- SPECIAL NOTE -->
+    <div style="margin-bottom: 12px;">
+      <p style="font-size: 8pt; line-height: 1.5; color: #dc2626;">
+        <strong>Special Note:</strong><br />
+        Above rates are considered based on the prevailing steel prices. Any price increase/decrease in the material rates will have commercial implication at the time of finalization meeting. The rates are volatile due to the unpredictable steel market.
+      </p>
     </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 7 — {{meta.quotationNumber}}</span>
+      <span>Page 7 of 10</span>
     </div>
   </div>
 
@@ -1136,60 +1249,58 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Notes &amp; Payment Terms
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    {{#if notes}}
-    <div class="section-title">Notes</div>
-    <div class="notes-box">
-      <div class="notes-title">Important Notes</div>
-      <p style="white-space: pre-wrap;">{{notes}}</p>
-    </div>
-    {{/if}}
-
-    <div class="section-title">Special Technical Assumptions</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. All structural design is based on the building dimensions and loads specified herein.<br>
-        2. Foundation design is assumed to be on normal soil (SBC ≥ 150 kN/m²) unless otherwise specified.<br>
-        3. All steel members are manufactured to IS 2062 / IS 808 standards.<br>
-        4. Bolts are Grade 4.6 / 8.8 as per design requirements.<br>
-        5. All welds are performed by certified welders as per IS 816.
-      </p>
-    </div>
-
-    <div class="section-title">Payment Terms</div>
-    <div class="terms-box">{{payment.terms}}</div>
-
-    {{#if payment.bankName}}
-    <div class="section-title">Bank Details</div>
-    <div class="info-card">
-      <div class="spec-grid">
-        <div class="spec-item">
-          <span class="spec-label">Bank Name</span>
-          <span class="spec-value">{{payment.bankName}}</span>
-        </div>
-        <div class="spec-item">
-          <span class="spec-label">Account No.</span>
-          <span class="spec-value">{{payment.accountNumber}}</span>
-        </div>
-        <div class="spec-item">
-          <span class="spec-label">IFSC Code</span>
-          <span class="spec-value">{{payment.ifscCode}}</span>
-        </div>
-        <div class="spec-item">
-          <span class="spec-label">Branch</span>
-          <span class="spec-value">{{payment.branchName}}</span>
-        </div>
+    <!-- NOTE -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Note:</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 6px;">• The above prices are Inclusive of GST Taxes. Any Change in the Taxes during the supply of Structural/Sheeting and during erection will be applicable accordingly. TCS Tax will be extra at actuals.</p>
+        <p style="margin-bottom: 6px;">• Packing-Forwarding-Transportation up to site by Shedx Peb LLP scope.</p>
+        <p style="margin-bottom: 6px;">• The prices offered are fixed as long as the project schedules are maintained by both the parties. Shedx peb LLP will be allowed for price & delivery escalation for reasons not attributable to Shedx peb LLP as under:</p>
+        <p style="margin-left: 20px; margin-bottom: 6px;">o Delay in approval on engineering drawings and structural/sheeting color shade system by Client/Consultant.</p>
+        <p style="margin-left: 20px; margin-bottom: 6px;">o Portions of Fabrication structural system put on hold either in part or in full condition</p>
+        <p style="margin-bottom: 6px;">Till we issue a Completion Certificate and Handover Letter, The cannot be termed as Complete and Safe for its Intended Use. Hence, Client will not occupy or put to use the Structure in whole or in part, without issuing a completion certificate by Shedx peb LLP in respect thereof. Also, we will not be liable for any consequences therein.</p>
       </div>
     </div>
-    {{/if}}
+
+    <!-- SPECIAL TECHNICAL ASSUMPTION -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Special Technical Assumption</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 4px;">1) Crane {{craneCapacityMt}}MT EOT Considered in both of the module and Running in Full length.</p>
+        <p style="margin-bottom: 4px;">2) Crane Data need to be confirmed before Finalised with Crane Vendor.</p>
+        <p style="margin-bottom: 4px;">3) 1 Nos. Cage ladder considered for Roof Access.</p>
+        <p style="margin-bottom: 4px;">4) Rolling Shutter.</p>
+      </div>
+    </div>
+
+    <!-- PAYMENT TERMS -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Payment Terms</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 6px;"><strong>Supply Payment Terms:</strong></p>
+        <p style="margin-bottom: 6px;">(1) 30 % advance with your confirm Work Order, 30 % against GA drawing approval & 35 % against dispatch of structure from our work shop, 05 % after Handover the Project.</p>
+        <p style="margin-bottom: 6px;">(2) Change orders/revisions will be negotiated separately.</p>
+      </div>
+    </div>
+
+    <!-- BANK DETAILS -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">BANK DETAILS:</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 4px;">Bank Name: {{payment.bankName}}</p>
+        <p style="margin-bottom: 4px;">CC Account No.: {{payment.accountNumber}}</p>
+        <p style="margin-bottom: 4px;">ISFC Code: {{payment.ifscCode}}</p>
+        <p style="margin-bottom: 4px;">Address: {{payment.address}}</p>
+      </div>
+    </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 8 — {{meta.quotationNumber}}</span>
+      <span>Page 8 of 10</span>
     </div>
   </div>
 
@@ -1200,59 +1311,55 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Exclusions &amp; Delivery
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    {{#if exclusions.length}}
-    <div class="section-title">Exclusions</div>
-    <ul class="content-list">
-      {{#each exclusions}}
-      <li>{{this}}</li>
-      {{/each}}
-    </ul>
-    {{/if}}
-
-    <div class="section-title">Delivery Schedule</div>
-    <div class="info-card">
-      <div class="card-title">Estimated Delivery</div>
-      <p style="font-size:9pt; margin-bottom:8px;">
-        {{#if delivery.terms}}{{delivery.terms}}{{else}}Estimated delivery: {{delivery.estimatedDuration}} from order confirmation.{{/if}}
-      </p>
-      {{#if delivery.milestones.length}}
-      <table class="milestone-table">
-        <thead>
-          <tr>
-            <th>Milestone</th>
-            <th>Estimated Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each delivery.milestones}}
-          <tr>
-            <td>{{milestone}}</td>
-            <td>{{estimatedDate}}</td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-      {{/if}}
+    <!-- EXCLUSION -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Exclusion</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 4px;">• Any Kind of Roof accessories like Roof Monitor unless otherwise mentioned above</p>
+        <p style="margin-bottom: 4px;">• Cable tray, cable tray supporting structure, ventilation duct, pipe support structure unless mentioned</p>
+        <p style="margin-bottom: 4px;">• Any support structure for additional load consideration.</p>
+        <p style="margin-bottom: 4px;">• Mechanical and electrical design and materials.</p>
+        <p style="margin-bottom: 4px;">• Miscellaneous steel except as specified herein</p>
+        <p style="margin-bottom: 4px;">• Concrete embedded plate's expansion bolts or weld plate of any kind.</p>
+        <p style="margin-bottom: 4px;">• Architectural services of any kind.</p>
+        <p style="margin-bottom: 4px;">• Any kind of internal partitions except those mentioned herein.</p>
+        <p style="margin-bottom: 4px;">• Any other items not included in the building specification.</p>
+        <p style="margin-bottom: 4px;">• Rolling Shutter</p>
+      </div>
     </div>
 
-    <div class="section-title">Other Commercial Terms</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. This quotation is valid for 30 days from the date of issue.<br>
-        2. Prices are subject to change after the validity period.<br>
-        3. All taxes, duties, and levies as applicable will be charged extra unless otherwise stated.<br>
-        4. Any modifications to the scope may result in price adjustments.
-      </p>
+    <!-- DELIVERY SCHEDULE -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Delivery Schedule</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 4px;">1. The starting date will be considered either the date on which the general Arrangement drawing of the building approved by the client or the date of advance payment whichever is later.</p>
+        <p style="margin-bottom: 4px;">2. Total time schedule to complete work will be finalization at the time of final negotiation with you</p>
+        <p style="margin-bottom: 4px;">3. We won't be responsible in delivering material in time if incase of unavoidable circumstances such as Worker's strike, Electric supply, Natural hazards Etc...</p>
+        <p style="margin-bottom: 4px; font-weight: bold;">❖ Delivery of Material within 6-8 Weeks after GA Approval.</p>
+        <p style="margin-bottom: 4px; font-weight: bold;">❖ Erection will be Completed within 8-10 Weeks after Material Supply.</p>
+      </div>
+    </div>
+
+    <!-- OTHER COMMERCIAL TERMS -->
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Other Commercial Terms</div>
+      <div style="font-size: 8pt; line-height: 1.5;">
+        <p style="margin-bottom: 4px;"><strong>1. Proposal Validity:</strong> This proposal will be valid for 20 days only from the date of this proposal.</p>
+        <p style="margin-bottom: 4px;"><strong>2. Variation:</strong> Any changes and /or revision of the above stated scope of supply MAY lead to a variation in price and the delivery period</p>
+        <p style="margin-bottom: 4px;"><strong>3. Permits:</strong> SELLER shall not be responsible or liable for the obtaining of permits to erect or install any product</p>
+        <p style="margin-bottom: 4px;"><strong>4. Changes and Revision:</strong> Any change and for revision to the above stated scope of supply may lead to a variation in the price and the delivery period. A change must not hold payment for work completed in the original contract.</p>
+        <p style="margin-bottom: 4px;"><strong>5. INSPECTION OF PRODUCT:</strong> BUYER agrees to inspect upon arrival of all articles shipped. Claims for shortage or defective material, If not packaged, must be made in writing to ASSL sales office within five days after the receipt of the shipment, and if packaged within 30 days after receipt of the shipment ASSL shall have a reasonable time to investigate all claims made by BUYER. Any claims for shortages or defects made after the above periods shall be refused and finally dismissed.</p>
+        <p style="margin-bottom: 4px;"><strong>6. ERECTION DRAWINGS:</strong> ASSL the SELLER will furnish the BUYER with all standard erection drawings required for the erection of the buildings. The SELLER will also furnish the BUYER with anchor bolts setting plans and column base reactions.</p>
+      </div>
     </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 9 — {{meta.quotationNumber}}</span>
+      <span>Page 9 of 10</span>
     </div>
   </div>
 
@@ -1263,76 +1370,39 @@
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
-        <strong>{{meta.quotationNumber}}</strong>
-        Terms &amp; Conditions
+        <strong>Inq. No. {{meta.inquiryNumber}}</strong>
       </div>
     </div>
 
-    <div class="section-title">Cancellations</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. Cancellation after order confirmation may attract a cancellation fee of up to 25% of the order value.<br>
-        2. Materials already procured or fabricated cannot be cancelled.<br>
-        3. Cancellation requests must be submitted in writing.
-      </p>
-    </div>
+    <div style="font-size: 8pt; line-height: 1.5;">
+      <p style="margin-bottom: 6px;"><strong>7. CANCELLATIONS:</strong> BUYER CANNOT cancel order, without first reaching an Agreement in writing with SELLER covering all the damages. If cancellations or modifications is agreed to by SELLER, BUYER agrees to pay all engineering and other expenses, Incurred by SELLER and in any case not less than 5% of the agreement price in case of cancellations</p>
+      <p style="margin-bottom: 6px;"><strong>8. PRODUCTION RELEASE:</strong> That portion of the order that is not shipped within 2 months from the date of contract / Purchase order will be subject to price increase.</p>
+      <p style="margin-bottom: 6px;"><strong>9. WARRANTY:</strong> ASSL products are warranted against any failure due to defective material or workmanship for a period of ONE year.</p>
+      <p style="margin-bottom: 6px;"><strong>10. PRODUCTION RELEASE:</strong> That portion of the order that is not shipped within 2 months from the date of contract / Purchase order will be subject to price increase.</p>
+      <p style="margin-bottom: 6px;"><strong>11. EXCLUSIONS:</strong> SELLER supply does not include any material or labor in connection with foundations, concrete, setting of anchor bolts, grouting under columns or in recess around bottom of wall sheets, electrical installations, heating, masonry, interior finishing, partitions, glass and glazing, or any item not shown in ASSL approval drawing, unless specifically mentioned in this agreement.</p>
+      <p style="margin-bottom: 6px;"><strong>12. Governing Laws:</strong> This agreement shall be construed and enforced in accordance with and under the laws of the Government of India. Both parties agree that in case of any difference or dispute arising between the Seller and the Buyer will be resolved by mutual discussions and agreement. However, unresolved issues, if any, will be settled by arbitration as per the Indian Arbitration and Conciliation Act, and the venue of the arbitration will be Ahmedabad, Gujarat, India.</p>
+      <p style="margin-bottom: 12px;">We hope you will find our proposal in accordance with your requirement & we look forward to serve your esteemed Organization.</p>
 
-    <div class="section-title">Production Release</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. Production will commence upon receipt of advance payment and order confirmation.<br>
-        2. Production timeline starts from the date of full payment or agreed milestone payment.<br>
-        3. Any delays in payments may proportionally delay the delivery schedule.
-      </p>
-    </div>
-
-    <div class="section-title">Warranty</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. Structural steel work carries a warranty of 10 years against structural defects.<br>
-        2. Cladding and sheeting carries a warranty of 5 years against weather-tightness.<br>
-        3. Warranty covers manufacturing defects only and does not cover damage due to misuse, unauthorized modifications, or natural disasters beyond design specifications.<br>
-        4. Warranty claims must be reported in writing within 30 days of defect discovery.
-      </p>
-    </div>
-
-    <div class="section-title">Governing Laws</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        This agreement shall be governed by and construed in accordance with the laws of India.
-        Any disputes arising shall be subject to the exclusive jurisdiction of courts in
-        {{#if organization.state}}{{organization.state}}{{else}}Gujarat{{/if}}, India.
-      </p>
-    </div>
-
-    <div class="section-title">Taxes &amp; Duties</div>
-    <div class="info-card">
-      <p style="font-size:9pt; line-height:1.6;">
-        1. All prices are exclusive of GST unless explicitly stated otherwise.<br>
-        2. GST will be charged at the applicable rate (currently {{pricing.gstRate}}).<br>
-        3. Any future changes in tax rates will be adjusted accordingly.<br>
-        4. TDS deductions, if applicable, must be made as per IT Act provisions.
-      </p>
-    </div>
-
-    <div class="signature-block">
-      <div class="signature-box">
-        <div class="sig-line"></div>
-        <div class="sig-name">{{preparedBy.name}}</div>
-        <div class="sig-label">{{preparedBy.designation}}</div>
-        <div class="sig-label">{{preparedBy.company}}</div>
+      <!-- TAXES & DUTIES -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ TAXES & DUTIES</div>
+        <p style="margin-bottom: 4px;">• The above price for the building is for Design, Engineering, and Preparation of erection drawings, manufacture, supply, transportation and erection of the Pre-Engineered Building.</p>
+        <p style="margin-bottom: 4px;">• Supply Charges will be inclusive of erection and freight, however G.S.T @ 18% will be charged on the above supply value. Any Change in GST Structure at the time of billing shall Govern.</p>
+        <p style="margin-bottom: 4px;">• Octroi and entry tax, if any will have been borne by the BUYER as per actual however if there is any change in G.S.T or any new statutory levies are introduced by the appropriate Government (state and central) at the time of shipment such additional charges will have to be borne by the BUYER as per actual.</p>
       </div>
-      <div class="signature-box">
-        <div class="sig-line"></div>
-        <div class="sig-name">Customer Authorization</div>
-        <div class="sig-label">Authorized Signatory</div>
-        <div class="sig-label">Date: _______________</div>
+
+      <!-- THANK YOU -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 9pt; font-weight: bold;">Thank you</div>
+        <p style="margin-bottom: 4px;">{{finalSignature.name}}</p>
+        <p style="margin-bottom: 4px;">{{finalSignature.mobile}}</p>
+        <p style="margin-bottom: 4px;">{{finalSignature.company}}</p>
       </div>
     </div>
 
     <div class="page-footer">
       <span class="company-name">{{organization.name}}</span>
-      <span>Page 10 — {{meta.quotationNumber}} — Generated on {{meta.generatedAt}}</span>
+      <span>Page 10 of 10</span>
     </div>
   </div>
 

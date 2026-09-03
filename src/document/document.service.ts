@@ -114,4 +114,32 @@ export class DocumentService {
       recentActivity: [],
     };
   }
+
+  async getActivities(id: string, organizationId: string) {
+    // For now, return empty array as documents don't have activities yet
+    // This can be extended later if document activities are implemented
+    return [];
+  }
+
+  async getById(id: string, organizationId: string) {
+    const attachment = await this.prisma.attachment.findFirst({
+      where: { id, organizationId, isDeleted: false },
+    });
+
+    if (!attachment) {
+      throw new Error('Document not found');
+    }
+
+    return {
+      id: attachment.id,
+      documentNumber: attachment.originalName || attachment.fileName,
+      documentType: attachment.entityType || 'Document',
+      customerName: attachment.entityId || '-',
+      projectName: undefined,
+      totalAmount: undefined,
+      status: attachment.category || 'Draft',
+      createdBy: attachment.uploadedById || undefined,
+      createdAt: attachment.createdAt,
+    };
+  }
 }

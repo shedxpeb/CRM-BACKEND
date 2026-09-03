@@ -109,9 +109,7 @@ export class HtmlPdfService implements OnModuleDestroy {
       ],
     });
 
-    this.browserContext = await this.browser.newContext({
-      viewport: { width: 595, height: 842 }, // A4 dimensions at 72dpi
-    });
+    this.browserContext = await this.browser.newContext();
 
     this.browser.on('disconnected', () => {
       this.logger.warn('Chromium browser disconnected');
@@ -176,6 +174,8 @@ export class HtmlPdfService implements OnModuleDestroy {
       );
     }
 
+    this.logger.log(`Generating PDF using template: ${templateName}`);
+
     // Acquire a page slot (blocks if at capacity)
     await this.acquirePageSlot();
 
@@ -184,8 +184,9 @@ export class HtmlPdfService implements OnModuleDestroy {
 
       // Save debug HTML in development only
       if (process.env.NODE_ENV !== 'production') {
-        const debugHtmlPath = path.join(process.cwd(), 'debug-pdf-output.html');
+        const debugHtmlPath = path.join(process.cwd(), `debug-${templateName}-output.html`);
         fs.writeFileSync(debugHtmlPath, html);
+        this.logger.log(`Debug HTML saved to: ${debugHtmlPath}`);
       }
 
       const browser = await this.getBrowser();

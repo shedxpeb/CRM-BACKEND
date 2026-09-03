@@ -16,6 +16,7 @@ import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { RequireRoles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { SkipOrgScope } from '../common/decorators/org-scope.decorator';
+import { QuotationTemplateDefaults } from '../quotation/interfaces/quotation-template-defaults.interface';
 
 @ApiTags('organization')
 @ApiBearerAuth()
@@ -99,5 +100,34 @@ export class OrganizationController {
   async softDelete(@Param('id') id: string) {
     await this.orgService.softDelete(id);
     return { message: 'Organization deleted successfully.' };
+  }
+
+  @Get(':id/quotation-template')
+  @RequirePermissions('organization:read')
+  @ApiOperation({ summary: 'Get quotation template defaults' })
+  async getQuotationTemplateDefaults(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    if (id !== organizationId) {
+      throw new ForbiddenException('Cannot access another organization');
+    }
+    const data = await this.orgService.getQuotationTemplateDefaults(id);
+    return { message: 'Quotation template defaults fetched successfully.', data };
+  }
+
+  @Patch(':id/quotation-template')
+  @RequirePermissions('organization:update')
+  @ApiOperation({ summary: 'Update quotation template defaults' })
+  async updateQuotationTemplateDefaults(
+    @Param('id') id: string,
+    @Body() defaults: QuotationTemplateDefaults,
+    @CurrentUser('organizationId') organizationId: string,
+  ) {
+    if (id !== organizationId) {
+      throw new ForbiddenException('Cannot update another organization');
+    }
+    const data = await this.orgService.updateQuotationTemplateDefaults(id, defaults);
+    return { message: 'Quotation template defaults updated successfully.', data };
   }
 }

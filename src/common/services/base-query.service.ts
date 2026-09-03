@@ -82,7 +82,7 @@ export class BaseQueryService {
       where.organizationId = this.requireOrganizationId(organizationId);
     }
 
-    if (search && search.length >= 2) {
+    if (search && search.length >= 1) {
       where.OR = this.config.searchFields.map((field) => ({
         [field]: { contains: search, mode: 'insensitive' },
       }));
