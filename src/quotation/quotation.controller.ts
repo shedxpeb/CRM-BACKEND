@@ -79,16 +79,12 @@ export class QuotationController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateQuotationDto,
-    @CurrentUser('id') updatedById: string,
-    @CurrentUser('name') updatedBy: string,
     @CurrentUser('organizationId') organizationId: string,
   ) {
     const data = await this.quotationService.update(
       id,
       dto,
       organizationId,
-      updatedById,
-      updatedBy,
     );
     return { message: 'Quotation updated successfully.', data };
   }

@@ -244,6 +244,8 @@ export class QuotationService {
           weightRows: dto.weightRows || [],
           // Contract price rows
           contractPriceRows: dto.contractPriceRows || [],
+          // Design weight summary for Page 7
+          designWeightSummary: dto.designWeightSummary || [],
         },
         // Store line items in materialSelections for PDF
         materialSelections: (dto.lineItems || []).map((item: any) => ({
@@ -301,8 +303,6 @@ export class QuotationService {
     id: string,
     dto: UpdateQuotationDto,
     organizationId: string,
-    updatedById: string,
-    updatedBy: string,
   ) {
     const existing = await this.findById(id, organizationId);
 
@@ -359,8 +359,6 @@ export class QuotationService {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
-      updatedById,
-      updatedBy,
       subtotal,
       discountAmount,
       taxAmount,
@@ -428,6 +426,14 @@ export class QuotationService {
       updateData.technicalSpecifications = {
         ...existingTechSpecs,
         contractPriceRows: dto.contractPriceRows,
+      };
+    }
+    // Handle designWeightSummary in technicalSpecifications
+    if (dto.designWeightSummary !== undefined) {
+      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
+      updateData.technicalSpecifications = {
+        ...existingTechSpecs,
+        designWeightSummary: dto.designWeightSummary,
       };
     }
 
