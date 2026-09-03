@@ -183,6 +183,12 @@ export class CreateQuotationDto {
   @IsOptional()
   @IsArray()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contractPriceRows?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   weightRows?: any;
 
   @ApiPropertyOptional()

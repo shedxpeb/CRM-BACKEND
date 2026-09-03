@@ -242,6 +242,8 @@ export class QuotationService {
           // Materials and weight
           materialSpecs: dto.materialSpecs || [],
           weightRows: dto.weightRows || [],
+          // Contract price rows
+          contractPriceRows: dto.contractPriceRows || [],
         },
         // Store line items in materialSelections for PDF
         materialSelections: (dto.lineItems || []).map((item: any) => ({
@@ -414,10 +416,18 @@ export class QuotationService {
     }
     if (dto.roofAccessories !== undefined) updateData.inclusions = dto.roofAccessories;
     if (dto.wallAccessories !== undefined) updateData.exclusions = dto.wallAccessories;
-    if (dto.materialSpecs !== undefined || dto.weightRows !== undefined) {
+    if (dto.materialSpecs !== undefined || dto.weightRows !== undefined || dto.contractPriceRows !== undefined) {
       updateData.proposalConfiguration = {
         materialSpecs: dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],
         weightRows: dto.weightRows || (existing.proposalConfiguration as any)?.weightRows || [],
+      };
+    }
+    // Handle contractPriceRows in technicalSpecifications (consistent with create method)
+    if (dto.contractPriceRows !== undefined) {
+      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
+      updateData.technicalSpecifications = {
+        ...existingTechSpecs,
+        contractPriceRows: dto.contractPriceRows,
       };
     }
 

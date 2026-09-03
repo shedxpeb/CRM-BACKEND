@@ -245,6 +245,44 @@ export interface PdfQuotationViewModel {
     mobile: string;
     company: string;
   };
+  roofAccessories: Array<{
+    id: string;
+    description: string;
+    size: string;
+    quantity: string;
+    location: string;
+  }>;
+  wallAccessories: Array<{
+    id: string;
+    description: string;
+    size: string;
+    quantity: string;
+    location: string;
+  }>;
+  materialSpecs: Array<{
+    id: string;
+    component: string;
+    specification: string;
+    make: string;
+    yieldStrength: string;
+    isChild?: boolean;
+    parentId?: string;
+  }>;
+  contractPriceRows: Array<{
+    id: string;
+    serialNo: number;
+    description: string;
+    unit: string;
+    quantity: string;
+    rate: string;
+    amount: number;
+  }>;
+  contractPrice: {
+    basicTotal: number;
+    gstRate: number;
+    gstAmount: number;
+    grandTotal: number;
+  };
 
   branding: {
     coverImage: string;
@@ -339,6 +377,11 @@ export class QuotationPdfService {
         return options.inverse(this);
       },
     );
+    Handlebars.registerHelper('formatIndianCurrency', (value: number) => {
+      if (typeof value !== 'number' || isNaN(value) || value === 0) return '';
+      return value.toLocaleString('en-IN');
+    });
+    Handlebars.registerHelper('add', (a: number, b: number) => (a || 0) + (b || 0));
   }
 
   /**
@@ -552,16 +595,43 @@ export class QuotationPdfService {
   /**
    * Map raw quotation data to the normalized PDF view model.
    */
-  mapToViewModel(
-    quotationData: Record<string, any>,
-    branding: PdfBrandingContext,
-  ): PdfQuotationViewModel {
-    const q = quotationData;
-    const techSpecs = q.technicalSpecifications as Record<string, any> || {};
+  private mapToViewModel(q: Record<string, any>, branding: PdfBrandingContext): PdfQuotationViewModel {
+    const templateDefaults = (q._organization as any)?.quotationTemplateDefaults || {};
+    const techSpecs = q.technicalSpecifications as any || {};
     const scopeConfig = q.scopeConfiguration as Record<string, any> || {};
     const pc = q.pricingConfiguration as Record<string, any> || {};
     const org = q._organization || {};
-    const templateDefaults = org.quotationTemplateDefaults || {};
+
+    // Debug logging for row counts before mapping
+    this.logger.log(`[mapToViewModel] === INPUT DATA INSPECTION ===`);
+    this.logger.log(`[mapToViewModel] Quotation ID: ${q.id}`);
+    this.logger.log(`[mapToViewModel] Roof Accessories: ${Array.isArray(q.roofAccessories) ? q.roofAccessories.length : 0}`);
+    this.logger.log(`[mapToViewModel] Wall Accessories: ${Array.isArray(q.wallAccessories) ? q.wallAccessories.length : 0}`);
+    this.logger.log(`[mapToViewModel] Material Specs: ${Array.isArray(q.materialSpecs) ? q.materialSpecs.length : 0}`);
+    this.logger.log(`[mapToViewModel] Contract Price Rows: ${Array.isArray(q.contractPriceRows) ? q.contractPriceRows.length : 0}`);
+    
+    // Log contract price rows details if present
+    if (Array.isArray(q.contractPriceRows) && q.contractPriceRows.length > 0) {
+      this.logger.log(`[mapToViewModel] Contract Price Rows details:`);
+      q.contractPriceRows.forEach((row: any, idx: number) => {
+        this.logger.log(`[mapToViewModel] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`);
+      });
+    } else {
+      this.logger.warn(`[mapToViewModel] WARNING: contractPriceRows is empty or not an array. Type: ${typeof q.contractPriceRows}, Value: ${JSON.stringify(q.contractPriceRows)}`);
+    }
+
+    // Row count validation
+    const roofCount = Array.isArray(q.roofAccessories) ? q.roofAccessories.length : 0;
+    const wallCount = Array.isArray(q.wallAccessories) ? q.wallAccessories.length : 0;
+    const materialCount = Array.isArray(q.materialSpecs) ? q.materialSpecs.length : 0;
+    const contractPriceCount = Array.isArray(q.contractPriceRows) ? q.contractPriceRows.length : 0;
+
+    if (roofCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Roof Accessories count is 0`);
+    if (wallCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Wall Accessories count is 0`);
+    if (materialCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Material Specs count is 0`);
+    if (contractPriceCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Contract Price Rows count is 0`);
+
+    this.logger.log('[mapToViewModel] Customer Name:', q.customerName);
 
     // Technical specifications are stored as flat fields, not nested objects
     const buildingSpec = {
@@ -870,6 +940,49 @@ export class QuotationPdfService {
         company: this.normalizeString(q.finalSignatureCompany || templateDefaults.signature?.company || 'Shedx Peb LLP'),
       },
 
+      roofAccessories: (q.roofAccessories || []).map((acc: any) => ({
+        id: acc.id || '',
+        description: this.normalizeString(acc.description || ''),
+        size: this.normalizeString(acc.size || ''),
+        quantity: this.normalizeString(acc.quantity || ''),
+        location: this.normalizeString(acc.location || ''),
+      })),
+
+      wallAccessories: (q.wallAccessories || []).map((acc: any) => ({
+        id: acc.id || '',
+        description: this.normalizeString(acc.description || ''),
+        size: this.normalizeString(acc.size || ''),
+        quantity: this.normalizeString(acc.quantity || ''),
+        location: this.normalizeString(acc.location || ''),
+      })),
+
+      materialSpecs: (q.materialSpecs || []).map((spec: any) => ({
+        id: spec.id || '',
+        component: this.normalizeString(spec.component || ''),
+        specification: this.normalizeString(spec.specification || ''),
+        make: this.normalizeString(spec.make || ''),
+        yieldStrength: this.normalizeString(spec.yieldStrength || ''),
+        isChild: spec.isChild || false,
+        parentId: spec.parentId || '',
+      })),
+
+      contractPriceRows: (q.contractPriceRows || []).map((row: any) => ({
+        id: row.id || '',
+        serialNo: row.serialNo || 0,
+        description: this.normalizeString(row.description || ''),
+        unit: this.normalizeString(row.unit || ''),
+        quantity: this.normalizeString(row.quantity || ''),
+        rate: this.normalizeString(row.rate || ''),
+        amount: row.amount || 0,
+      })),
+
+      contractPrice: {
+        basicTotal: q.contractPrice?.basicTotal || 0,
+        gstRate: q.contractPrice?.gstRate || 18,
+        gstAmount: q.contractPrice?.gstAmount || 0,
+        grandTotal: q.contractPrice?.grandTotal || 0,
+      },
+
       delivery: {
         terms: q.deliveryTerms || '',
         estimatedDuration: '4-6 weeks',
@@ -938,8 +1051,39 @@ export class QuotationPdfService {
     });
 
     if (quotation) {
+      // Extract technical specifications JSON
+      const techSpecs = quotation.technicalSpecifications as any || {};
+      const proposalConfig = quotation.proposalConfiguration as any || {};
+      
+      // Debug logging to track row counts from both sources
+      this.logger.log(`[fetchQuotation] Quotation ID: ${id}`);
+      this.logger.log(`[fetchQuotation] Inquiry Number: ${quotation.inquiryNumber}`);
+      this.logger.log(`[fetchQuotation] === TECHNICAL SPECIFICATIONS ===`);
+      this.logger.log(`[fetchQuotation] Roof Accessories count: ${Array.isArray(techSpecs.roofAccessories) ? techSpecs.roofAccessories.length : 0}`);
+      this.logger.log(`[fetchQuotation] Wall Accessories count: ${Array.isArray(techSpecs.wallAccessories) ? techSpecs.wallAccessories.length : 0}`);
+      this.logger.log(`[fetchQuotation] Material Specs count: ${Array.isArray(techSpecs.materialSpecs) ? techSpecs.materialSpecs.length : 0}`);
+      this.logger.log(`[fetchQuotation] Contract Price Rows (from technicalSpecifications): ${Array.isArray(techSpecs.contractPriceRows) ? techSpecs.contractPriceRows.length : 0}`);
+      this.logger.log(`[fetchQuotation] === PROPOSAL CONFIGURATION ===`);
+      this.logger.log(`[fetchQuotation] Contract Price Rows (from proposalConfiguration): ${Array.isArray(proposalConfig.contractPriceRows) ? proposalConfig.contractPriceRows.length : 0}`);
+      this.logger.log(`[fetchQuotation] Material Specs (from proposalConfiguration): ${Array.isArray(proposalConfig.materialSpecs) ? proposalConfig.materialSpecs.length : 0}`);
+      
+      // Log contract price rows details if present
+      if (Array.isArray(techSpecs.contractPriceRows) && techSpecs.contractPriceRows.length > 0) {
+        this.logger.log(`[fetchQuotation] Contract Price Rows from technicalSpecifications:`);
+        techSpecs.contractPriceRows.forEach((row: any, idx: number) => {
+          this.logger.log(`[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount(${row.amount})`);
+        });
+      }
+      if (Array.isArray(proposalConfig.contractPriceRows) && proposalConfig.contractPriceRows.length > 0) {
+        this.logger.log(`[fetchQuotation] Contract Price Rows from proposalConfiguration:`);
+        proposalConfig.contractPriceRows.forEach((row: any, idx: number) => {
+          this.logger.log(`[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`);
+        });
+      }
+
       return {
         ...quotation,
+        ...techSpecs, // Flatten technicalSpecifications to top level for easier access
         _organization: await this.getOrganizationForQuotation(organizationId),
       };
     }

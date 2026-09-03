@@ -838,12 +838,6 @@
         <tr>
           <th colspan="4" class="page3-header-yellow">BUILDING SPECIFICATION</th>
         </tr>
-        <tr>
-          <th class="page3-col-no">No.</th>
-          <th class="page3-col-field">Field</th>
-          <th class="page3-col-sep">:</th>
-          <th class="page3-col-value">Value</th>
-        </tr>
       </thead>
       <tbody>
         <tr><td class="page3-col-no">1</td><td>FRAME TYPE</td><td class="page3-col-sep">:</td><td>{{building.frameType}}</td></tr>
@@ -874,12 +868,6 @@
         <tr>
           <th colspan="4" class="page3-header-gray">DESIGN CODE</th>
         </tr>
-        <tr>
-          <th class="page3-col-no">No.</th>
-          <th class="page3-col-field">Field</th>
-          <th class="page3-col-sep">:</th>
-          <th class="page3-col-value">Value</th>
-        </tr>
       </thead>
       <tbody>
         <tr><td class="page3-col-no">1</td><td>Design and Wind Load Application</td><td class="page3-col-sep">:</td><td>{{design.designCode}}</td></tr>
@@ -892,12 +880,6 @@
       <thead>
         <tr>
           <th colspan="4" class="page3-header-gray">DESIGN LOAD</th>
-        </tr>
-        <tr>
-          <th class="page3-col-no">No.</th>
-          <th class="page3-col-field">Field</th>
-          <th class="page3-col-sep">:</th>
-          <th class="page3-col-value">Value</th>
         </tr>
       </thead>
       <tbody>
@@ -916,12 +898,6 @@
       <thead>
         <tr>
           <th colspan="4" class="page3-header-gray">MEZZANINE LOAD</th>
-        </tr>
-        <tr>
-          <th class="page3-col-no">No.</th>
-          <th class="page3-col-field">Field</th>
-          <th class="page3-col-sep">:</th>
-          <th class="page3-col-value">Value</th>
         </tr>
       </thead>
       <tbody>
@@ -959,12 +935,6 @@
         <tr>
           <th colspan="4" class="page3-header-gray">CRANE DETAIL</th>
         </tr>
-        <tr>
-          <th class="page3-col-no">No.</th>
-          <th class="page3-col-field">Field</th>
-          <th class="page3-col-sep">:</th>
-          <th class="page3-col-value">Value</th>
-        </tr>
       </thead>
       <tbody>
         <tr><td class="page3-col-no">1</td><td>CRANE CAPACITY</td><td class="page3-col-sep">:</td><td>{{crane.capacity}}</td></tr>
@@ -1000,9 +970,9 @@
         </tr>
       </thead>
       <tbody>
-        {{#each accessories.roofAccessories}}
+        {{#each roofAccessories}}
         <tr>
-          <td class="page4-col-no">{{@index}}</td>
+          <td class="page4-col-no">{{add @index 1}}</td>
           <td class="page4-col-desc">{{description}}</td>
           <td class="page4-col-size">{{size}}</td>
           <td class="page4-col-qty">{{quantity}}</td>
@@ -1044,10 +1014,10 @@
         </tr>
       </thead>
       <tbody>
-        {{#if accessories.wallAccessories.length}}
-          {{#each accessories.wallAccessories}}
+        {{#if wallAccessories.length}}
+          {{#each wallAccessories}}
           <tr>
-            <td class="page4-col-no">{{@index}}</td>
+            <td class="page4-col-no">{{add @index 1}}</td>
             <td class="page4-col-desc">{{description}}</td>
             <td class="page4-col-size">{{size}}</td>
             <td class="page4-col-qty">{{quantity}}</td>
@@ -1115,7 +1085,7 @@
     <div style="margin-bottom: 12px;">
       <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">❖ Material Specification for Building</div>
       
-      {{#if materials.length}}
+      {{#if materialSpecs.length}}
       <table class="page6-material-table" style="margin-top: 8px;">
         <thead>
           <tr>
@@ -1127,14 +1097,25 @@
           </tr>
         </thead>
         <tbody>
-          {{#each materials}}
+          {{#each materialSpecs}}
+          {{#unless isChild}}
           <tr>
-            <td class="page6-col-sno">{{sno}}</td>
+            <td class="page6-col-sno">{{add @index 1}}</td>
             <td class="page6-col-comp">{{component}}</td>
             <td class="page6-col-spec">{{specification}}</td>
             <td class="page6-col-make">{{make}}</td>
             <td class="page6-col-yield">{{yieldStrength}}</td>
           </tr>
+          {{/unless}}
+          {{#if isChild}}
+          <tr>
+            <td class="page6-col-sno"></td>
+            <td class="page6-col-comp" style="padding-left: 20px;">→ {{component}}</td>
+            <td class="page6-col-spec">{{specification}}</td>
+            <td class="page6-col-make">{{make}}</td>
+            <td class="page6-col-yield">{{yieldStrength}}</td>
+          </tr>
+          {{/if}}
           {{/each}}
         </tbody>
       </table>
@@ -1197,9 +1178,9 @@
         </tr>
       </thead>
       <tbody>
-        {{#each pricing.lineItems}}
+        {{#each contractPriceRows}}
         <tr>
-          <td class="page7-col-sno">{{sno}}</td>
+          <td class="page7-col-sno">{{serialNo}}</td>
           <td class="page7-col-desc">{{description}}</td>
           <td class="page7-col-unit">{{unit}}</td>
           <td class="page7-col-qty">{{quantity}}</td>
@@ -1215,15 +1196,15 @@
       <tbody>
         <tr>
           <td colspan="5" class="page7-total-label">TOTAL</td>
-          <td class="page7-total-value">{{pricing.subtotal}}</td>
+          <td class="page7-total-value">INR. {{formatIndianCurrency contractPrice.basicTotal}}/-</td>
         </tr>
         <tr>
-          <td colspan="5" class="page7-total-label">GST ({{pricing.gstRate}})</td>
-          <td class="page7-total-value">{{pricing.taxAmount}}</td>
+          <td colspan="5" class="page7-total-label">GST @ {{contractPrice.gstRate}}%</td>
+          <td class="page7-total-value">INR. {{formatIndianCurrency contractPrice.gstAmount}}/-</td>
         </tr>
         <tr>
           <td colspan="5" class="page7-grand-label">GRAND TOTAL</td>
-          <td class="page7-grand-value">{{pricing.grandTotal}}</td>
+          <td class="page7-grand-value">INR. {{formatIndianCurrency contractPrice.grandTotal}}/-</td>
         </tr>
       </tbody>
     </table>

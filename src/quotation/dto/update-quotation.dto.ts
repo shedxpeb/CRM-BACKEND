@@ -146,6 +146,12 @@ export class UpdateQuotationDto {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   weightRows?: any;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contractPriceRows?: any;
+
   // Page 2: Prepared By snapshot
   @ApiPropertyOptional()
   @IsOptional()
