@@ -57,7 +57,7 @@ export class HtmlPdfService implements OnModuleDestroy {
         return str.includes(substr);
       });
       Handlebars.registerHelper('or', (...args: unknown[]) => {
-        const options = args.pop() as any;
+        args.pop();
         return args.some((arg: unknown) => !!arg);
       });
       Handlebars.registerHelper('isEmpty', (value: unknown) => {
@@ -107,7 +107,9 @@ export class HtmlPdfService implements OnModuleDestroy {
     this.logger.log('[TEMPLATE RELOAD] Clearing template cache and reloading...');
     this.templates.clear();
     this.loadTemplates();
-    this.logger.log(`[TEMPLATE RELOAD] Templates reloaded. Available: ${Array.from(this.templates.keys()).join(', ')}`);
+    this.logger.log(
+      `[TEMPLATE RELOAD] Templates reloaded. Available: ${Array.from(this.templates.keys()).join(', ')}`,
+    );
   }
 
   // ─── Browser Pooling ──────────────────────────────────────────────────────
@@ -222,7 +224,9 @@ export class HtmlPdfService implements OnModuleDestroy {
         await page.setContent(html, { waitUntil: 'networkidle' });
 
         // Diagnostic: Count page containers before PDF generation
-        const pageContainerCount = await page.locator('.page, .quotation-page, .cover-page').count();
+        const pageContainerCount = await page
+          .locator('.page, .quotation-page, .cover-page')
+          .count();
         this.logger.log(`[PDF DEBUG] HTML page containers: ${pageContainerCount}`);
 
         // Diagnostic: Check for Design Weight Summary

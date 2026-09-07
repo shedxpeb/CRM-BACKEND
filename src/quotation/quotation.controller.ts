@@ -81,11 +81,7 @@ export class QuotationController {
     @Body() dto: UpdateQuotationDto,
     @CurrentUser('organizationId') organizationId: string,
   ) {
-    const data = await this.quotationService.update(
-      id,
-      dto,
-      organizationId,
-    );
+    const data = await this.quotationService.update(id, dto, organizationId);
     return { message: 'Quotation updated successfully.', data };
   }
 

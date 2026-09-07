@@ -105,9 +105,9 @@ export class OrganizationService {
   }
 
   async getQuotationTemplateDefaults(organizationId: string): Promise<QuotationTemplateDefaults> {
-    const org = await this.prisma.organization.findFirst({
+    const org = (await this.prisma.organization.findFirst({
       where: { id: organizationId, isDeleted: false },
-    }) as any;
+    })) as any;
     if (!org) throw new NotFoundException(`Organization with ID ${organizationId} not found`);
     return (org.quotationTemplateDefaults as QuotationTemplateDefaults) || {};
   }
@@ -120,12 +120,12 @@ export class OrganizationService {
       where: { id: organizationId, isDeleted: false },
     });
     if (!org) throw new NotFoundException(`Organization with ID ${organizationId} not found`);
-    
-    const updated = await this.prisma.organization.update({
+
+    const updated = (await this.prisma.organization.update({
       where: { id: organizationId },
       data: { quotationTemplateDefaults: defaults as any },
-    }) as any;
-    
+    })) as any;
+
     return updated.quotationTemplateDefaults as QuotationTemplateDefaults;
   }
 }

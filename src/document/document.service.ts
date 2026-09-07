@@ -115,7 +115,7 @@ export class DocumentService {
     };
   }
 
-  async getActivities(id: string, organizationId: string) {
+  async getActivities(_id: string, _organizationId: string) {
     // For now, return empty array as documents don't have activities yet
     // This can be extended later if document activities are implemented
     return [];

@@ -533,8 +533,15 @@ export class QuotationPdfService {
    * The cover image is located at frontend/public/quotation-assets/first.jpg
    */
   loadCoverImageAsDataUri(): string {
-    const coverImagePath = path.join(process.cwd(), '..', 'frontend', 'public', 'quotation-assets', 'first.jpg');
-    
+    const coverImagePath = path.join(
+      process.cwd(),
+      '..',
+      'frontend',
+      'public',
+      'quotation-assets',
+      'first.jpg',
+    );
+
     // Check cache
     const cacheKey = `cover-image:${coverImagePath}`;
     const cached = this.assetCache.get(cacheKey);
@@ -547,7 +554,7 @@ export class QuotationPdfService {
       if (!fs.existsSync(coverImagePath)) {
         throw new Error(`Quotation cover image missing: ${coverImagePath}`);
       }
-      
+
       const buffer = fs.readFileSync(coverImagePath);
       const dataUri = `data:image/jpeg;base64,${buffer.toString('base64')}`;
 
@@ -558,7 +565,9 @@ export class QuotationPdfService {
       });
       return dataUri;
     } catch (error) {
-      this.logger.error(`Failed to load cover image: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Failed to load cover image: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new Error(`Quotation cover image missing: frontend/public/quotation-assets/first.jpg`);
     }
   }
@@ -568,8 +577,15 @@ export class QuotationPdfService {
    * The watermark image is located at frontend/public/quotation-assets/watermark.png
    */
   loadWatermarkImageAsDataUri(): string {
-    const watermarkPath = path.join(process.cwd(), '..', 'frontend', 'public', 'quotation-assets', 'watermark.png');
-    
+    const watermarkPath = path.join(
+      process.cwd(),
+      '..',
+      'frontend',
+      'public',
+      'quotation-assets',
+      'watermark.png',
+    );
+
     // Check cache
     const cacheKey = `watermark-image:${watermarkPath}`;
     const cached = this.assetCache.get(cacheKey);
@@ -583,7 +599,7 @@ export class QuotationPdfService {
         this.logger.warn(`Watermark image not found: ${watermarkPath}`);
         return '';
       }
-      
+
       const buffer = fs.readFileSync(watermarkPath);
       const dataUri = `data:image/png;base64,${buffer.toString('base64')}`;
 
@@ -594,7 +610,9 @@ export class QuotationPdfService {
       });
       return dataUri;
     } catch (error) {
-      this.logger.warn(`Failed to load watermark image: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(
+        `Failed to load watermark image: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return '';
     }
   }
@@ -602,29 +620,44 @@ export class QuotationPdfService {
   /**
    * Map raw quotation data to the normalized PDF view model.
    */
-  private mapToViewModel(q: Record<string, any>, branding: PdfBrandingContext): PdfQuotationViewModel {
+  private mapToViewModel(
+    q: Record<string, any>,
+    branding: PdfBrandingContext,
+  ): PdfQuotationViewModel {
     const templateDefaults = (q._organization as any)?.quotationTemplateDefaults || {};
-    const techSpecs = q.technicalSpecifications as any || {};
-    const scopeConfig = q.scopeConfiguration as Record<string, any> || {};
-    const pc = q.pricingConfiguration as Record<string, any> || {};
+    const techSpecs = (q.technicalSpecifications as any) || {};
+    const _scopeConfig = (q.scopeConfiguration as Record<string, any>) || {};
+    const pc = (q.pricingConfiguration as Record<string, any>) || {};
     const org = q._organization || {};
 
     // Debug logging for row counts before mapping
     this.logger.log(`[mapToViewModel] === INPUT DATA INSPECTION ===`);
     this.logger.log(`[mapToViewModel] Quotation ID: ${q.id}`);
-    this.logger.log(`[mapToViewModel] Roof Accessories: ${Array.isArray(q.roofAccessories) ? q.roofAccessories.length : 0}`);
-    this.logger.log(`[mapToViewModel] Wall Accessories: ${Array.isArray(q.wallAccessories) ? q.wallAccessories.length : 0}`);
-    this.logger.log(`[mapToViewModel] Material Specs: ${Array.isArray(q.materialSpecs) ? q.materialSpecs.length : 0}`);
-    this.logger.log(`[mapToViewModel] Contract Price Rows: ${Array.isArray(q.contractPriceRows) ? q.contractPriceRows.length : 0}`);
-    
+    this.logger.log(
+      `[mapToViewModel] Roof Accessories: ${Array.isArray(q.roofAccessories) ? q.roofAccessories.length : 0}`,
+    );
+    this.logger.log(
+      `[mapToViewModel] Wall Accessories: ${Array.isArray(q.wallAccessories) ? q.wallAccessories.length : 0}`,
+    );
+    this.logger.log(
+      `[mapToViewModel] Material Specs: ${Array.isArray(q.materialSpecs) ? q.materialSpecs.length : 0}`,
+    );
+    this.logger.log(
+      `[mapToViewModel] Contract Price Rows: ${Array.isArray(q.contractPriceRows) ? q.contractPriceRows.length : 0}`,
+    );
+
     // Log contract price rows details if present
     if (Array.isArray(q.contractPriceRows) && q.contractPriceRows.length > 0) {
       this.logger.log(`[mapToViewModel] Contract Price Rows details:`);
       q.contractPriceRows.forEach((row: any, idx: number) => {
-        this.logger.log(`[mapToViewModel] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`);
+        this.logger.log(
+          `[mapToViewModel] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`,
+        );
       });
     } else {
-      this.logger.warn(`[mapToViewModel] WARNING: contractPriceRows is empty or not an array. Type: ${typeof q.contractPriceRows}, Value: ${JSON.stringify(q.contractPriceRows)}`);
+      this.logger.warn(
+        `[mapToViewModel] WARNING: contractPriceRows is empty or not an array. Type: ${typeof q.contractPriceRows}, Value: ${JSON.stringify(q.contractPriceRows)}`,
+      );
     }
 
     // Row count validation
@@ -635,8 +668,10 @@ export class QuotationPdfService {
 
     if (roofCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Roof Accessories count is 0`);
     if (wallCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Wall Accessories count is 0`);
-    if (materialCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Material Specs count is 0`);
-    if (contractPriceCount === 0) this.logger.warn(`[mapToViewModel] WARNING: Contract Price Rows count is 0`);
+    if (materialCount === 0)
+      this.logger.warn(`[mapToViewModel] WARNING: Material Specs count is 0`);
+    if (contractPriceCount === 0)
+      this.logger.warn(`[mapToViewModel] WARNING: Contract Price Rows count is 0`);
 
     this.logger.log('[mapToViewModel] Customer Name:', q.customerName);
 
@@ -718,8 +753,14 @@ export class QuotationPdfService {
     this.logger.log('[mapToViewModel] Organization Settings:', JSON.stringify(org.settings));
     this.logger.log('[mapToViewModel] Technical Specifications (flat):', JSON.stringify(techSpecs));
     this.logger.log('[mapToViewModel] Material Specs:', JSON.stringify(techSpecs.materialSpecs));
-    this.logger.log('[mapToViewModel] Roof Accessories:', JSON.stringify(techSpecs.roofAccessories));
-    this.logger.log('[mapToViewModel] Wall Accessories:', JSON.stringify(techSpecs.wallAccessories));
+    this.logger.log(
+      '[mapToViewModel] Roof Accessories:',
+      JSON.stringify(techSpecs.roofAccessories),
+    );
+    this.logger.log(
+      '[mapToViewModel] Wall Accessories:',
+      JSON.stringify(techSpecs.wallAccessories),
+    );
     this.logger.log('[mapToViewModel] Weight Rows:', JSON.stringify(techSpecs.weightRows));
     this.logger.log('[mapToViewModel] Pricing Configuration:', JSON.stringify(pc));
 
@@ -778,12 +819,26 @@ export class QuotationPdfService {
         email: q.preparedByEmail || org.email || '',
       },
 
-      subject: q.subject || templateDefaults?.subject || 'Techno Commercial Offer for Design Supply of PEB Building.',
-      introduction: q.introduction || templateDefaults?.introduction || 'We Thank you for valued enquiry for Pre engineering building Steel Structure and giving us opportunity to submit a Proposal to your valuable project in a cost-effective manner.\n\nThis Proposal to you is based on steels standard design criteria and specifications. However, the overall dimensions and layout are in General accordance with your enquiry or Drawings Given by you.\n\nKindly note that we have tried our utmost to assure that this proposal meets all your project requirements and specifications. However, in some case we had to make some assumptions, suggest certain deviations and exclude some items that you may have requested.\n\nWe hope you will find the same in order, awaiting your kind reply & esteemed order.',
+      subject:
+        q.subject ||
+        templateDefaults?.subject ||
+        'Techno Commercial Offer for Design Supply of PEB Building.',
+      introduction:
+        q.introduction ||
+        templateDefaults?.introduction ||
+        'We Thank you for valued enquiry for Pre engineering building Steel Structure and giving us opportunity to submit a Proposal to your valuable project in a cost-effective manner.\n\nThis Proposal to you is based on steels standard design criteria and specifications. However, the overall dimensions and layout are in General accordance with your enquiry or Drawings Given by you.\n\nKindly note that we have tried our utmost to assure that this proposal meets all your project requirements and specifications. However, in some case we had to make some assumptions, suggest certain deviations and exclude some items that you may have requested.\n\nWe hope you will find the same in order, awaiting your kind reply & esteemed order.',
       signature: {
         prefix: q.signaturePrefix || 'Sincerely Yours,',
-        name: q.signatureName || templateDefaults?.signature?.name || q.preparedByName || 'Mr. VIKAS GONDALIYA',
-        designation: q.signatureDesignation || templateDefaults?.signature?.designation || q.preparedByDesignation || 'Director For Shedx Peb LLP.',
+        name:
+          q.signatureName ||
+          templateDefaults?.signature?.name ||
+          q.preparedByName ||
+          'Mr. VIKAS GONDALIYA',
+        designation:
+          q.signatureDesignation ||
+          templateDefaults?.signature?.designation ||
+          q.preparedByDesignation ||
+          'Director For Shedx Peb LLP.',
         mobile: q.signatureMobile || q.preparedByMobile || '6359998111',
         email: q.signatureEmail || q.preparedByEmail || 'Sales@shedxpeb.com',
       },
@@ -839,8 +894,12 @@ export class QuotationPdfService {
         windLoad: this.normalizeString(designLoad.windSpeed),
         columnLoad: this.normalizeString(designLoad.columnLoad),
         collateralLoad: this.normalizeString(designLoad.collateralLoad),
-        craneLoad: craneDetail?.craneCapacity ? `${this.normalizeString(craneDetail.craneCapacity)} MT` : 'N/A',
-        mezzanineLoad: mezzanineLoad?.mezzLiveLoad ? `${this.normalizeString(mezzanineLoad.mezzLiveLoad)} kN/m²` : 'N/A',
+        craneLoad: craneDetail?.craneCapacity
+          ? `${this.normalizeString(craneDetail.craneCapacity)} MT`
+          : 'N/A',
+        mezzanineLoad: mezzanineLoad?.mezzLiveLoad
+          ? `${this.normalizeString(mezzanineLoad.mezzLiveLoad)} kN/m²`
+          : 'N/A',
       },
 
       crane: {
@@ -871,13 +930,13 @@ export class QuotationPdfService {
       },
 
       accessories: {
-        roofAccessories: (q.inclusions as any[] || []).map((item: any) => ({
+        roofAccessories: ((q.inclusions as any[]) || []).map((item: any) => ({
           description: this.normalizeString(item.description),
           size: this.normalizeString(item.size),
           quantity: this.normalizeString(item.quantity),
           location: this.normalizeString(item.location),
         })),
-        wallAccessories: (q.exclusions as any[] || []).map((item: any) => ({
+        wallAccessories: ((q.exclusions as any[]) || []).map((item: any) => ({
           description: this.normalizeString(item.description),
           size: this.normalizeString(item.size),
           quantity: this.normalizeString(item.quantity),
@@ -887,7 +946,7 @@ export class QuotationPdfService {
 
       materials: this.mapMaterials(techSpecs.materialSpecs || [], pc),
 
-      weightSummary: (techSpecs.weightRows || []).map((item: any, index: number) => ({
+      weightSummary: (techSpecs.weightRows || []).map((item: any, _index: number) => ({
         description: this.normalizeString(item.description),
         weight: this.normalizeString(item.weight),
         unit: this.normalizeString(item.unit) || 'MT',
@@ -896,16 +955,79 @@ export class QuotationPdfService {
 
       pricing: {
         lineItems: [
-          { sno: 1, description: 'Material Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.materialCost), amount: this.fmtCurrency(q.materialCost) },
-          { sno: 2, description: 'Labour Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.labourCost), amount: this.fmtCurrency(q.labourCost) },
-          { sno: 3, description: 'Installation Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.installationCost), amount: this.fmtCurrency(q.installationCost) },
-          { sno: 4, description: 'Transportation Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.transportationCost), amount: this.fmtCurrency(q.transportationCost) },
-          { sno: 5, description: 'Crane Cost', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.craneCost), amount: this.fmtCurrency(q.craneCost) },
-          { sno: 6, description: 'Civil Work', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.civilCost), amount: this.fmtCurrency(q.civilCost) },
-          { sno: 7, description: 'Accommodation', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.accommodationCost), amount: this.fmtCurrency(q.accommodationCost) },
-          { sno: 8, description: 'Erection', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.erectionCost), amount: this.fmtCurrency(q.erectionCost) },
-          { sno: 9, description: 'Freight', unit: 'LS', quantity: '1', rate: this.fmtCurrency(q.freightCost), amount: this.fmtCurrency(q.freightCost) },
-        ].filter(item => item.amount !== '₹ 0.00'),
+          {
+            sno: 1,
+            description: 'Material Cost',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.materialCost),
+            amount: this.fmtCurrency(q.materialCost),
+          },
+          {
+            sno: 2,
+            description: 'Labour Cost',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.labourCost),
+            amount: this.fmtCurrency(q.labourCost),
+          },
+          {
+            sno: 3,
+            description: 'Installation Cost',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.installationCost),
+            amount: this.fmtCurrency(q.installationCost),
+          },
+          {
+            sno: 4,
+            description: 'Transportation Cost',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.transportationCost),
+            amount: this.fmtCurrency(q.transportationCost),
+          },
+          {
+            sno: 5,
+            description: 'Crane Cost',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.craneCost),
+            amount: this.fmtCurrency(q.craneCost),
+          },
+          {
+            sno: 6,
+            description: 'Civil Work',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.civilCost),
+            amount: this.fmtCurrency(q.civilCost),
+          },
+          {
+            sno: 7,
+            description: 'Accommodation',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.accommodationCost),
+            amount: this.fmtCurrency(q.accommodationCost),
+          },
+          {
+            sno: 8,
+            description: 'Erection',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.erectionCost),
+            amount: this.fmtCurrency(q.erectionCost),
+          },
+          {
+            sno: 9,
+            description: 'Freight',
+            unit: 'LS',
+            quantity: '1',
+            rate: this.fmtCurrency(q.freightCost),
+            amount: this.fmtCurrency(q.freightCost),
+          },
+        ].filter((item) => item.amount !== '₹ 0.00'),
         materialCost: this.fmtCurrency(q.materialCost),
         labourCost: this.fmtCurrency(q.labourCost),
         installationCost: this.fmtCurrency(q.installationCost),
@@ -936,15 +1058,24 @@ export class QuotationPdfService {
         ifscCode: templateDefaults.bankDetails?.ifscCode || q.ifscCode || '',
         address: templateDefaults.bankDetails?.address || q.address || '',
         branchName: templateDefaults.bankDetails?.branchName || q.bankBranch || '',
-        accountType: templateDefaults.bankDetails?.accountType || q.accountType || 'Current Account',
+        accountType:
+          templateDefaults.bankDetails?.accountType || q.accountType || 'Current Account',
       },
 
-      craneCapacityMt: this.normalizeString(techSpecs.craneDetail?.craneCapacity?.replace(/[^0-9]/g, '') || '10'),
+      craneCapacityMt: this.normalizeString(
+        techSpecs.craneDetail?.craneCapacity?.replace(/[^0-9]/g, '') || '10',
+      ),
 
       finalSignature: {
-        name: this.normalizeString(q.finalSignatureName || templateDefaults.signature?.name || 'Mr. VIKAS GONDALIYA'),
-        mobile: this.normalizeString(q.finalSignatureMobile || templateDefaults.signature?.mobile || '+91 6359998111'),
-        company: this.normalizeString(q.finalSignatureCompany || templateDefaults.signature?.company || 'Shedx Peb LLP'),
+        name: this.normalizeString(
+          q.finalSignatureName || templateDefaults.signature?.name || 'Mr. VIKAS GONDALIYA',
+        ),
+        mobile: this.normalizeString(
+          q.finalSignatureMobile || templateDefaults.signature?.mobile || '+91 6359998111',
+        ),
+        company: this.normalizeString(
+          q.finalSignatureCompany || templateDefaults.signature?.company || 'Shedx Peb LLP',
+        ),
       },
 
       roofAccessories: (q.roofAccessories || []).map((acc: any) => ({
@@ -1022,21 +1153,32 @@ export class QuotationPdfService {
       notes: templateDefaults.notes || q.notes || '',
 
       branding: {
-        coverImage: this.normalizeString(branding.coverImage ? this.loadLogoAsDataUri(branding.coverImage) : this.loadCoverImageAsDataUri()),
-        watermarkImage: this.normalizeString(branding.watermarkImage
-          ? this.loadLogoAsDataUri(branding.watermarkImage)
-          : this.loadWatermarkImageAsDataUri()),
+        coverImage: this.normalizeString(
+          branding.coverImage
+            ? this.loadLogoAsDataUri(branding.coverImage)
+            : this.loadCoverImageAsDataUri(),
+        ),
+        watermarkImage: this.normalizeString(
+          branding.watermarkImage
+            ? this.loadLogoAsDataUri(branding.watermarkImage)
+            : this.loadWatermarkImageAsDataUri(),
+        ),
         watermarkOpacity: branding.watermarkOpacity || 0.05,
         watermarkSize: this.normalizeString(branding.watermarkSize),
         watermarkPosition: this.normalizeString(branding.watermarkPosition),
-        headerLogo: this.normalizeString(branding.headerLogo ? this.loadLogoAsDataUri(branding.headerLogo) : ''),
-        footerLogo: this.normalizeString(branding.footerLogo ? this.loadLogoAsDataUri(branding.footerLogo) : ''),
+        headerLogo: this.normalizeString(
+          branding.headerLogo ? this.loadLogoAsDataUri(branding.headerLogo) : '',
+        ),
+        footerLogo: this.normalizeString(
+          branding.footerLogo ? this.loadLogoAsDataUri(branding.footerLogo) : '',
+        ),
         primaryColor: this.normalizeString(branding.primaryColor),
         secondaryColor: this.normalizeString(branding.secondaryColor),
       },
 
       templateDefaults: {
-        subject: templateDefaults.subject || 'Techno Commercial Offer for Design Supply of PEB Building.',
+        subject:
+          templateDefaults.subject || 'Techno Commercial Offer for Design Supply of PEB Building.',
         introduction: templateDefaults.introduction || '',
         applicableCodes: templateDefaults.applicableCodes || [],
         primaryStructuralMembers: templateDefaults.primaryStructuralMembers || [],
@@ -1058,9 +1200,13 @@ export class QuotationPdfService {
     };
 
     // Diagnostic: Log designWeightSummary data
-    this.logger.log(`[PDF DEBUG] designWeightSummary rows in view model: ${viewModel.designWeightSummary.length}`);
+    this.logger.log(
+      `[PDF DEBUG] designWeightSummary rows in view model: ${viewModel.designWeightSummary.length}`,
+    );
     if (viewModel.designWeightSummary.length > 0) {
-      this.logger.log(`[PDF DEBUG] First designWeight row: ${JSON.stringify(viewModel.designWeightSummary[0])}`);
+      this.logger.log(
+        `[PDF DEBUG] First designWeight row: ${JSON.stringify(viewModel.designWeightSummary[0])}`,
+      );
     }
 
     return viewModel;
@@ -1095,33 +1241,54 @@ export class QuotationPdfService {
 
     if (quotation) {
       // Extract technical specifications JSON
-      const techSpecs = quotation.technicalSpecifications as any || {};
-      const proposalConfig = quotation.proposalConfiguration as any || {};
-      
+      const techSpecs = (quotation.technicalSpecifications as any) || {};
+      const proposalConfig = (quotation.proposalConfiguration as any) || {};
+
       // Debug logging to track row counts from both sources
       this.logger.log(`[fetchQuotation] Quotation ID: ${id}`);
       this.logger.log(`[fetchQuotation] Inquiry Number: ${quotation.inquiryNumber}`);
       this.logger.log(`[fetchQuotation] === TECHNICAL SPECIFICATIONS ===`);
-      this.logger.log(`[fetchQuotation] Roof Accessories count: ${Array.isArray(techSpecs.roofAccessories) ? techSpecs.roofAccessories.length : 0}`);
-      this.logger.log(`[fetchQuotation] Wall Accessories count: ${Array.isArray(techSpecs.wallAccessories) ? techSpecs.wallAccessories.length : 0}`);
-      this.logger.log(`[fetchQuotation] Material Specs count: ${Array.isArray(techSpecs.materialSpecs) ? techSpecs.materialSpecs.length : 0}`);
-      this.logger.log(`[fetchQuotation] Contract Price Rows (from technicalSpecifications): ${Array.isArray(techSpecs.contractPriceRows) ? techSpecs.contractPriceRows.length : 0}`);
+      this.logger.log(
+        `[fetchQuotation] Roof Accessories count: ${Array.isArray(techSpecs.roofAccessories) ? techSpecs.roofAccessories.length : 0}`,
+      );
+      this.logger.log(
+        `[fetchQuotation] Wall Accessories count: ${Array.isArray(techSpecs.wallAccessories) ? techSpecs.wallAccessories.length : 0}`,
+      );
+      this.logger.log(
+        `[fetchQuotation] Material Specs count: ${Array.isArray(techSpecs.materialSpecs) ? techSpecs.materialSpecs.length : 0}`,
+      );
+      this.logger.log(
+        `[fetchQuotation] Contract Price Rows (from technicalSpecifications): ${Array.isArray(techSpecs.contractPriceRows) ? techSpecs.contractPriceRows.length : 0}`,
+      );
       this.logger.log(`[fetchQuotation] === PROPOSAL CONFIGURATION ===`);
-      this.logger.log(`[fetchQuotation] Contract Price Rows (from proposalConfiguration): ${Array.isArray(proposalConfig.contractPriceRows) ? proposalConfig.contractPriceRows.length : 0}`);
-      this.logger.log(`[fetchQuotation] Material Specs (from proposalConfiguration): ${Array.isArray(proposalConfig.materialSpecs) ? proposalConfig.materialSpecs.length : 0}`);
-      this.logger.log(`[fetchQuotation] Design Weight Summary count: ${Array.isArray(techSpecs.designWeightSummary) ? techSpecs.designWeightSummary.length : 0}`);
+      this.logger.log(
+        `[fetchQuotation] Contract Price Rows (from proposalConfiguration): ${Array.isArray(proposalConfig.contractPriceRows) ? proposalConfig.contractPriceRows.length : 0}`,
+      );
+      this.logger.log(
+        `[fetchQuotation] Material Specs (from proposalConfiguration): ${Array.isArray(proposalConfig.materialSpecs) ? proposalConfig.materialSpecs.length : 0}`,
+      );
+      this.logger.log(
+        `[fetchQuotation] Design Weight Summary count: ${Array.isArray(techSpecs.designWeightSummary) ? techSpecs.designWeightSummary.length : 0}`,
+      );
 
       // Log contract price rows details if present
       if (Array.isArray(techSpecs.contractPriceRows) && techSpecs.contractPriceRows.length > 0) {
         this.logger.log(`[fetchQuotation] Contract Price Rows from technicalSpecifications:`);
         techSpecs.contractPriceRows.forEach((row: any, idx: number) => {
-          this.logger.log(`[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount(${row.amount})`);
+          this.logger.log(
+            `[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount(${row.amount})`,
+          );
         });
       }
-      if (Array.isArray(proposalConfig.contractPriceRows) && proposalConfig.contractPriceRows.length > 0) {
+      if (
+        Array.isArray(proposalConfig.contractPriceRows) &&
+        proposalConfig.contractPriceRows.length > 0
+      ) {
         this.logger.log(`[fetchQuotation] Contract Price Rows from proposalConfiguration:`);
         proposalConfig.contractPriceRows.forEach((row: any, idx: number) => {
-          this.logger.log(`[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`);
+          this.logger.log(
+            `[fetchQuotation] Row ${idx}: serialNo=${row.serialNo}, description=${row.description?.substring(0, 50)}..., qty=${row.quantity}, rate=${row.rate}, amount=${row.amount})`,
+          );
         });
       }
 

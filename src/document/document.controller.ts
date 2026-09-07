@@ -49,10 +49,7 @@ export class DocumentController {
   @Get(':id')
   @RequirePermissions('document:read')
   @ApiOperation({ summary: 'Get document by ID' })
-  async getById(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string,
-  ) {
+  async getById(@Param('id') id: string, @CurrentUser('organizationId') organizationId: string) {
     const data = await this.documentService.getById(id, organizationId);
     return { message: 'Document fetched successfully.', data };
   }
