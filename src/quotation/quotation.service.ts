@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
-import { Prisma } from '@prisma/client';
 
 interface MaterialRate {
   amount?: number;
@@ -151,7 +150,7 @@ export class QuotationService {
     }
 
     // Build materialSelections JSON from pricingConfiguration
-    const materialSelections =
+    const _materialSelections =
       pricingConfig?.materialRates?.map(
         (r: { materialSelectionId: string; rate: number; quantity: number; amount: number }) => ({
           id: r.materialSelectionId,
@@ -299,11 +298,7 @@ export class QuotationService {
     return quotation;
   }
 
-  async update(
-    id: string,
-    dto: UpdateQuotationDto,
-    organizationId: string,
-  ) {
+  async update(id: string, dto: UpdateQuotationDto, organizationId: string) {
     const existing = await this.findById(id, organizationId);
 
     // Recalculate pricing if configuration changed
@@ -392,24 +387,37 @@ export class QuotationService {
     if (dto.preparedByAddress !== undefined) updateData.preparedByAddress = dto.preparedByAddress;
     if (dto.preparedByGstin !== undefined) updateData.preparedByGstin = dto.preparedByGstin;
     if (dto.preparedByName !== undefined) updateData.preparedByName = dto.preparedByName;
-    if (dto.preparedByDesignation !== undefined) updateData.preparedByDesignation = dto.preparedByDesignation;
+    if (dto.preparedByDesignation !== undefined)
+      updateData.preparedByDesignation = dto.preparedByDesignation;
     if (dto.preparedByMobile !== undefined) updateData.preparedByMobile = dto.preparedByMobile;
     if (dto.preparedByEmail !== undefined) updateData.preparedByEmail = dto.preparedByEmail;
     if (dto.subject !== undefined) updateData.subject = dto.subject;
     if (dto.introduction !== undefined) updateData.introduction = dto.introduction;
     if (dto.signaturePrefix !== undefined) updateData.signaturePrefix = dto.signaturePrefix;
     if (dto.signatureName !== undefined) updateData.signatureName = dto.signatureName;
-    if (dto.signatureDesignation !== undefined) updateData.signatureDesignation = dto.signatureDesignation;
+    if (dto.signatureDesignation !== undefined)
+      updateData.signatureDesignation = dto.signatureDesignation;
     if (dto.signatureMobile !== undefined) updateData.signatureMobile = dto.signatureMobile;
     if (dto.signatureEmail !== undefined) updateData.signatureEmail = dto.signatureEmail;
     // Handle new structured fields
     if (dto.buildingSpec !== undefined) updateData.scopeConfiguration = dto.buildingSpec;
-    if (dto.designCode !== undefined || dto.designLoad !== undefined || dto.mezzanineLoad !== undefined || dto.craneDetail !== undefined) {
+    if (
+      dto.designCode !== undefined ||
+      dto.designLoad !== undefined ||
+      dto.mezzanineLoad !== undefined ||
+      dto.craneDetail !== undefined
+    ) {
       updateData.technicalSpecifications = {
         designCode: dto.designCode || (existing.technicalSpecifications as any)?.designCode || {},
         designLoad: dto.designLoad || (existing.technicalSpecifications as any)?.designLoad || {},
-        mezzanineLoad: dto.mezzanineLoad !== undefined ? dto.mezzanineLoad : (existing.technicalSpecifications as any)?.mezzanineLoad,
-        craneDetail: dto.craneDetail !== undefined ? dto.craneDetail : (existing.technicalSpecifications as any)?.craneDetail,
+        mezzanineLoad:
+          dto.mezzanineLoad !== undefined
+            ? dto.mezzanineLoad
+            : (existing.technicalSpecifications as any)?.mezzanineLoad,
+        craneDetail:
+          dto.craneDetail !== undefined
+            ? dto.craneDetail
+            : (existing.technicalSpecifications as any)?.craneDetail,
       };
     }
     // Handle roofAccessories and wallAccessories in technicalSpecifications (consistent with create method)
@@ -427,9 +435,14 @@ export class QuotationService {
         wallAccessories: dto.wallAccessories,
       };
     }
-    if (dto.materialSpecs !== undefined || dto.weightRows !== undefined || dto.contractPriceRows !== undefined) {
+    if (
+      dto.materialSpecs !== undefined ||
+      dto.weightRows !== undefined ||
+      dto.contractPriceRows !== undefined
+    ) {
       updateData.proposalConfiguration = {
-        materialSpecs: dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],
+        materialSpecs:
+          dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],
         weightRows: dto.weightRows || (existing.proposalConfiguration as any)?.weightRows || [],
       };
     }

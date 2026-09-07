@@ -37,7 +37,9 @@ export class QuotationPdfController {
     let quotationData;
     try {
       quotationData = await this.quotationPdfService.fetchQuotation(id, organizationId);
-      this.logger.log(`[PDF] Quotation data fetched successfully for ${id}, quotationNumber: ${quotationData.quotationNumber}`);
+      this.logger.log(
+        `[PDF] Quotation data fetched successfully for ${id}, quotationNumber: ${quotationData.quotationNumber}`,
+      );
     } catch (error) {
       this.logger.error(`[PDF] Failed to fetch quotation ${id}: ${error.message}`);
       this.logger.error(`[PDF] Error stack: ${error.stack}`);
