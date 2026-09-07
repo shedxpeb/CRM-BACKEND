@@ -782,7 +782,7 @@ export class QuotationPdfService {
       introduction: q.introduction || templateDefaults?.introduction || 'We Thank you for valued enquiry for Pre engineering building Steel Structure and giving us opportunity to submit a Proposal to your valuable project in a cost-effective manner.\n\nThis Proposal to you is based on steels standard design criteria and specifications. However, the overall dimensions and layout are in General accordance with your enquiry or Drawings Given by you.\n\nKindly note that we have tried our utmost to assure that this proposal meets all your project requirements and specifications. However, in some case we had to make some assumptions, suggest certain deviations and exclude some items that you may have requested.\n\nWe hope you will find the same in order, awaiting your kind reply & esteemed order.',
       signature: {
         prefix: q.signaturePrefix || 'Sincerely Yours,',
-        name: q.signatureName || templateDefaults?.signature?.name || q.preparedByName || 'VIKAS GONDALIYA',
+        name: q.signatureName || templateDefaults?.signature?.name || q.preparedByName || 'Mr. VIKAS GONDALIYA',
         designation: q.signatureDesignation || templateDefaults?.signature?.designation || q.preparedByDesignation || 'Director For Shedx Peb LLP.',
         mobile: q.signatureMobile || q.preparedByMobile || '6359998111',
         email: q.signatureEmail || q.preparedByEmail || 'Sales@shedxpeb.com',
@@ -942,7 +942,7 @@ export class QuotationPdfService {
       craneCapacityMt: this.normalizeString(techSpecs.craneDetail?.craneCapacity?.replace(/[^0-9]/g, '') || '10'),
 
       finalSignature: {
-        name: this.normalizeString(q.finalSignatureName || templateDefaults.signature?.name || 'VIKAS GONDALIYA'),
+        name: this.normalizeString(q.finalSignatureName || templateDefaults.signature?.name || 'Mr. VIKAS GONDALIYA'),
         mobile: this.normalizeString(q.finalSignatureMobile || templateDefaults.signature?.mobile || '+91 6359998111'),
         company: this.normalizeString(q.finalSignatureCompany || templateDefaults.signature?.company || 'Shedx Peb LLP'),
       },

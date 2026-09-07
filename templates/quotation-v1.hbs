@@ -136,6 +136,18 @@
       vertical-align: top;
     }
 
+    /* Page 4 Crane Detail Table - larger typography */
+    .page .page3-table:not(.page3-compact) {
+      font-size: 12pt;
+      line-height: 1.35;
+    }
+
+    .page .page3-table:not(.page3-compact) th,
+    .page .page3-table:not(.page3-compact) td {
+      padding: 5px 6px;
+      vertical-align: middle;
+    }
+
     /* Page 3 compact layout - reduce spacing to fit all content on one page */
     .page.page-3 .page3-compact th,
     .page.page-3 .page3-compact .page3-table td {
@@ -150,7 +162,8 @@
     .page3-header-yellow {
       background-color: #fffacd;
       font-weight: bold;
-      text-align: center;
+      text-align: center !important;
+      vertical-align: middle !important;
       font-size: 11pt;
       padding: 2px;
     }
@@ -158,7 +171,8 @@
     .page3-header-gray {
       background-color: #e0e0e0;
       font-weight: bold;
-      text-align: center;
+      text-align: center !important;
+      vertical-align: middle !important;
       font-size: 11pt;
       padding: 2px;
     }
@@ -189,38 +203,54 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 11.5pt;
+      font-size: 11pt;
+      line-height: 1.3;
+      page-break-inside: avoid;
+      table-layout: fixed;
     }
 
-    .page4-accessories-table th,
+    .page4-accessories-table th {
+      border: 1px solid black;
+      padding: 4px 6px;
+      text-align: center;
+      vertical-align: middle;
+      color: #000000;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+
     .page4-accessories-table td {
       border: 1px solid black;
       padding: 4px 6px;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
+      color: #000000;
     }
 
     .page4-col-no {
-      width: 25px;
       text-align: center;
       font-weight: bold;
     }
 
     .page4-col-desc {
-      width: 35%;
       white-space: pre-wrap;
     }
 
     .page4-col-size {
-      width: 20%;
+      /* Width controlled by colgroup */
     }
 
     .page4-col-qty {
-      width: 20%;
+      /* Width controlled by colgroup */
     }
 
     .page4-col-loc {
-      width: 25%;
+      /* Width controlled by colgroup */
+    }
+
+    .page4-value-red {
+      color: #CC0000 !important;
+      font-weight: bold !important;
     }
 
     /* ─── Page 6 Material Table Styling ───────────────────────────────── */
@@ -228,7 +258,7 @@
       width: 100%;
       border-collapse: collapse;
       border: 1px solid black;
-      font-size: 11.5pt;
+      font-size: 12.5pt;
     }
 
     .page6-material-table th,
@@ -382,7 +412,7 @@
       left: 18mm;
       right: 18mm;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       font-size: 8pt;
       color: var(--text-muted);
       border-top: 1px solid var(--border);
@@ -957,7 +987,6 @@
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 2 of 11</span>
     </div>
   </div>
@@ -1054,7 +1083,6 @@
     </table>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 3 of 11</span>
     </div>
   </div>
@@ -1098,6 +1126,13 @@
 
     <!-- ROOF ACCESSORIES TABLE -->
     <table class="page4-accessories-table" style="margin-bottom: 12px;">
+      <colgroup>
+        <col style="width: 7%">
+        <col style="width: 39%">
+        <col style="width: 20%">
+        <col style="width: 14%">
+        <col style="width: 20%">
+      </colgroup>
       <thead>
         <tr>
           <th colspan="5" class="page3-header-gray">ROOF ACCESSORIES</th>
@@ -1112,19 +1147,26 @@
       </thead>
       <tbody>
         {{#each roofAccessories}}
+        {{#if (or (eq @index 0) (eq @index 1))}}
         <tr>
           <td class="page4-col-no">{{add @index 1}}</td>
           <td class="page4-col-desc">{{description}}</td>
-          <td class="page4-col-size">{{size}}</td>
-          <td class="page4-col-qty">{{quantity}}</td>
-          <td class="page4-col-loc">{{location}}</td>
+          <td colspan="3" class="page4-col-size page4-value-red">{{size}}<br/>{{quantity}}<br/>{{location}}</td>
         </tr>
+        {{else}}
+        <tr>
+          <td class="page4-col-no">{{add @index 1}}</td>
+          <td class="page4-col-desc">{{description}}</td>
+          <td class="page4-col-size{{#if (or (contains size 'N/A') (contains size 'MM'))}} page4-value-red{{/if}}">{{size}}</td>
+          <td class="page4-col-qty{{#if (or (contains quantity 'N/A') (contains quantity 'SQ') (contains quantity 'Sqm'))}} page4-value-red{{/if}}">{{quantity}}</td>
+          <td class="page4-col-loc{{#if (or (contains location 'N/A') (contains location 'specified') (contains location 'Roof') (contains location 'Sidewall') (contains location 'Periphery'))}} page4-value-red{{/if}}">{{location}}</td>
+        </tr>
+        {{/if}}
         {{/each}}
       </tbody>
     </table>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 4 of 11</span>
     </div>
   </div>
@@ -1175,10 +1217,10 @@
     </table>
 
     <!-- APPLICABLE CODES -->
-    <div style="margin-bottom: 12px;">
+    <div style="margin-bottom: 10px;">
       <div class="blue-section-heading">❖ Applicable Codes</div>
-      <p style="font-size: 11pt; line-height: 1.5; margin-bottom: 4px;">All Structural included in this proposal are designed in accordance with the following codes:</p>
-      <ol style="font-size: 11pt; line-height: 1.5; margin-left: 18px; margin-bottom: 4px;">
+      <p style="font-size: 10pt; line-height: 1.4; margin-bottom: 3px;">All Structural included in this proposal are designed in accordance with the following codes:</p>
+      <ol style="font-size: 10pt; line-height: 1.4; margin-left: 16px; margin-bottom: 3px;">
         <li>Loads on the building are applied in accordance with: <strong>MBMA & AISC-2012</strong></li>
         <li>Hot rolled Sections and built-up Sections are designed in accordance with: <strong>AISC-1989; AWS D1.1 M 2006</strong></li>
         <li>Cold formed members are designed in accordance with: <strong>AISI</strong></li>
@@ -1189,16 +1231,15 @@
     </div>
 
     <!-- PRIMARY STRUCTURAL MEMBERS -->
-    <div style="margin-bottom: 12px;">
+    <div style="margin-bottom: 10px;">
       <div class="blue-section-heading">❖ Primary Structural Members</div>
-      <p style="font-size: 11pt; line-height: 1.5;">
+      <p style="font-size: 10pt; line-height: 1.4;">
         Paint Application: Epoxy DTM Paint with Airless Spray System - <strong>100 Micron DFT</strong><br />
         MS Bolt (Black unpainted).
       </p>
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 5 of 11</span>
     </div>
   </div>
@@ -1217,7 +1258,7 @@
     <!-- SECONDARY STRUCTURAL MEMBERS -->
     <div style="margin-bottom: 12px;">
       <div class="blue-section-heading">❖ Secondary Structural Members</div>
-      <p style="font-size: 11pt; line-height: 1.5; margin-left: 20px;">
+      <p style="font-size: 12pt; line-height: 1.5; margin-left: 20px;">
         ➢ Pre-galvanized.
       </p>
     </div>
@@ -1282,7 +1323,6 @@
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 6 of 11</span>
     </div>
   </div>
@@ -1304,7 +1344,7 @@
     </div>
 
     <!-- DESIGN WEIGHT TABLE -->
-    <table class="page7-price-table" style="margin-bottom: 12px;">
+    <table class="page7-price-table" style="margin-top: 50px; margin-bottom: 12px;">
       <thead>
         <tr>
           <th style="border: 1px solid #000; padding: 6px; font-size: 13pt; font-weight: bold; background-color: #f5f5f5;">Description</th>
@@ -1330,7 +1370,6 @@
     </table>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 7 of 11</span>
     </div>
   </div>
@@ -1402,7 +1441,6 @@
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 8 of 11</span>
     </div>
   </div>
@@ -1420,8 +1458,8 @@
 
     <!-- NOTE -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px;">Note:</div>
-      <div style="font-size: 12pt; line-height: 1.5;">
+      <div style="font-size: 11pt; font-weight: bold; margin-bottom: 6px;">Note:</div>
+      <div style="font-size: 13pt; line-height: 1.5;">
         <p style="margin-bottom: 6px;">• The above prices are Inclusive of GST Taxes. Any Change in the Taxes during the supply of Structural/Sheeting and during erection will be applicable accordingly. TCS Tax will be extra at actuals.</p>
         <p style="margin-bottom: 6px;">• Packing-Forwarding-Transportation up to site by Shedx Peb LLP scope.</p>
         <p style="margin-bottom: 6px;">• The prices offered are fixed as long as the project schedules are maintained by both the parties. Shedx peb LLP will be allowed for price & delivery escalation for reasons not attributable to Shedx peb LLP as under:</p>
@@ -1434,7 +1472,7 @@
     <!-- SPECIAL TECHNICAL ASSUMPTION -->
     <div style="margin-bottom: 12px;">
       <div class="blue-section-heading">❖ Special Technical Assumption</div>
-      <div style="font-size: 11pt; line-height: 1.5;">
+      <div style="font-size: 12pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">1) Crane {{craneCapacityMt}}MT EOT Considered in both of the module and Running in Full length.</p>
         <p style="margin-bottom: 4px;">2) Crane Data need to be confirmed before Finalised with Crane Vendor.</p>
         <p style="margin-bottom: 4px;">3) 1 Nos. Cage ladder considered for Roof Access.</p>
@@ -1445,7 +1483,7 @@
     <!-- PAYMENT TERMS -->
     <div style="margin-bottom: 12px;">
       <div class="blue-section-heading">❖ Payment Terms</div>
-      <div style="font-size: 11pt; line-height: 1.5;">
+      <div style="font-size: 12pt; line-height: 1.5;">
         <p style="margin-bottom: 6px;"><strong>Supply Payment Terms:</strong></p>
         <p style="margin-bottom: 6px;">(1) 30 % advance with your confirm Work Order, 30 % against GA drawing approval & 35 % against dispatch of structure from our work shop, 05 % after Handover the Project.</p>
         <p style="margin-bottom: 6px;">(2) Change orders/revisions will be negotiated separately.</p>
@@ -1454,8 +1492,8 @@
 
     <!-- BANK DETAILS -->
     <div style="margin-bottom: 12px;">
-      <div style="font-size: 9pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">BANK DETAILS:</div>
-      <div style="font-size: 11pt; line-height: 1.5;">
+      <div style="font-size: 11pt; font-weight: bold; margin-bottom: 6px; text-decoration: underline;">BANK DETAILS:</div>
+      <div style="font-size: 12pt; line-height: 1.5;">
         <p style="margin-bottom: 4px;">Bank Name: {{payment.bankName}}</p>
         <p style="margin-bottom: 4px;">CC Account No.: {{payment.accountNumber}}</p>
         <p style="margin-bottom: 4px;">ISFC Code: {{payment.ifscCode}}</p>
@@ -1464,7 +1502,6 @@
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 9 of 11</span>
     </div>
   </div>
@@ -1523,7 +1560,6 @@
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 10 of 11</span>
     </div>
   </div>
@@ -1557,16 +1593,15 @@
       </div>
 
       <!-- THANK YOU -->
-      <div style="margin-bottom: 12px; text-align: right;">
-        <div style="font-size: 11pt; font-weight: bold;" class="signature-page11">Thank you</div>
-        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.name}}</p>
-        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.mobile}}</p>
-        <p style="margin-bottom: 4px;" class="signature-page11">{{finalSignature.company}}</p>
+      <div style="margin-top: 30px; margin-bottom: 12px; text-align: right;">
+        <div style="font-size: 13pt; font-weight: bold; color: #1e3a8a;" class="signature-page11">Thank you</div>
+        <p style="margin-bottom: 4px; color: #1e3a8a;" class="signature-page11">{{finalSignature.name}}</p>
+        <p style="margin-bottom: 4px; color: #1e3a8a;" class="signature-page11">{{finalSignature.mobile}}</p>
+        <p style="margin-bottom: 4px; color: #1e3a8a;" class="signature-page11">{{finalSignature.company}}</p>
       </div>
     </div>
 
     <div class="page-footer">
-      <span class="company-name">{{organization.name}}</span>
       <span>Page 11 of 11</span>
     </div>
   </div>
