@@ -412,8 +412,21 @@ export class QuotationService {
         craneDetail: dto.craneDetail !== undefined ? dto.craneDetail : (existing.technicalSpecifications as any)?.craneDetail,
       };
     }
-    if (dto.roofAccessories !== undefined) updateData.inclusions = dto.roofAccessories;
-    if (dto.wallAccessories !== undefined) updateData.exclusions = dto.wallAccessories;
+    // Handle roofAccessories and wallAccessories in technicalSpecifications (consistent with create method)
+    if (dto.roofAccessories !== undefined) {
+      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
+      updateData.technicalSpecifications = {
+        ...existingTechSpecs,
+        roofAccessories: dto.roofAccessories,
+      };
+    }
+    if (dto.wallAccessories !== undefined) {
+      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
+      updateData.technicalSpecifications = {
+        ...existingTechSpecs,
+        wallAccessories: dto.wallAccessories,
+      };
+    }
     if (dto.materialSpecs !== undefined || dto.weightRows !== undefined || dto.contractPriceRows !== undefined) {
       updateData.proposalConfiguration = {
         materialSpecs: dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],

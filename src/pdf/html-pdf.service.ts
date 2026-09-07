@@ -52,6 +52,24 @@ export class HtmlPdfService implements OnModuleDestroy {
       Handlebars.registerHelper('gt', (a: number, b: number) => a > b);
       Handlebars.registerHelper('lt', (a: number, b: number) => a < b);
       Handlebars.registerHelper('abs', (value: number) => Math.abs(value));
+      Handlebars.registerHelper('contains', (str: string, substr: string) => {
+        if (typeof str !== 'string') return false;
+        return str.includes(substr);
+      });
+      Handlebars.registerHelper('or', (...args: unknown[]) => {
+        const options = args.pop() as any;
+        return args.some((arg: unknown) => !!arg);
+      });
+      Handlebars.registerHelper('isEmpty', (value: unknown) => {
+        return value === null || value === undefined || value === '' || value === 'N/A';
+      });
+      Handlebars.registerHelper('elseIf', (v1: unknown, v2: unknown, options: any) => {
+        if (v1) {
+          return options.fn(this);
+        } else {
+          return options.inverse(this);
+        }
+      });
     }
   }
 
