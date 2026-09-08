@@ -405,28 +405,35 @@ export class QuotationService {
     const existingTechSpecs = (existing.technicalSpecifications as any) || {};
     const techSpecUpdates: Record<string, any> = {};
     if (dto.designCode !== undefined) techSpecUpdates.designCode = dto.designCode;
-    else if (existingTechSpecs.designCode) techSpecUpdates.designCode = existingTechSpecs.designCode;
+    else if (existingTechSpecs.designCode)
+      techSpecUpdates.designCode = existingTechSpecs.designCode;
     if (dto.designLoad !== undefined) techSpecUpdates.designLoad = dto.designLoad;
-    else if (existingTechSpecs.designLoad) techSpecUpdates.designLoad = existingTechSpecs.designLoad;
+    else if (existingTechSpecs.designLoad)
+      techSpecUpdates.designLoad = existingTechSpecs.designLoad;
     if (dto.mezzanineLoad !== undefined) techSpecUpdates.mezzanineLoad = dto.mezzanineLoad;
-    else if (existingTechSpecs.mezzanineLoad) techSpecUpdates.mezzanineLoad = existingTechSpecs.mezzanineLoad;
+    else if (existingTechSpecs.mezzanineLoad)
+      techSpecUpdates.mezzanineLoad = existingTechSpecs.mezzanineLoad;
     if (dto.craneDetail !== undefined) techSpecUpdates.craneDetail = dto.craneDetail;
-    else if (existingTechSpecs.craneDetail) techSpecUpdates.craneDetail = existingTechSpecs.craneDetail;
+    else if (existingTechSpecs.craneDetail)
+      techSpecUpdates.craneDetail = existingTechSpecs.craneDetail;
     if (dto.roofAccessories !== undefined) techSpecUpdates.roofAccessories = dto.roofAccessories;
-    else if (existingTechSpecs.roofAccessories) techSpecUpdates.roofAccessories = existingTechSpecs.roofAccessories;
+    else if (existingTechSpecs.roofAccessories)
+      techSpecUpdates.roofAccessories = existingTechSpecs.roofAccessories;
     if (dto.wallAccessories !== undefined) techSpecUpdates.wallAccessories = dto.wallAccessories;
-    else if (existingTechSpecs.wallAccessories) techSpecUpdates.wallAccessories = existingTechSpecs.wallAccessories;
-    if (dto.contractPriceRows !== undefined) techSpecUpdates.contractPriceRows = dto.contractPriceRows;
-    else if (existingTechSpecs.contractPriceRows) techSpecUpdates.contractPriceRows = existingTechSpecs.contractPriceRows;
-    if (dto.designWeightSummary !== undefined) techSpecUpdates.designWeightSummary = dto.designWeightSummary;
-    else if (existingTechSpecs.designWeightSummary) techSpecUpdates.designWeightSummary = existingTechSpecs.designWeightSummary;
+    else if (existingTechSpecs.wallAccessories)
+      techSpecUpdates.wallAccessories = existingTechSpecs.wallAccessories;
+    if (dto.contractPriceRows !== undefined)
+      techSpecUpdates.contractPriceRows = dto.contractPriceRows;
+    else if (existingTechSpecs.contractPriceRows)
+      techSpecUpdates.contractPriceRows = existingTechSpecs.contractPriceRows;
+    if (dto.designWeightSummary !== undefined)
+      techSpecUpdates.designWeightSummary = dto.designWeightSummary;
+    else if (existingTechSpecs.designWeightSummary)
+      techSpecUpdates.designWeightSummary = existingTechSpecs.designWeightSummary;
     if (Object.keys(techSpecUpdates).length > 0) {
       updateData.technicalSpecifications = { ...existingTechSpecs, ...techSpecUpdates };
     }
-    if (
-      dto.materialSpecs !== undefined ||
-      dto.weightRows !== undefined
-    ) {
+    if (dto.materialSpecs !== undefined || dto.weightRows !== undefined) {
       updateData.proposalConfiguration = {
         materialSpecs:
           dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],
