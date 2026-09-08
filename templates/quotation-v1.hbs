@@ -96,6 +96,25 @@
       line-height: 1.25;
     }
 
+    /* Page 8 specific - reduce padding and font size to fit contract price table */
+    .page.page-8 {
+      padding: 10mm 18mm 18mm 18mm;
+    }
+
+    .page.page-8 .page7-price-table {
+      font-size: 11.5pt;
+      line-height: 1.3;
+    }
+
+    .page.page-8 .page7-price-table th,
+    .page.page-8 .page7-price-table td {
+      padding: 3px 5px;
+    }
+
+    .page.page-8 .page-footer {
+      bottom: 16mm;
+    }
+
     .page:last-child {
       page-break-after: auto;
     }
@@ -1377,7 +1396,7 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- PAGE 8: CONTRACT PRICE / COMMERCIAL PRICING                       -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="page">
+  <div class="page page-8">
     <div class="page-header">
       {{#if organization.logo}}<img src="{{organization.logo}}" class="page-header-logo" alt="Logo">{{/if}}
       <div class="page-header-title">
