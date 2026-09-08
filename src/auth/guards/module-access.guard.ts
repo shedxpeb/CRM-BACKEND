@@ -123,7 +123,11 @@ export class ModuleAccessGuard implements CanActivate {
     },
     // Documents module
     document: {
-      GET: ['document:list'],
+      GET: ['document:list', 'document:read'],
+      POST: ['document:create'],
+      PUT: ['document:update'],
+      PATCH: ['document:update'],
+      DELETE: ['document:delete'],
     },
     // Organization module
     organization: {
@@ -328,6 +332,7 @@ export class ModuleAccessGuard implements CanActivate {
       reports: 'report',
       inventories: 'inventory',
       documents: 'document',
+      quotations: 'document',
       'item-masters': 'item-master',
       'purchase-orders': 'purchase-order',
       warehouses: 'warehouse',

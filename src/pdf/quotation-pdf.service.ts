@@ -620,7 +620,7 @@ export class QuotationPdfService {
   /**
    * Map raw quotation data to the normalized PDF view model.
    */
-  private mapToViewModel(
+  public mapToViewModel(
     q: Record<string, any>,
     branding: PdfBrandingContext,
   ): PdfQuotationViewModel {

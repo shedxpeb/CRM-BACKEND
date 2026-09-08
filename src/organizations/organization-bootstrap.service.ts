@@ -356,12 +356,17 @@ export class OrganizationBootstrapService {
    * Filter permissions for manager role
    */
   private filterManagerPermissions(allPermissions: string[]): string[] {
-    // Managers get view, create, update permissions but not delete
+    // Managers get view, create, update permissions but not delete.
+    // Permission keys use colon format (e.g. document:update), so match both
+    // colon and dot delimiters for forward/backward compatibility.
     return allPermissions.filter(
       (perm) =>
         perm.includes('.view') ||
+        perm.includes(':list') ||
         perm.includes('.create') ||
+        perm.includes(':create') ||
         perm.includes('.update') ||
+        perm.includes(':update') ||
         perm.includes('.manage'),
     );
   }
@@ -370,8 +375,16 @@ export class OrganizationBootstrapService {
    * Filter permissions for employee role
    */
   private filterEmployeePermissions(allPermissions: string[]): string[] {
-    // Employees get only view and create permissions
-    return allPermissions.filter((perm) => perm.includes('.view') || perm.includes('.create'));
+    // Employees get only view and create permissions.
+    // Match both colon and dot delimiters for forward/backward compatibility.
+    return allPermissions.filter(
+      (perm) =>
+        perm.includes('.view') ||
+        perm.includes(':list') ||
+        perm.includes(':read') ||
+        perm.includes('.create') ||
+        perm.includes(':create'),
+    );
   }
 
   /**

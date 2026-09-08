@@ -399,67 +399,38 @@ export class QuotationService {
       updateData.signatureDesignation = dto.signatureDesignation;
     if (dto.signatureMobile !== undefined) updateData.signatureMobile = dto.signatureMobile;
     if (dto.signatureEmail !== undefined) updateData.signatureEmail = dto.signatureEmail;
-    // Handle new structured fields
+    // Handle new structured fields — merge ALL into one technicalSpecifications
+    // object to prevent sequential blocks overwriting each other.
     if (dto.buildingSpec !== undefined) updateData.scopeConfiguration = dto.buildingSpec;
-    if (
-      dto.designCode !== undefined ||
-      dto.designLoad !== undefined ||
-      dto.mezzanineLoad !== undefined ||
-      dto.craneDetail !== undefined
-    ) {
-      updateData.technicalSpecifications = {
-        designCode: dto.designCode || (existing.technicalSpecifications as any)?.designCode || {},
-        designLoad: dto.designLoad || (existing.technicalSpecifications as any)?.designLoad || {},
-        mezzanineLoad:
-          dto.mezzanineLoad !== undefined
-            ? dto.mezzanineLoad
-            : (existing.technicalSpecifications as any)?.mezzanineLoad,
-        craneDetail:
-          dto.craneDetail !== undefined
-            ? dto.craneDetail
-            : (existing.technicalSpecifications as any)?.craneDetail,
-      };
-    }
-    // Handle roofAccessories and wallAccessories in technicalSpecifications (consistent with create method)
-    if (dto.roofAccessories !== undefined) {
-      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
-      updateData.technicalSpecifications = {
-        ...existingTechSpecs,
-        roofAccessories: dto.roofAccessories,
-      };
-    }
-    if (dto.wallAccessories !== undefined) {
-      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
-      updateData.technicalSpecifications = {
-        ...existingTechSpecs,
-        wallAccessories: dto.wallAccessories,
-      };
+    const existingTechSpecs = (existing.technicalSpecifications as any) || {};
+    const techSpecUpdates: Record<string, any> = {};
+    if (dto.designCode !== undefined) techSpecUpdates.designCode = dto.designCode;
+    else if (existingTechSpecs.designCode) techSpecUpdates.designCode = existingTechSpecs.designCode;
+    if (dto.designLoad !== undefined) techSpecUpdates.designLoad = dto.designLoad;
+    else if (existingTechSpecs.designLoad) techSpecUpdates.designLoad = existingTechSpecs.designLoad;
+    if (dto.mezzanineLoad !== undefined) techSpecUpdates.mezzanineLoad = dto.mezzanineLoad;
+    else if (existingTechSpecs.mezzanineLoad) techSpecUpdates.mezzanineLoad = existingTechSpecs.mezzanineLoad;
+    if (dto.craneDetail !== undefined) techSpecUpdates.craneDetail = dto.craneDetail;
+    else if (existingTechSpecs.craneDetail) techSpecUpdates.craneDetail = existingTechSpecs.craneDetail;
+    if (dto.roofAccessories !== undefined) techSpecUpdates.roofAccessories = dto.roofAccessories;
+    else if (existingTechSpecs.roofAccessories) techSpecUpdates.roofAccessories = existingTechSpecs.roofAccessories;
+    if (dto.wallAccessories !== undefined) techSpecUpdates.wallAccessories = dto.wallAccessories;
+    else if (existingTechSpecs.wallAccessories) techSpecUpdates.wallAccessories = existingTechSpecs.wallAccessories;
+    if (dto.contractPriceRows !== undefined) techSpecUpdates.contractPriceRows = dto.contractPriceRows;
+    else if (existingTechSpecs.contractPriceRows) techSpecUpdates.contractPriceRows = existingTechSpecs.contractPriceRows;
+    if (dto.designWeightSummary !== undefined) techSpecUpdates.designWeightSummary = dto.designWeightSummary;
+    else if (existingTechSpecs.designWeightSummary) techSpecUpdates.designWeightSummary = existingTechSpecs.designWeightSummary;
+    if (Object.keys(techSpecUpdates).length > 0) {
+      updateData.technicalSpecifications = { ...existingTechSpecs, ...techSpecUpdates };
     }
     if (
       dto.materialSpecs !== undefined ||
-      dto.weightRows !== undefined ||
-      dto.contractPriceRows !== undefined
+      dto.weightRows !== undefined
     ) {
       updateData.proposalConfiguration = {
         materialSpecs:
           dto.materialSpecs || (existing.proposalConfiguration as any)?.materialSpecs || [],
         weightRows: dto.weightRows || (existing.proposalConfiguration as any)?.weightRows || [],
-      };
-    }
-    // Handle contractPriceRows in technicalSpecifications (consistent with create method)
-    if (dto.contractPriceRows !== undefined) {
-      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
-      updateData.technicalSpecifications = {
-        ...existingTechSpecs,
-        contractPriceRows: dto.contractPriceRows,
-      };
-    }
-    // Handle designWeightSummary in technicalSpecifications
-    if (dto.designWeightSummary !== undefined) {
-      const existingTechSpecs = (existing.technicalSpecifications as any) || {};
-      updateData.technicalSpecifications = {
-        ...existingTechSpecs,
-        designWeightSummary: dto.designWeightSummary,
       };
     }
 
