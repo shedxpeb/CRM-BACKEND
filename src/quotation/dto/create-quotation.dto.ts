@@ -274,4 +274,24 @@ export class CreateQuotationDto {
   @IsOptional()
   @IsString()
   signatureEmail?: string;
+
+  // Inclusions and Exclusions
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inclusions?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  exclusions?: any;
+
+  // Timeline
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  timeline?: any;
 }
