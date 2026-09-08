@@ -59,6 +59,26 @@ export class UpdateQuotationDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ifscCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsObject()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pricingConfiguration?: any;
@@ -229,4 +249,24 @@ export class UpdateQuotationDto {
   @IsOptional()
   @IsString()
   signatureEmail?: string;
+
+  // Inclusions and Exclusions
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inclusions?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  exclusions?: any;
+
+  // Timeline
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  timeline?: any;
 }

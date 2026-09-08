@@ -177,7 +177,16 @@ export class QuotationService {
         validUntil: dto.validUntil ? new Date(dto.validUntil) : undefined,
         paymentTerms: dto.paymentTerms || undefined,
         deliveryTerms: dto.deliveryTerms || undefined,
-        pricingConfiguration: (pricingConfig as any) || undefined,
+        pricingConfiguration: {
+          ...(pricingConfig as any),
+          // Store bank details for PDF rendering
+          bankDetails: {
+            bankName: dto.bankName || undefined,
+            accountNumber: dto.accountNumber || undefined,
+            ifscCode: dto.ifscCode || undefined,
+            address: dto.address || undefined,
+          },
+        },
         // Store structured data in JSON columns with proper field mapping for PDF
         scopeConfiguration: dto.buildingSpec || {},
         technicalSpecifications: {
@@ -292,6 +301,11 @@ export class QuotationService {
         signatureDesignation: dto.signatureDesignation || undefined,
         signatureMobile: dto.signatureMobile || undefined,
         signatureEmail: dto.signatureEmail || undefined,
+        // Inclusions and Exclusions
+        inclusions: dto.inclusions || [],
+        exclusions: dto.exclusions || [],
+        // Timeline
+        timeline: dto.timeline || undefined,
       },
     });
 
@@ -373,8 +387,36 @@ export class QuotationService {
       updateData.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
     if (dto.paymentTerms !== undefined) updateData.paymentTerms = dto.paymentTerms;
     if (dto.deliveryTerms !== undefined) updateData.deliveryTerms = dto.deliveryTerms;
-    if (dto.pricingConfiguration !== undefined)
-      updateData.pricingConfiguration = dto.pricingConfiguration;
+    if (dto.pricingConfiguration !== undefined) {
+      updateData.pricingConfiguration = {
+        ...(dto.pricingConfiguration as any),
+        // Merge bank details if provided
+        ...(dto.bankName !== undefined || dto.accountNumber !== undefined ||
+           dto.ifscCode !== undefined || dto.address !== undefined
+           ? {
+               bankDetails: {
+                 bankName: dto.bankName !== undefined ? dto.bankName : (existing.pricingConfiguration as any)?.bankDetails?.bankName,
+                 accountNumber: dto.accountNumber !== undefined ? dto.accountNumber : (existing.pricingConfiguration as any)?.bankDetails?.accountNumber,
+                 ifscCode: dto.ifscCode !== undefined ? dto.ifscCode : (existing.pricingConfiguration as any)?.bankDetails?.ifscCode,
+                 address: dto.address !== undefined ? dto.address : (existing.pricingConfiguration as any)?.bankDetails?.address,
+               }
+             }
+           : {})
+      };
+    } else if (dto.bankName !== undefined || dto.accountNumber !== undefined ||
+               dto.ifscCode !== undefined || dto.address !== undefined) {
+      // If only bank details are updated without full pricing config
+      const existingPricingConfig = (existing.pricingConfiguration as any) || {};
+      updateData.pricingConfiguration = {
+        ...existingPricingConfig,
+        bankDetails: {
+          bankName: dto.bankName !== undefined ? dto.bankName : existingPricingConfig.bankDetails?.bankName,
+          accountNumber: dto.accountNumber !== undefined ? dto.accountNumber : existingPricingConfig.bankDetails?.accountNumber,
+          ifscCode: dto.ifscCode !== undefined ? dto.ifscCode : existingPricingConfig.bankDetails?.ifscCode,
+          address: dto.address !== undefined ? dto.address : existingPricingConfig.bankDetails?.address,
+        }
+      };
+    }
     if (dto.termsAndConditions !== undefined)
       updateData.termsAndConditions = dto.termsAndConditions;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
@@ -399,6 +441,11 @@ export class QuotationService {
       updateData.signatureDesignation = dto.signatureDesignation;
     if (dto.signatureMobile !== undefined) updateData.signatureMobile = dto.signatureMobile;
     if (dto.signatureEmail !== undefined) updateData.signatureEmail = dto.signatureEmail;
+    // Inclusions and Exclusions
+    if (dto.inclusions !== undefined) updateData.inclusions = dto.inclusions;
+    if (dto.exclusions !== undefined) updateData.exclusions = dto.exclusions;
+    // Timeline
+    if (dto.timeline !== undefined) updateData.timeline = dto.timeline;
     // Handle new structured fields — merge ALL into one technicalSpecifications
     // object to prevent sequential blocks overwriting each other.
     if (dto.buildingSpec !== undefined) updateData.scopeConfiguration = dto.buildingSpec;

@@ -1053,10 +1053,10 @@ export class QuotationPdfService {
 
       payment: {
         terms: q.paymentTerms || templateDefaults.paymentTerms || 'As per agreement',
-        bankName: templateDefaults.bankDetails?.bankName || q.bankName || '',
-        accountNumber: templateDefaults.bankDetails?.accountNumber || q.accountNumber || '',
-        ifscCode: templateDefaults.bankDetails?.ifscCode || q.ifscCode || '',
-        address: templateDefaults.bankDetails?.address || q.address || '',
+        bankName: templateDefaults.bankDetails?.bankName || (pc as any)?.bankDetails?.bankName || q.bankName || '',
+        accountNumber: templateDefaults.bankDetails?.accountNumber || (pc as any)?.bankDetails?.accountNumber || q.accountNumber || '',
+        ifscCode: templateDefaults.bankDetails?.ifscCode || (pc as any)?.bankDetails?.ifscCode || q.ifscCode || '',
+        address: templateDefaults.bankDetails?.address || (pc as any)?.bankDetails?.address || q.address || '',
         branchName: templateDefaults.bankDetails?.branchName || q.bankBranch || '',
         accountType:
           templateDefaults.bankDetails?.accountType || q.accountType || 'Current Account',
