@@ -527,6 +527,7 @@ model Lead {
   annualRevenue       Float?
   area                String?
   businessType        BusinessType?
+  totalTun            Float?
   companyLogo         String?
   companySize         String?
   country             String?
@@ -623,6 +624,7 @@ model Project {
   reservedItems           String[]
   consumedItems           String[]
   customFields            Json?
+  totalTun                Float?
   createdById             String?
   createdBy               String?
   updatedBy               String?

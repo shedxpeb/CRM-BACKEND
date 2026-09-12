@@ -254,6 +254,8 @@ export class QuotationService {
           contractPriceRows: dto.contractPriceRows || [],
           // Design weight summary for Page 7
           designWeightSummary: dto.designWeightSummary || [],
+          // Special note under the contract price table (Page 8)
+          specialNote: dto.specialNote || '',
         },
         // Store line items in materialSelections for PDF
         materialSelections: (dto.lineItems || []).map((item: any) => ({
@@ -391,30 +393,54 @@ export class QuotationService {
       updateData.pricingConfiguration = {
         ...(dto.pricingConfiguration as any),
         // Merge bank details if provided
-        ...(dto.bankName !== undefined || dto.accountNumber !== undefined ||
-           dto.ifscCode !== undefined || dto.address !== undefined
-           ? {
-               bankDetails: {
-                 bankName: dto.bankName !== undefined ? dto.bankName : (existing.pricingConfiguration as any)?.bankDetails?.bankName,
-                 accountNumber: dto.accountNumber !== undefined ? dto.accountNumber : (existing.pricingConfiguration as any)?.bankDetails?.accountNumber,
-                 ifscCode: dto.ifscCode !== undefined ? dto.ifscCode : (existing.pricingConfiguration as any)?.bankDetails?.ifscCode,
-                 address: dto.address !== undefined ? dto.address : (existing.pricingConfiguration as any)?.bankDetails?.address,
-               }
-             }
-           : {})
+        ...(dto.bankName !== undefined ||
+        dto.accountNumber !== undefined ||
+        dto.ifscCode !== undefined ||
+        dto.address !== undefined
+          ? {
+              bankDetails: {
+                bankName:
+                  dto.bankName !== undefined
+                    ? dto.bankName
+                    : (existing.pricingConfiguration as any)?.bankDetails?.bankName,
+                accountNumber:
+                  dto.accountNumber !== undefined
+                    ? dto.accountNumber
+                    : (existing.pricingConfiguration as any)?.bankDetails?.accountNumber,
+                ifscCode:
+                  dto.ifscCode !== undefined
+                    ? dto.ifscCode
+                    : (existing.pricingConfiguration as any)?.bankDetails?.ifscCode,
+                address:
+                  dto.address !== undefined
+                    ? dto.address
+                    : (existing.pricingConfiguration as any)?.bankDetails?.address,
+              },
+            }
+          : {}),
       };
-    } else if (dto.bankName !== undefined || dto.accountNumber !== undefined ||
-               dto.ifscCode !== undefined || dto.address !== undefined) {
+    } else if (
+      dto.bankName !== undefined ||
+      dto.accountNumber !== undefined ||
+      dto.ifscCode !== undefined ||
+      dto.address !== undefined
+    ) {
       // If only bank details are updated without full pricing config
       const existingPricingConfig = (existing.pricingConfiguration as any) || {};
       updateData.pricingConfiguration = {
         ...existingPricingConfig,
         bankDetails: {
-          bankName: dto.bankName !== undefined ? dto.bankName : existingPricingConfig.bankDetails?.bankName,
-          accountNumber: dto.accountNumber !== undefined ? dto.accountNumber : existingPricingConfig.bankDetails?.accountNumber,
-          ifscCode: dto.ifscCode !== undefined ? dto.ifscCode : existingPricingConfig.bankDetails?.ifscCode,
-          address: dto.address !== undefined ? dto.address : existingPricingConfig.bankDetails?.address,
-        }
+          bankName:
+            dto.bankName !== undefined ? dto.bankName : existingPricingConfig.bankDetails?.bankName,
+          accountNumber:
+            dto.accountNumber !== undefined
+              ? dto.accountNumber
+              : existingPricingConfig.bankDetails?.accountNumber,
+          ifscCode:
+            dto.ifscCode !== undefined ? dto.ifscCode : existingPricingConfig.bankDetails?.ifscCode,
+          address:
+            dto.address !== undefined ? dto.address : existingPricingConfig.bankDetails?.address,
+        },
       };
     }
     if (dto.termsAndConditions !== undefined)
@@ -448,9 +474,35 @@ export class QuotationService {
     if (dto.timeline !== undefined) updateData.timeline = dto.timeline;
     // Handle new structured fields — merge ALL into one technicalSpecifications
     // object to prevent sequential blocks overwriting each other.
-    if (dto.buildingSpec !== undefined) updateData.scopeConfiguration = dto.buildingSpec;
     const existingTechSpecs = (existing.technicalSpecifications as any) || {};
     const techSpecUpdates: Record<string, any> = {};
+    if (dto.buildingSpec !== undefined) {
+      updateData.scopeConfiguration = dto.buildingSpec;
+      // Sync the flat technicalSpecifications fields that the PDF view model reads.
+      // Without this, edited Building Specification values never reach the generated PDF.
+      const bs = dto.buildingSpec;
+      techSpecUpdates.buildingLength = bs?.length || '';
+      techSpecUpdates.buildingWidth = bs?.width || '';
+      techSpecUpdates.buildingHeight = bs?.clearHeight || '';
+      techSpecUpdates.buildingArea = bs?.area || '';
+      techSpecUpdates.baySpacing = bs?.sidewallBaySpacing || '';
+      techSpecUpdates.roofSlope = bs?.roofSlope || '';
+      techSpecUpdates.frameType = bs?.frameType || '';
+      techSpecUpdates.endFrameCondition = bs?.endFrameCondition || '';
+      techSpecUpdates.widthModule = bs?.widthModule || '';
+      techSpecUpdates.opening = bs?.opening || '';
+      techSpecUpdates.endwallBaySpacing = bs?.endwallBaySpacing || '';
+      techSpecUpdates.brickwallCondition = bs?.brickwallCondition || '';
+      techSpecUpdates.canopy = bs?.canopy || '';
+      techSpecUpdates.roofSheeting = bs?.roofSheeting || '';
+      techSpecUpdates.wallSheeting = bs?.wallSheeting || '';
+      techSpecUpdates.gutter = bs?.gutter || '';
+      techSpecUpdates.downTakePipe = bs?.downTakePipe || '';
+      techSpecUpdates.bracingType = bs?.bracingType || '';
+      techSpecUpdates.fascia = bs?.fascia || '';
+      techSpecUpdates.futureExpansion = bs?.futureExpansion || '';
+    }
+    if (dto.specialNote !== undefined) techSpecUpdates.specialNote = dto.specialNote;
     if (dto.designCode !== undefined) techSpecUpdates.designCode = dto.designCode;
     else if (existingTechSpecs.designCode)
       techSpecUpdates.designCode = existingTechSpecs.designCode;

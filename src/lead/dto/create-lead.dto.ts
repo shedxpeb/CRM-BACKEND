@@ -282,6 +282,11 @@ export class CreateLeadDto {
   nextFollowUpDate?: string;
 
   @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  totalTun?: number;
+
+  @IsOptional()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   customFields?: Record<string, any>;
 }

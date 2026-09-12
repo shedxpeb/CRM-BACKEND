@@ -120,6 +120,11 @@ export class CreateQuotationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  specialNote?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   templateId?: string;
 
   @ApiPropertyOptional()
