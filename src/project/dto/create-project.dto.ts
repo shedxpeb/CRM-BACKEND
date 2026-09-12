@@ -199,4 +199,9 @@ export class CreateProjectDto {
   @Max(100)
   @Type(() => Number)
   progress?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  totalTun?: number;
 }

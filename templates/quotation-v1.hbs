@@ -1455,7 +1455,7 @@
     <div style="margin-bottom: 12px;">
       <p style="font-size: 13pt; line-height: 1.5;" class="special-note">
         <strong>Special Note:</strong><br />
-        Above rates are considered based on the prevailing steel prices. Any price increase/decrease in the material rates will have commercial implication at the time of finalization meeting. The rates are volatile due to the unpredictable steel market.
+        {{#if specialNote}}{{specialNote}}{{else}}Above rates are considered based on the prevailing steel prices. Any price increase/decrease in the material rates will have commercial implication at the time of finalization meeting. The rates are volatile due to the unpredictable steel market.{{/if}}
       </p>
     </div>
 
@@ -1504,8 +1504,12 @@
       <div class="blue-section-heading">❖ Payment Terms</div>
       <div style="font-size: 12pt; line-height: 1.5;">
         <p style="margin-bottom: 6px;"><strong>Supply Payment Terms:</strong></p>
-        <p style="margin-bottom: 6px;">(1) 30 % advance with your confirm Work Order, 30 % against GA drawing approval & 35 % against dispatch of structure from our work shop, 05 % after Handover the Project.</p>
+        {{#if payment.terms}}
+        <p style="margin-bottom: 6px;">{{payment.terms}}</p>
+        {{else}}
+        <p style="margin-bottom: 6px;">(1) 30 % advance with your confirm Work Order, 30 % against GA drawing approval &amp; 35 % against dispatch of structure from our work shop, 05 % after Handover the Project.</p>
         <p style="margin-bottom: 6px;">(2) Change orders/revisions will be negotiated separately.</p>
+        {{/if}}
       </div>
     </div>
 

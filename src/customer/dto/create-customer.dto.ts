@@ -7,6 +7,7 @@ import {
   MaxLength,
   Matches,
   ValidateIf,
+  IsNumber,
 } from 'class-validator';
 import { CustomerStatus } from './get-customers.dto';
 import { BusinessType } from '../../lead/dto/get-leads.dto';

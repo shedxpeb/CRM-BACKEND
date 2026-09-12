@@ -290,6 +290,7 @@ export interface PdfQuotationViewModel {
     gstAmount: number;
     grandTotal: number;
   };
+  specialNote: string;
 
   branding: {
     coverImage: string;
@@ -674,69 +675,86 @@ export class QuotationPdfService {
       this.logger.warn(`[mapToViewModel] WARNING: Contract Price Rows count is 0`);
 
     this.logger.log('[mapToViewModel] Customer Name:', q.customerName);
-
-    // Technical specifications are stored as flat fields, not nested objects
+    // Technical specifications are stored as flat fields, not nested objects.
+    // Prefer scopeConfiguration (written on every update) over the legacy flat fields,
+    // so edited Building Specification values are reflected in the PDF.
+    const scopeConfig = (q.scopeConfiguration as Record<string, any>) || {};
+    const pickScope = (key: string, fallback: any) => {
+      const v = scopeConfig[key];
+      return v !== undefined && v !== null && String(v).trim() !== '' ? v : fallback;
+    };
     const buildingSpec = {
-      frameType: techSpecs.frameType,
-      endFrameCondition: techSpecs.endFrameCondition,
-      width: techSpecs.buildingWidth,
-      length: techSpecs.buildingLength,
-      clearHeight: techSpecs.buildingHeight,
-      widthModule: techSpecs.widthModule,
-      roofSlope: techSpecs.roofSlope,
-      opening: techSpecs.opening,
-      sidewallBaySpacing: techSpecs.baySpacing,
-      endwallBaySpacing: techSpecs.endwallBaySpacing,
-      brickwallCondition: techSpecs.brickwallCondition,
-      canopy: techSpecs.canopy,
-      roofSheeting: techSpecs.roofSheeting,
-      wallSheeting: techSpecs.wallSheeting,
-      gutter: techSpecs.gutter,
-      downTakePipe: techSpecs.downTakePipe,
-      bracingType: techSpecs.bracingType,
-      fascia: techSpecs.fascia,
-      futureExpansion: techSpecs.futureExpansion,
+      frameType: pickScope('frameType', techSpecs.frameType),
+      endFrameCondition: pickScope('endFrameCondition', techSpecs.endFrameCondition),
+      width: pickScope('width', techSpecs.buildingWidth),
+      length: pickScope('length', techSpecs.buildingLength),
+      clearHeight: pickScope('clearHeight', techSpecs.buildingHeight),
+      widthModule: pickScope('widthModule', techSpecs.widthModule),
+      roofSlope: pickScope('roofSlope', techSpecs.roofSlope),
+      opening: pickScope('opening', techSpecs.opening),
+      sidewallBaySpacing: pickScope('sidewallBaySpacing', techSpecs.baySpacing),
+      endwallBaySpacing: pickScope('endwallBaySpacing', techSpecs.endwallBaySpacing),
+      brickwallCondition: pickScope('brickwallCondition', techSpecs.brickwallCondition),
+      canopy: pickScope('canopy', techSpecs.canopy),
+      roofSheeting: pickScope('roofSheeting', techSpecs.roofSheeting),
+      wallSheeting: pickScope('wallSheeting', techSpecs.wallSheeting),
+      gutter: pickScope('gutter', techSpecs.gutter),
+      downTakePipe: pickScope('downTakePipe', techSpecs.downTakePipe),
+      bracingType: pickScope('bracingType', techSpecs.bracingType),
+      fascia: pickScope('fascia', techSpecs.fascia),
+      futureExpansion: pickScope('futureExpansion', techSpecs.futureExpansion),
     };
 
+    // Design code / loads / crane may be stored either as nested objects (written by
+    // QuotationService.update) or as legacy flat fields (written by create). Support both
+    // shapes; the nested object wins once present so edits always reach the PDF.
+    const asObject = (v: any): Record<string, any> =>
+      v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+
+    const dc = asObject(techSpecs.designCode);
+    const legacyDesignCode = typeof techSpecs.designCode === 'string' ? techSpecs.designCode : '';
     const designCode = {
-      windLoadApplication: techSpecs.designCode,
-      seismicCode: techSpecs.seismicCode,
-      responseFactor: techSpecs.responseFactor,
-      importanceFactor: techSpecs.importanceFactor,
-      seismicZone: techSpecs.seismicZone,
-      seismicCoefficient: techSpecs.seismicCoefficient,
+      windLoadApplication: dc.windLoadApplication ?? legacyDesignCode,
+      seismicCode: dc.seismicCode ?? techSpecs.seismicCode,
+      responseFactor: dc.responseFactor ?? techSpecs.responseFactor,
+      importanceFactor: dc.importanceFactor ?? techSpecs.importanceFactor,
+      seismicZone: dc.seismicZone ?? techSpecs.seismicZone,
+      seismicCoefficient: dc.seismicCoefficient ?? techSpecs.seismicCoefficient,
     };
 
+    const dl = asObject(techSpecs.designLoad);
     const designLoad = {
-      deadLoad: techSpecs.deadLoad,
-      liveLoad: techSpecs.liveLoad,
-      windSpeed: techSpecs.windLoad,
-      columnLoad: techSpecs.columnLoad,
-      collateralLoad: techSpecs.collateralLoad,
+      deadLoad: dl.deadLoad ?? techSpecs.deadLoad,
+      liveLoad: dl.liveLoad ?? techSpecs.liveLoad,
+      windSpeed: dl.windSpeed ?? dl.windLoad ?? techSpecs.windLoad,
+      columnLoad: dl.columnLoad ?? techSpecs.columnLoad,
+      collateralLoad: dl.collateralLoad ?? techSpecs.collateralLoad,
     };
 
+    const ml = asObject(techSpecs.mezzanineLoad);
     const mezzanineLoad = {
-      mezzArea: techSpecs.mezzanineArea,
-      mezzLiveLoad: techSpecs.mezzanineLoad,
-      thicknessOfSlab: techSpecs.thicknessOfSlab,
-      mezzAdditionalLoad: techSpecs.mezzanineAdditionalLoad,
-      stairCase: techSpecs.stairCase,
-      deflection: techSpecs.deflection,
-      topOfSlab: techSpecs.topOfMezzanineSlab,
-      shearStud: techSpecs.shearStud,
+      mezzArea: ml.area ?? techSpecs.mezzanineArea,
+      mezzLiveLoad: ml.liveLoad ?? techSpecs.mezzanineLoad,
+      thicknessOfSlab: ml.thicknessOfSlab ?? techSpecs.thicknessOfSlab,
+      mezzAdditionalLoad: ml.additionalLoad ?? techSpecs.mezzanineAdditionalLoad,
+      stairCase: ml.stairCase ?? techSpecs.stairCase,
+      deflection: ml.deflection ?? techSpecs.deflection,
+      topOfSlab: ml.topOfSlab ?? ml.topOfMezzanineSlab ?? techSpecs.topOfMezzanineSlab,
+      shearStud: ml.shearStud ?? techSpecs.shearStud,
     };
 
+    const cd = asObject(techSpecs.craneDetail);
     const craneDetail = {
-      craneCapacity: techSpecs.craneCapacity,
-      noOfCranes: techSpecs.numberOfCranes,
-      craneSpan: techSpecs.craneSpan,
-      trolleyHoistWeight: techSpecs.trolleyHoistWeight,
-      craneWeight: techSpecs.craneWeight,
-      wheelLoad: techSpecs.wheelLoad,
-      wheelBase: techSpecs.wheelBase,
-      runLength: techSpecs.runLength,
-      topOfCraneBeam: techSpecs.topOfCraneBeam,
-      tandemOperation: techSpecs.tandemOperation,
+      craneCapacity: cd.capacity ?? cd.craneCapacity ?? techSpecs.craneCapacity,
+      noOfCranes: cd.numberOfCranes ?? techSpecs.numberOfCranes,
+      craneSpan: cd.span ?? cd.craneSpan ?? techSpecs.craneSpan,
+      trolleyHoistWeight: cd.trolleyHoistWeight ?? techSpecs.trolleyHoistWeight,
+      craneWeight: cd.craneWeight ?? techSpecs.craneWeight,
+      wheelLoad: cd.wheelLoad ?? techSpecs.wheelLoad,
+      wheelBase: cd.wheelBase ?? techSpecs.wheelBase,
+      runLength: cd.runLength ?? techSpecs.runLength,
+      topOfCraneBeam: cd.topOfCraneBeam ?? techSpecs.topOfCraneBeam,
+      tandemOperation: cd.tandemOperation ?? techSpecs.tandemOperation,
     };
 
     // Debug logging to trace actual data structure
@@ -1052,18 +1070,35 @@ export class QuotationPdfService {
       },
 
       payment: {
-        terms: q.paymentTerms || templateDefaults.paymentTerms || 'As per agreement',
-        bankName: templateDefaults.bankDetails?.bankName || (pc as any)?.bankDetails?.bankName || q.bankName || '',
-        accountNumber: templateDefaults.bankDetails?.accountNumber || (pc as any)?.bankDetails?.accountNumber || q.accountNumber || '',
-        ifscCode: templateDefaults.bankDetails?.ifscCode || (pc as any)?.bankDetails?.ifscCode || q.ifscCode || '',
-        address: templateDefaults.bankDetails?.address || (pc as any)?.bankDetails?.address || q.address || '',
+        // Empty string lets the HBS template fall back to its default payment schedule
+        terms: q.paymentTerms || templateDefaults.paymentTerms || '',
+        bankName:
+          templateDefaults.bankDetails?.bankName ||
+          (pc as any)?.bankDetails?.bankName ||
+          q.bankName ||
+          '',
+        accountNumber:
+          templateDefaults.bankDetails?.accountNumber ||
+          (pc as any)?.bankDetails?.accountNumber ||
+          q.accountNumber ||
+          '',
+        ifscCode:
+          templateDefaults.bankDetails?.ifscCode ||
+          (pc as any)?.bankDetails?.ifscCode ||
+          q.ifscCode ||
+          '',
+        address:
+          templateDefaults.bankDetails?.address ||
+          (pc as any)?.bankDetails?.address ||
+          q.address ||
+          '',
         branchName: templateDefaults.bankDetails?.branchName || q.bankBranch || '',
         accountType:
           templateDefaults.bankDetails?.accountType || q.accountType || 'Current Account',
       },
 
       craneCapacityMt: this.normalizeString(
-        techSpecs.craneDetail?.craneCapacity?.replace(/[^0-9]/g, '') || '10',
+        String(craneDetail.craneCapacity || '').replace(/[^0-9]/g, '') || '10',
       ),
 
       finalSignature: {
@@ -1094,7 +1129,11 @@ export class QuotationPdfService {
         location: this.normalizeString(acc.location || ''),
       })),
 
-      materialSpecs: (q.materialSpecs || []).map((spec: any) => ({
+      materialSpecs: (
+        (Array.isArray(q.materialSpecs) && q.materialSpecs.length > 0
+          ? q.materialSpecs
+          : (q.proposalConfiguration as Record<string, any>)?.materialSpecs || []) as any[]
+      ).map((spec: any) => ({
         id: spec.id || '',
         component: this.normalizeString(spec.component || ''),
         specification: this.normalizeString(spec.specification || ''),
@@ -1113,6 +1152,9 @@ export class QuotationPdfService {
         rate: this.normalizeString(row.rate || ''),
         amount: row.amount || 0,
       })),
+
+      // Special note under the contract price table (Page 8); empty falls back to template default in HBS
+      specialNote: this.normalizeString(q.specialNote ?? techSpecs.specialNote ?? ''),
 
       // Calculate totals from contractPriceRows
       contractPrice: (() => {
@@ -1295,6 +1337,13 @@ export class QuotationPdfService {
       return {
         ...quotation,
         ...techSpecs, // Flatten technicalSpecifications to top level for easier access
+        // Flatten proposalConfiguration too so edited materialSpecs/weightRows reach the view model
+        ...(Array.isArray(proposalConfig.materialSpecs) && proposalConfig.materialSpecs.length > 0
+          ? { materialSpecs: proposalConfig.materialSpecs }
+          : {}),
+        ...(Array.isArray(proposalConfig.weightRows) && proposalConfig.weightRows.length > 0
+          ? { weightRows: proposalConfig.weightRows }
+          : {}),
         _organization: await this.getOrganizationForQuotation(organizationId),
       };
     }
