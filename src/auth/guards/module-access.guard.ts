@@ -149,6 +149,22 @@ export class ModuleAccessGuard implements CanActivate {
     system: {
       GET: ['system:read'],
     },
+    // Finance module
+    finance: {
+      GET: ['finance:list', 'finance:read'],
+      POST: ['finance:create'],
+      PUT: ['finance:update'],
+      PATCH: ['finance:update'],
+      DELETE: ['finance:delete'],
+    },
+    // Accounting module
+    accounting: {
+      GET: ['finance:read'],
+      POST: ['finance:create'],
+      PUT: ['finance:update'],
+      PATCH: ['finance:update'],
+      DELETE: ['finance:delete'],
+    },
   };
 
   constructor(
