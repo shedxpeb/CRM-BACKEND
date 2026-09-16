@@ -32,6 +32,8 @@ const DEFAULT_MODULE_KEYS = [
   'document',
   'task',
   'system',
+  'finance',
+  'accounting',
 ];
 
 async function main() {
